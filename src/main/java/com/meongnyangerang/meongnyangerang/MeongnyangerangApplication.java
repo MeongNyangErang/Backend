@@ -8,6 +8,8 @@ public class MeongnyangerangApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(MeongnyangerangApplication.class, args);
+
+		// asdfasfsad
 	}
 
 }
