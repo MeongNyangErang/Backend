@@ -49,12 +49,6 @@ dependencies {
 	// Websocket
 //	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
-	// SSE (Server-Sent Events)
-//	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-
-	// Scheduling
-//	implementation 'org.springframework.boot:spring-boot-starter-quartz'
-
 	// Email (SMTP)
 //	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
