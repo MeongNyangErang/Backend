@@ -1,4 +1,4 @@
-package com.meongnyangerang.meongnyangerang.domain.user;
+package com.meongnyangerang.meongnyangerang.domain.host;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,7 +25,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-public class User {
+public class Host {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,17 +34,29 @@ public class User {
   @Column(length = 100, nullable = false, unique = true)
   private String email;
 
+  @Column(length = 50, nullable = false)
+  private String name;
+
   @Column(length = 50, nullable = false, unique = true)
   private String nickname;
 
   @Column(nullable = false)
   private String password;
 
-  private String profileImage;
+  private String profileImageUrl;
+
+  @Column(nullable = false)
+  private String businessLicenseImageUrl;
+
+  @Column(nullable = false)
+  private String submitDocumentImageUrl;
+
+  @Column(length = 20, nullable = false)
+  private String phoneNumber;
 
   @Enumerated(EnumType.STRING)
   @Column(length = 50, nullable = false)
-  private UserStatus status;
+  private HostStatus status;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)

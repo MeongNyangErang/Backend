@@ -5,9 +5,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,26 +29,33 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-public class User {
+public class UserPet {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(length = 100, nullable = false, unique = true)
-  private String email;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-  @Column(length = 50, nullable = false, unique = true)
-  private String nickname;
+  @Column(length = 50, nullable = false)
+  private String name;
 
   @Column(nullable = false)
-  private String password;
-
-  private String profileImage;
+  private LocalDate birthDate;
 
   @Enumerated(EnumType.STRING)
-  @Column(length = 50, nullable = false)
-  private UserStatus status;
+  @Column(length = 20, nullable = false)
+  private PetType type;
+
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20, nullable = false)
+  private Personality personality;
+
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20, nullable = false)
+  private ActivityLevel activityLevel;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
@@ -54,5 +65,4 @@ public class User {
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 
-  private LocalDateTime deletedAt;
 }
