@@ -35,7 +35,7 @@ public class ReviewReport {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private ReportType type;
+  private ReporterType type;
 
   @Column(nullable = false, columnDefinition = "TEXT")
   private String reason;
@@ -49,7 +49,7 @@ public class ReviewReport {
   @CreatedDate
   private LocalDateTime createdAt;
 
-  enum ReportType {
+  enum ReporterType {
     USER, HOST;
   }
 
