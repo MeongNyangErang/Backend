@@ -1,6 +1,5 @@
-package com.meongnyangerang.meongnyangerang.domain.accommodation.facility;
+package com.meongnyangerang.meongnyangerang.domain.accommodation;
 
-import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -26,7 +25,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class AccommodationFacility {
+public class AllowPet {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,7 +37,7 @@ public class AccommodationFacility {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private AccommodationFacilityType type;
+  private PetType petType;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)

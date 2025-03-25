@@ -1,11 +1,8 @@
-package com.meongnyangerang.meongnyangerang.domain.accommodation.facility;
+package com.meongnyangerang.meongnyangerang.domain.room;
 
-import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -26,19 +23,18 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class AccommodationFacility {
+public class RoomImage {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "accommodation_id", nullable = false)
-  private Accommodation accommodation;
+  @JoinColumn(name = "room_id", nullable = false)
+  private Room room;
 
-  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private AccommodationFacilityType type;
+  private String imageUrl;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)

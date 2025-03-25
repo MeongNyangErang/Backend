@@ -26,7 +26,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class AccommodationFacility {
+public class AccommodationPetFacility {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,8 +37,8 @@ public class AccommodationFacility {
   private Accommodation accommodation;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private AccommodationFacilityType type;
+  @Column( nullable = false)
+  private AccommodationPetFacilityType type;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)

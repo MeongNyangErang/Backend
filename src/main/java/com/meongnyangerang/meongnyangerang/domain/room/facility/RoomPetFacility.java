@@ -1,6 +1,6 @@
-package com.meongnyangerang.meongnyangerang.domain.accommodation.facility;
+package com.meongnyangerang.meongnyangerang.domain.room.facility;
 
-import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -26,19 +26,20 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class AccommodationFacility {
+public class RoomPetFacility {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "accommodation_id", nullable = false)
-  private Accommodation accommodation;
+  @JoinColumn(name = "room_id", nullable = false)
+  private Room room;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private AccommodationFacilityType type;
+  private RoomPetFacilityType type;
+
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
