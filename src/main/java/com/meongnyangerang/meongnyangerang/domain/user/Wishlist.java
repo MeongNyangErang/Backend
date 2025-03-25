@@ -26,11 +26,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-public class Bookmark {
+public class Wishlist {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long wishlistId;
+  private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)

@@ -33,7 +33,7 @@ public class UserPet {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long petId;
+  private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
