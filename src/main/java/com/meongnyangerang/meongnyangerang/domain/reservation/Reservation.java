@@ -74,9 +74,11 @@ public class Reservation {
   private ReservationStatus status;
 
   @CreatedDate
+  @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
   @LastModifiedDate
+  @Column(nullable = false)
   private LocalDateTime updatedAt;
 
   private LocalDateTime canceledAt;

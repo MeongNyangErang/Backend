@@ -47,6 +47,7 @@ public class ReviewReport {
   private ReportStatus status;
 
   @CreatedDate
+  @Column(nullable = false)
   private LocalDateTime createdAt;
 
   enum ReporterType {

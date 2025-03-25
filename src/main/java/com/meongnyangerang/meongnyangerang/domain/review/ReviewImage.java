@@ -39,5 +39,6 @@ public class ReviewImage {
   private String imageUrl;
 
   @CreatedDate
+  @Column(nullable = false)
   private LocalDateTime createdAt;
 }
