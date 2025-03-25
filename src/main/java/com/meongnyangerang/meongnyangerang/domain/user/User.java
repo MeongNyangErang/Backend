@@ -37,10 +37,9 @@ public class User {
   @Column(length = 50, nullable = false, unique = true)
   private String nickname;
 
-  @Column(length = 255, nullable = false)
+  @Column(nullable = false)
   private String password;
 
-  @Column(length = 255)
   private String profileImage;
 
   @Enumerated(EnumType.STRING)

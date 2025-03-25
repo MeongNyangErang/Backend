@@ -40,16 +40,15 @@ public class Host {
   @Column(length = 50, nullable = false, unique = true)
   private String nickname;
 
-  @Column(length = 255, nullable = false)
+  @Column(nullable = false)
   private String password;
 
-  @Column(length = 255)
   private String profileImageUrl;
 
-  @Column(length = 255, nullable = false)
+  @Column(nullable = false)
   private String businessLicenseImageUrl;
 
-  @Column(length = 255, nullable = false)
+  @Column(nullable = false)
   private String submitDocumentImageUrl;
 
   @Column(length = 20, nullable = false)
@@ -67,6 +66,5 @@ public class Host {
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 
-  @Column
   private LocalDateTime deletedAt;
 }
