@@ -35,15 +35,15 @@ public class ChatRoom {
   @JoinColumn(name = "user_id")
   private User user;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  /*@ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "host_id")
-  private Host host;
+  private Host host;*/
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
   @LastModifiedDate
-  @Column(name = "updated_at", nullable = false)
+  @Column(nullable = false)
   private LocalDateTime updatedAt;
 }
