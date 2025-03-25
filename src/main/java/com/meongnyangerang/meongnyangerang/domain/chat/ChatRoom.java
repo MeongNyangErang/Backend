@@ -32,11 +32,11 @@ public class ChatRoom {
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id")
+  @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
   /*@ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "host_id")
+  @JoinColumn(name = "host_id", nullable = false)
   private Host host;*/
 
   @CreatedDate
