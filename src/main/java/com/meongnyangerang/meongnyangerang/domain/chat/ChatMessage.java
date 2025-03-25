@@ -32,14 +32,14 @@ public class ChatMessage {
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(nullable = false)
+  @JoinColumn(name = "chat_room_id", nullable = false)
   private ChatRoom chatRoom;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private SenderType senderType;
 
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String content;
 
   @CreatedDate
