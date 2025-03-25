@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.domain.notification;
 
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,9 +37,9 @@ public class Notification {
   @JoinColumn(name = "user_id")
   private User user;
 
-  /*@ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "host_id")
-  private Host host;*/
+  private Host host;
 
   @Column(nullable = false, columnDefinition = "TEXT")
   private String content;

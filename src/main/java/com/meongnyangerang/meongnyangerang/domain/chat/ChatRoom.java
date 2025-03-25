@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.domain.chat;
 
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,9 +36,9 @@ public class ChatRoom {
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  /*@ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "host_id", nullable = false)
-  private Host host;*/
+  private Host host;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
