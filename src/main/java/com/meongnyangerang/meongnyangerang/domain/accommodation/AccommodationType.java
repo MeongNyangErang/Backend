@@ -1,4 +1,4 @@
-package com.meongnyangerang.meongnyangerang.domain.accommodation.facility;
+package com.meongnyangerang.meongnyangerang.domain.accommodation;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,6 @@
-package com.meongnyangerang.meongnyangerang.domain.room;
+package com.meongnyangerang.meongnyangerang.domain.room.facility;
 
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;

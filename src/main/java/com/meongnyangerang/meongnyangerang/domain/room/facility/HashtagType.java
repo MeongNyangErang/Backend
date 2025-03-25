@@ -1,4 +1,4 @@
-package com.meongnyangerang.meongnyangerang.domain.room;
+package com.meongnyangerang.meongnyangerang.domain.room.facility;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

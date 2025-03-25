@@ -1,6 +1,5 @@
 package com.meongnyangerang.meongnyangerang.domain.accommodation;
 
-import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
