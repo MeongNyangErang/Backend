@@ -31,13 +31,13 @@ public class ReviewReport {
   private Long id;
 
   @Column(nullable = false)
-  private Long reportId;
+  private Long reporterId;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private ReportType type;
 
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String reason;
 
   private String evidenceImageUrl;
