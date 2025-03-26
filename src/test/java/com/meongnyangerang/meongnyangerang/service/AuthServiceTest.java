@@ -11,6 +11,8 @@ import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
 import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,5 +49,26 @@ class AuthServiceTest {
     verify(authenticationCodeRepository, times(1)).deleteAllByEmail(email);
     verify(authenticationCodeRepository, times(1)).save(any(AuthenticationCode.class));
     verify(mailComponent, times(1)).sendMail(eq(email), anyString(), anyString());
+  }
+
+  @Test
+  @DisplayName("인증 코드 정상 검증 테스트")
+  void verifyCode_Success() {
+    // given
+    String email = "test@example.com";
+    String code = "123456";
+    AuthenticationCode authCode = AuthenticationCode.builder()
+        .email(email)
+        .code(code)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    when(authenticationCodeRepository.findByEmail(email)).thenReturn(Optional.of(authCode));
+
+    // when
+    authService.verifyCode(email, code);
+
+    // then
+    verify(authenticationCodeRepository, times(1)).delete(authCode);
   }
 }
