@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.EmailRequest;
+import com.meongnyangerang.meongnyangerang.dto.VerifyCodeRequest;
 import com.meongnyangerang.meongnyangerang.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,13 @@ public class UserController {
   public ResponseEntity<String> sendVerificationCode(@Valid @RequestBody EmailRequest request) {
     userService.sendVerificationCode(request.getEmail());
     return ResponseEntity.ok("인증코드가 발송되었습니다.");
+  }
+
+  // 인증 코드 검증 API
+  @PostMapping("/email/verify-code")
+  public ResponseEntity<String> verifyCode(@Valid @RequestBody VerifyCodeRequest request) {
+    userService.verifyCode(request.getEmail(), request.getCode());
+    return ResponseEntity.ok("인증이 완료되었습니다.");
   }
 
 }
