@@ -80,7 +80,7 @@ class AuthServiceTest {
     // given
     String email = "test@example.com";
     String code = "123456";
-    
+
     when(authenticationCodeRepository.findByEmail(email)).thenReturn(Optional.of(AuthenticationCode.builder()
         .email(email)
         .code(code)
