@@ -34,7 +34,7 @@ class AuthServiceTest {
   private MailComponent mailComponent;
 
   @Test
-  @DisplayName("인증 코드 생성 및 저장 테스트")
+  @DisplayName("인증 코드 생성 및 이메일 발송 테스트")
   void sendVerificationCode_Success() {
     // given
     String email = "test@example.com";
