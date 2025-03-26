@@ -34,8 +34,6 @@ public class AuthenticationCode {
   @Column(nullable = false)
   private Integer code;
 
-  private Boolean isValid;
-
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;

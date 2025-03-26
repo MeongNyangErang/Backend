@@ -1,11 +1,11 @@
 package com.meongnyangerang.meongnyangerang.repository;
 
-import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface AuthenticationCodeRepository extends JpaRepository<AuthenticationCode, Long> {
 
-  boolean existsByEmail(String email);
+
 }
