@@ -19,7 +19,9 @@ public class HostSignupRequest {
   @NotBlank(message = "이메일은 필수 입력 항목입니다.")
   private String email;
 
-
+  @NotBlank(message = "이름은 필수 입력 항목입니다.")
+  @Size(min = 1, max = 20, message = "이름은 1자 이상 20자 이하여야 합니다.")
+  @Pattern(regexp = "^[가-힣a-zA-Z]+$", message = "이름은 한글 또는 영문만 입력 가능합니다.")
   private String name;
 
   @Size(min = 2, max = 20)
