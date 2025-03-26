@@ -50,7 +50,7 @@ dependencies {
 //	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
 	// Email (SMTP)
-//	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
 	// Validation
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
