@@ -1,6 +1,6 @@
 package com.meongnyangerang.meongnyangerang.domain.reservation;
 
-import com.meongnyangerang.meongnyangerang.domain.accommodation.Room;
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,18 +1,14 @@
-package com.meongnyangerang.meongnyangerang.domain.user;
+package com.meongnyangerang.meongnyangerang.domain.admin;
 
-import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,33 +26,23 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-public class UserPet {
+public class Notice {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  @JoinColumn(name = "admin_id", nullable = false)
+  private Admin admin;
 
-  @Column(length = 50, nullable = false)
-  private String name;
+  @Column(nullable = false, length = 100)
+  private String title;
 
-  @Column(nullable = false)
-  private LocalDate birthDate;
+  @Column(nullable = false, columnDefinition = "TEXT")
+  private String content;
 
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20, nullable = false)
-  private PetType type;
-
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20, nullable = false)
-  private Personality personality;
-
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20, nullable = false)
-  private ActivityLevel activityLevel;
+  private String imageUrl;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
@@ -65,5 +51,4 @@ public class UserPet {
   @LastModifiedDate
   @Column(nullable = false)
   private LocalDateTime updatedAt;
-
 }

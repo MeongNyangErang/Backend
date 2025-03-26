@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.domain.accommodation;
 
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -32,9 +33,9 @@ public class Accommodation {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  /*@ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "host_id", nullable = false)
-  private Host host;*/
+  private Host host;
 
   @Column(nullable = false, length = 100)
   private String name;
