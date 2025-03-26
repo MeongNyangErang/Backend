@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
+import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import java.time.LocalDateTime;
@@ -70,5 +72,22 @@ class AuthServiceTest {
 
     // then
     verify(authenticationCodeRepository, times(1)).delete(authCode);
+  }
+
+  @Test
+  @DisplayName("인증 코드 검증 실패 테스트")
+  void verifyCode_Fail_InvalidCode() {
+    // given
+    String email = "test@example.com";
+    String code = "123456";
+    
+    when(authenticationCodeRepository.findByEmail(email)).thenReturn(Optional.of(AuthenticationCode.builder()
+        .email(email)
+        .code(code)
+        .createdAt(LocalDateTime.now())
+        .build()));
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () -> authService.verifyCode(email, "654321"));
   }
 }
