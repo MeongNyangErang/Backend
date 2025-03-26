@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AuthenticationCodeRepository extends JpaRepository<AuthenticationCode, Long> {
 
-
+  void deleteAllByEmail(String email);
 }
