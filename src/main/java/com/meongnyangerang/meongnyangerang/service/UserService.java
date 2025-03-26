@@ -28,7 +28,7 @@ public class UserService {
     }
 
     // 6자리 랜덤 숫자 생성(Math.random()은 예측 가능한 난수 생성 → 보안 취약 → SecureRandom 사용)
-    int code = 100_000 + new SecureRandom().nextInt(900_000);
+    String code = String.format("%06d", new SecureRandom().nextInt(900_000));
 
     // 기존 코드 삭제
     authenticationCodeRepository.deleteAllByEmail(email);
