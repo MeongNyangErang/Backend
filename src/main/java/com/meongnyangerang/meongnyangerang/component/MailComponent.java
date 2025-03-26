@@ -1,5 +1,9 @@
 package com.meongnyangerang.meongnyangerang.component;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
+import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +38,7 @@ public class MailComponent {
       javaMailSender.send(msg);
     } catch (Exception e) {
       log.error("메일 발송 실패: {}", e.getMessage(), e); // 로그 추가 (예외 메시지와 스택 트레이스 출력)
+      throw new MeongnyangerangException(EMAIL_NOT_SEND);
     }
   }
 }
