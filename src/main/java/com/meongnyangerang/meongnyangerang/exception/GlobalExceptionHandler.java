@@ -1,6 +1,5 @@
 package com.meongnyangerang.meongnyangerang.exception;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INTERNAL_SERVER_ERROR;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_REQUEST;
 
 import lombok.extern.slf4j.Slf4j;

@@ -1,8 +1,7 @@
 package com.meongnyangerang.meongnyangerang.component;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EMAIL_NOT_SEND;
 
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;

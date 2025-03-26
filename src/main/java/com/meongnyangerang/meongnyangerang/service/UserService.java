@@ -1,24 +1,14 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.AUTH_CODE_NOT_FOUND;
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EXPIRED_AUTH_CODE;
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTH_CODE;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.USER_ALREADY_EXISTS;
 
-import com.meongnyangerang.meongnyangerang.component.MailComponent;
-import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
-import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor

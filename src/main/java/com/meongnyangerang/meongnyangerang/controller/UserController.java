@@ -1,8 +1,6 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
-import com.meongnyangerang.meongnyangerang.dto.EmailRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
-import com.meongnyangerang.meongnyangerang.dto.VerifyCodeRequest;
 import com.meongnyangerang.meongnyangerang.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
