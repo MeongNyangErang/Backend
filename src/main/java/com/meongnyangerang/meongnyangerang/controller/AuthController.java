@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.EmailRequest;
+import com.meongnyangerang.meongnyangerang.dto.NicknameRequest;
 import com.meongnyangerang.meongnyangerang.dto.VerifyCodeRequest;
 import com.meongnyangerang.meongnyangerang.service.AuthService;
 import jakarta.validation.Valid;
@@ -39,6 +40,13 @@ public class AuthController {
   @GetMapping("/email/check")
   public ResponseEntity<Void> checkEmail(@Valid @RequestBody EmailRequest request) {
     authService.checkEmail(request.getEmail());
+    return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+  // 닉네임 중복 확인 API
+  @GetMapping("/nickname/check")
+  public ResponseEntity<Void> checkNickname(@Valid @RequestBody NicknameRequest request) {
+    authService.checkNickname(request.getNickname());
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 }

@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.AUTH_CODE_NOT_FOUND;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EXPIRED_AUTH_CODE;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTH_CODE;
 
@@ -13,6 +14,7 @@ import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -80,6 +82,15 @@ public class AuthService {
     // 사용자, 호스트 이메일 중복 동시 체크
     if (userRepository.existsByEmail(email) || hostRepository.existsByEmail(email)) {
       throw new MeongnyangerangException(DUPLICATE_EMAIL);
+    }
+  }
+
+  // 닉네임 중복 확인
+  public void checkNickname(String nickname) {
+
+    // 사용자, 호스트 이메일 중복 동시 체크
+    if (userRepository.existsByNickname(nickname) || hostRepository.existsByNickname(nickname)) {
+      throw new MeongnyangerangException(DUPLICATE_NICKNAME);
     }
   }
 }
