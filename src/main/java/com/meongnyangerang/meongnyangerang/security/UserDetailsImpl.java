@@ -45,6 +45,7 @@ public class UserDetailsImpl implements UserDetails {
     return true;
   }
 
+  // 추후 상태에 따른 계정 잠금 고려
   @Override
   public boolean isAccountNonLocked() {
     return true;
@@ -55,6 +56,7 @@ public class UserDetailsImpl implements UserDetails {
     return true;
   }
 
+  // 추후 상태에 따른 계정 활성화 고려
   @Override
   public boolean isEnabled() {
     return true;
