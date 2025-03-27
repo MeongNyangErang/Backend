@@ -5,6 +5,7 @@ import com.meongnyangerang.meongnyangerang.dto.VerifyCodeRequest;
 import com.meongnyangerang.meongnyangerang.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,15 +21,15 @@ public class AuthController {
 
   // 이메일 인증 코드 전송 API
   @PostMapping("/email/send-code")
-  public ResponseEntity<String> sendVerificationCode(@Valid @RequestBody EmailRequest request) {
+  public ResponseEntity<Void> sendVerificationCode(@Valid @RequestBody EmailRequest request) {
     authService.sendVerificationCode(request.getEmail());
-    return ResponseEntity.ok("인증코드가 발송되었습니다.");
+    return ResponseEntity.status(HttpStatus.OK).build();
   }
 
   // 인증 코드 검증 API
   @PostMapping("/email/verify-code")
-  public ResponseEntity<String> verifyCode(@Valid @RequestBody VerifyCodeRequest request) {
+  public ResponseEntity<Void> verifyCode(@Valid @RequestBody VerifyCodeRequest request) {
     authService.verifyCode(request.getEmail(), request.getCode());
-    return ResponseEntity.ok("인증이 완료되었습니다.");
+    return ResponseEntity.status(HttpStatus.OK).build();
   }
 }

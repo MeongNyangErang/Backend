@@ -4,6 +4,7 @@ import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.service.HostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,8 +20,8 @@ public class HostController {
 
   // 호스트 회원가입 API
   @PostMapping("/signup")
-  public ResponseEntity<String> registerHost(@Valid @RequestBody HostSignupRequest request) {
+  public ResponseEntity<Void> registerHost(@Valid @RequestBody HostSignupRequest request) {
     hostService.registerHost(request);
-    return ResponseEntity.ok("호스트 회원가입이 완료되었습니다. 관리자 승인 후 이용 가능합니다.");
+    return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 }

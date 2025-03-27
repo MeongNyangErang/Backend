@@ -4,6 +4,7 @@ import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
 import com.meongnyangerang.meongnyangerang.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,9 +20,9 @@ public class UserController {
 
   // 사용자 회원가입 API
   @PostMapping("/signup")
-  public ResponseEntity<String> registerUser(@Valid @RequestBody UserSignupRequest request) {
+  public ResponseEntity<Void> registerUser(@Valid @RequestBody UserSignupRequest request) {
     userService.registerUser(request);
-    return ResponseEntity.ok("회원가입이 완료되었습니다.");
+    return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
 }
