@@ -6,7 +6,6 @@ import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
-import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,6 @@ public class HostService {
 
   private final UserRepository userRepository;
   private final HostRepository hostRepository;
-  private final AuthenticationCodeRepository authenticationCodeRepository;
 
   // 호스트 회원가입
   public void registerHost(HostSignupRequest request) {
