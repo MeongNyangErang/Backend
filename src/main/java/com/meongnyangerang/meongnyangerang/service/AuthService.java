@@ -35,7 +35,7 @@ public class AuthService {
   public void sendVerificationCode(String email) {
 
     // 중복 가입 방지
-    if (userRepository.existsByEmail(email)) {
+    if (userRepository.existsByEmail(email) || hostRepository.existsByEmail(email)) {
       throw new MeongnyangerangException(DUPLICATE_EMAIL);
     }
 
