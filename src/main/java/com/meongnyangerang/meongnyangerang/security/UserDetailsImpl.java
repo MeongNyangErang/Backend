@@ -8,6 +8,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+/**
+ * User, Host, Admin을 처리할 수 있도록 role을 포함하여 관리
+ * GrantedAuthority 목록을 role 기반으로 설정
+ */
+
 @Getter
 public class UserDetailsImpl implements UserDetails {
 
