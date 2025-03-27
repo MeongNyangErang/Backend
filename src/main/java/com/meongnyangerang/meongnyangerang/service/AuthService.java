@@ -9,7 +9,10 @@ import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
+import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
   private final UserRepository userRepository;
+  private final HostRepository hostRepository;
   private final AuthenticationCodeRepository authenticationCodeRepository;
   private final MailComponent mailComponent;
 
@@ -70,4 +74,12 @@ public class AuthService {
     authenticationCodeRepository.delete(authCode);
   }
 
+  // 이메일 중복 확인
+  public void checkEmail(String email) {
+
+    // 사용자, 호스트 이메일 중복 동시 체크
+    if (userRepository.existsByEmail(email) || hostRepository.existsByEmail(email)) {
+      throw new MeongnyangerangException(DUPLICATE_EMAIL);
+    }
+  }
 }

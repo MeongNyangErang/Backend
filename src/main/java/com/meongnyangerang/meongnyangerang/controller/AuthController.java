@@ -7,9 +7,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -30,6 +32,13 @@ public class AuthController {
   @PostMapping("/email/verify-code")
   public ResponseEntity<Void> verifyCode(@Valid @RequestBody VerifyCodeRequest request) {
     authService.verifyCode(request.getEmail(), request.getCode());
+    return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+  // 이메일 중복 확인 API
+  @GetMapping("/email/check")
+  public ResponseEntity<Void> checkEmail(@Valid @RequestBody EmailRequest request) {
+    authService.checkEmail(request.getEmail());
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 }
