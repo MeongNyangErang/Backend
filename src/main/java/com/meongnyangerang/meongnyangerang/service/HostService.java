@@ -6,8 +6,8 @@ import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
-import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
+import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,14 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class HostService {
 
+  private final UserRepository userRepository;
   private final HostRepository hostRepository;
-  private final AuthenticationCodeRepository authenticationCodeRepository;
 
   // 호스트 회원가입
   public void registerHost(HostSignupRequest request) {
 
-    // 중복 가입 방지
-    if (hostRepository.existsByEmail(request.getEmail())) {
+    // 이메일 중복 가입 방지
+    if (userRepository.existsByEmail(request.getEmail()) ||
+        hostRepository.existsByEmail(request.getEmail())) {
       throw new MeongnyangerangException(DUPLICATE_EMAIL);
     }
 
