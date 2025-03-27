@@ -14,6 +14,7 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepository;
+import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class AccommodationService {
   private final AccommodationFacilityRepository accommodationFacilityRepository;
   private final AccommodationPetFacilityRepository accommodationPetFacilityRepository;
   private final AllowPetRepository allowPetRepository;
-  //private final ImageService imageService;
+  private final ImageService imageService;
 
   /**
    * @param hostId           호스트 ID
@@ -47,9 +48,9 @@ public class AccommodationService {
   ) {
     Host host = validateHost(hostId); // 호스트 검증
 
-    // TODO: 이미지 파일 업로드 시 마인타입과 확장자 검증 필요
     // S3 다중 이미지 파일 업로드
-    additionalImages.add(thumbnail);
+    imageService.storeImage(thumbnail);
+    imageService.storeImages(additionalImages);
     
     // 썸네일 + 추가 이미지 한번에 업로드
     List<String> additionalImageUrls = List.of(); // = imageService.storeImageFiles(images);
