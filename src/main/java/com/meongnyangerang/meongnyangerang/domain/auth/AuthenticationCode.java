@@ -31,10 +31,8 @@ public class AuthenticationCode {
   @Column(nullable = false, length = 100)
   private String email;
 
-  @Column(nullable = false)
-  private Integer code;
-
-  private Boolean isValid;
+  @Column(nullable = false, length = 50)
+  private String code;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)

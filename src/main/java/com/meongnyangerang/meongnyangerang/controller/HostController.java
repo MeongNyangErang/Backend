@@ -1,7 +1,7 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
-import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
-import com.meongnyangerang.meongnyangerang.service.UserService;
+import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
+import com.meongnyangerang.meongnyangerang.service.HostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,16 +13,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/users")
-public class UserController {
+@RequestMapping("/api/v1/hosts")
+public class HostController {
 
-  private final UserService userService;
+  private final HostService hostService;
 
-  // 사용자 회원가입 API
+  // 호스트 회원가입 API
   @PostMapping("/signup")
-  public ResponseEntity<Void> registerUser(@Valid @RequestBody UserSignupRequest request) {
-    userService.registerUser(request);
+  public ResponseEntity<Void> registerHost(@Valid @RequestBody HostSignupRequest request) {
+    hostService.registerHost(request);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
-
 }

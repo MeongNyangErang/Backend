@@ -1,11 +1,10 @@
 package com.meongnyangerang.meongnyangerang.repository;
 
-import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
-
+public interface HostRepository extends JpaRepository<Host, Long> {
   boolean existsByEmail(String email);
 }
