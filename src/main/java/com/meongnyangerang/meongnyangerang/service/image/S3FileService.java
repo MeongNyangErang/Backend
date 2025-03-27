@@ -1,10 +1,5 @@
 package com.meongnyangerang.meongnyangerang.service.image;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.service.adptor.ImageStorage;
@@ -17,14 +12,25 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class S3FileService implements ImageStorage {
 
-  private static final String IMAGE_PATH_PREFIX = "image";
-  private final AmazonS3 amazonS3;
+  private static final String FILE_URL_PREFIX = "https://%s.s3.amazonaws.com/%s";
+  private static final String IMAGE_PATH_PREFIX = "image/";
+  private final S3Client s3Client;
 
   @Value("${AWS_BUCKET}")
   private String bucket;
@@ -41,13 +47,21 @@ public class S3FileService implements ImageStorage {
     String filename = createFilename(file);
 
     try {
-      ObjectMetadata metadata = createObjectMetadata(file);
-      amazonS3.putObject(bucket, filename, file.getInputStream(), metadata);
+      PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+          .bucket(bucket)
+          .key(filename)
+          .contentType(file.getContentType())
+          .build();
+
+      s3Client.putObject(
+          putObjectRequest,
+          RequestBody.fromInputStream(file.getInputStream(), file.getSize())
+      );
 
       log.info("파일 업로드 성공");
       return generateFileUrl(filename);
 
-    } catch (AmazonServiceException e) {
+    } catch (SdkException e) {
       log.error("파일 업로드 도중 아마존 서비스 에러 발생 : {}", e.getMessage(), e);
       throw new MeongnyangerangException(ErrorCode.FILE_NOT_EMPTY);
     } catch (IOException e) {
@@ -67,9 +81,15 @@ public class S3FileService implements ImageStorage {
 
     try {
       existKey(key);
-      amazonS3.deleteObject(bucket, key);
+      DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+          .bucket(bucket)
+          .key(key)
+          .build();
+
+      s3Client.deleteObject(deleteObjectRequest);
+
       log.info("파일 삭제 성공 bucket: {}, key: {}", bucket, key);
-    } catch (AmazonServiceException e) {
+    } catch (SdkException e) {
       log.error("파일 삭제 도중 아마존 서비스 에러 발생 : {}", e.getMessage(), e);
       throw new MeongnyangerangException(ErrorCode.AMAZON_SERVICE_ERROR);
     }
@@ -88,16 +108,19 @@ public class S3FileService implements ImageStorage {
 
     keys.forEach(this::existKey);
 
-    // 여러 파일 일괄 삭제
-    DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucket)
-        .withKeys(keys.stream()
-            .map(KeyVersion::new)
-            .collect(Collectors.toList()));
+    List<ObjectIdentifier> objectsToDelete = keys.stream()
+        .map(key -> ObjectIdentifier.builder().key(key).build())
+        .collect(Collectors.toList());
+
+    DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+        .bucket(bucket)
+        .delete(Delete.builder().objects(objectsToDelete).build())
+        .build();
 
     try {
-      amazonS3.deleteObjects(deleteObjectsRequest);
+      s3Client.deleteObjects(deleteObjectsRequest);
       log.info("{}개의 파일이 성공적으로 삭제되었습니다", keys.size());
-    } catch (AmazonServiceException e) {
+    } catch (SdkException e) {
       log.error("다중 파일 삭제 중 아마존 서비스 에러 발생: {}", e.getMessage());
       throw new MeongnyangerangException(ErrorCode.AMAZON_SERVICE_ERROR);
     }
@@ -107,25 +130,35 @@ public class S3FileService implements ImageStorage {
    * S3 URL에서 키(경로) 추출
    */
   private String extractKeyFromUrl(String fileUrl) {
-    String bucketUrl = amazonS3.getUrl(bucket, "").toString();
-    return fileUrl.replace(bucketUrl, "");
+    // 전체 경로에서 "image/" 이후의 파일명 추출
+    int index = fileUrl.indexOf(IMAGE_PATH_PREFIX);
+    return index != -1
+        ? fileUrl.substring(index)
+        : fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
   }
 
   private void existKey(String key) {
-    if (!amazonS3.doesObjectExist(bucket, key)) {
+    HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+        .bucket(bucket)
+        .key(key)
+        .build();
+
+    try {
+      s3Client.headObject(headObjectRequest);
+    } catch (NoSuchKeyException e) {
       log.warn("S3에 해당 객체가 존재하지 않습니다. Bucket : {}, key: {}", bucket, key);
       throw new MeongnyangerangException(ErrorCode.FILE_NOT_FOUND);
     }
   }
 
   private String generateFileUrl(String fileName) {
-    return amazonS3.getUrl(bucket, fileName).toString();
+    return String.format(FILE_URL_PREFIX, bucket, fileName);
   }
 
   private static String createFilename(MultipartFile file) {
     String originalFilename = file.getOriginalFilename();
     String fileName = UUID.randomUUID() + getExtension(originalFilename);
-    return IMAGE_PATH_PREFIX + "/" + fileName;
+    return IMAGE_PATH_PREFIX + fileName;
   }
 
   private static String getExtension(String originalFileName) {
@@ -135,13 +168,6 @@ public class S3FileService implements ImageStorage {
       log.error("파일의 확장자가 없습니다.");
       throw new MeongnyangerangException(ErrorCode.INVALID_EXTENSION);
     }
-  }
-
-  private static ObjectMetadata createObjectMetadata(MultipartFile file) {
-    ObjectMetadata metadata = new ObjectMetadata();
-    metadata.setContentType(file.getContentType());
-    metadata.setContentLength(file.getSize());
-    return metadata;
   }
 
   private static void validateFileName(MultipartFile file) {
