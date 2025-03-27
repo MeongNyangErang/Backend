@@ -19,14 +19,20 @@ public enum ErrorCode {
   INVALID_FILENAME(HttpStatus.BAD_REQUEST, "파일명이 유효하지 않습니다."),
   INVALID_EXTENSION(HttpStatus.BAD_REQUEST, "파일 확장자가 유효하지 않습니다."),
   NOT_SUPPORTED_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다."),
+  EMPTY_PET_TYPE(HttpStatus.BAD_REQUEST, "허용 반려동물 타입을 지정해 주세요."),
 
   // 401 UNAUTHORIZED (인증 실패)
 
   // 403 FORBIDDEN (접근 금지)
+  INVALID_AUTHORIZED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
 
   // 404  NOT_FOUND
+  NOT_EXISTS_HOST(HttpStatus.NOT_FOUND, "존재하지 않는 호스트입니다."),
   FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일이 존재하지 않습니다."),
   FILE_NOT_EMPTY(HttpStatus.NOT_FOUND, "파일이 비어있습니다."),
+
+  // 405 CONFLICT
+  ACCOMMODATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 숙소가 존재합니다."),
 
   // 500 INTERNAL SERVER ERROR (서버 내부 오류)
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "내부 서버 오류가 발생했습니다."),
