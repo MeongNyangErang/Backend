@@ -20,7 +20,14 @@ public enum ErrorCode {
   INVALID_EXTENSION(HttpStatus.BAD_REQUEST, "파일 확장자가 유효하지 않습니다."),
   NOT_SUPPORTED_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다."),
 
+  // 400 BAD REQUEST (JWT 관련 요청 오류)
+  INVALID_JWT_FORMAT(HttpStatus.BAD_REQUEST, "JWT 형식이 올바르지 않습니다."),
+  UNSUPPORTED_JWT(HttpStatus.BAD_REQUEST, "지원되지 않는 JWT 토큰입니다."),
+
   // 401 UNAUTHORIZED (인증 실패)
+  EXPIRED_JWT(HttpStatus.UNAUTHORIZED, "JWT 토큰이 만료되었습니다."),
+  INVALID_JWT_SIGNATURE(HttpStatus.UNAUTHORIZED, "JWT 서명이 유효하지 않습니다."),
+  JWT_VALIDATION_ERROR(HttpStatus.UNAUTHORIZED, "JWT 검증 중 오류가 발생했습니다."),
 
   // 403 FORBIDDEN (접근 금지)
 
