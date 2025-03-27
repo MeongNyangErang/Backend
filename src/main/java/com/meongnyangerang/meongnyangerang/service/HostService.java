@@ -31,7 +31,7 @@ public class HostService {
       throw new MeongnyangerangException(DUPLICATE_EMAIL);
     }
 
-    // 호스트 정보 저장
+    // 호스트 정보 저장(호스트는 처음 가입할때 pending 상태이고, 나중에 관리자가 역할 및 상태를 부여)
     hostRepository.save(Host.builder()
         .email(request.getEmail())
         .name(request.getName())
