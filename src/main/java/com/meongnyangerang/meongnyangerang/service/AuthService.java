@@ -34,10 +34,8 @@ public class AuthService {
   @Transactional
   public void sendVerificationCode(String email) {
 
-    // 중복 가입 방지
-    if (userRepository.existsByEmail(email) || hostRepository.existsByEmail(email)) {
-      throw new MeongnyangerangException(DUPLICATE_EMAIL);
-    }
+    // 이메일 중복 검증 메서드
+    checkEmail(email);
 
     // 6자리 랜덤 숫자 생성(Math.random()은 예측 가능한 난수 생성 → 보안 취약 → SecureRandom 사용)
     String code = String.format("%06d", new SecureRandom().nextInt(900_000));
