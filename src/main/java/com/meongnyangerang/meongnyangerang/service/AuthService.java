@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.AUTH_CODE_NOT_FOUND;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EXPIRED_AUTH_CODE;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTH_CODE;
 
@@ -9,7 +10,11 @@ import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
+import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
   private final UserRepository userRepository;
+  private final HostRepository hostRepository;
   private final AuthenticationCodeRepository authenticationCodeRepository;
   private final MailComponent mailComponent;
 
@@ -28,10 +34,8 @@ public class AuthService {
   @Transactional
   public void sendVerificationCode(String email) {
 
-    // 중복 가입 방지
-    if (userRepository.existsByEmail(email)) {
-      throw new MeongnyangerangException(DUPLICATE_EMAIL);
-    }
+    // 이메일 중복 검증 메서드
+    checkEmail(email);
 
     // 6자리 랜덤 숫자 생성(Math.random()은 예측 가능한 난수 생성 → 보안 취약 → SecureRandom 사용)
     String code = String.format("%06d", new SecureRandom().nextInt(900_000));
@@ -70,4 +74,21 @@ public class AuthService {
     authenticationCodeRepository.delete(authCode);
   }
 
+  // 이메일 중복 확인
+  public void checkEmail(String email) {
+
+    // 사용자, 호스트 이메일 중복 동시 체크
+    if (userRepository.existsByEmail(email) || hostRepository.existsByEmail(email)) {
+      throw new MeongnyangerangException(DUPLICATE_EMAIL);
+    }
+  }
+
+  // 닉네임 중복 확인
+  public void checkNickname(String nickname) {
+
+    // 사용자, 호스트 이메일 중복 동시 체크
+    if (userRepository.existsByNickname(nickname) || hostRepository.existsByNickname(nickname)) {
+      throw new MeongnyangerangException(DUPLICATE_NICKNAME);
+    }
+  }
 }
