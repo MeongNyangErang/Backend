@@ -58,7 +58,7 @@ public class Accommodation {
   private AccommodationType type;
 
   @Column(nullable = false)
-  private String thumbnailImageUrl;
+  private String thumbnailUrl;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
@@ -66,5 +66,5 @@ public class Accommodation {
 
   @LastModifiedDate
   @Column(nullable = false)
-  private LocalDateTime updateAt;
+  private LocalDateTime updatedAt;
 }
