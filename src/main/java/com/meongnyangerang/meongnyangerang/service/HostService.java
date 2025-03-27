@@ -9,6 +9,7 @@ import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ public class HostService {
 
   private final UserRepository userRepository;
   private final HostRepository hostRepository;
+  private final PasswordEncoder passwordEncoder;
 
   // 호스트 회원가입
   public void registerHost(HostSignupRequest request) {
@@ -34,7 +36,7 @@ public class HostService {
         .email(request.getEmail())
         .name(request.getName())
         .nickname(request.getNickname())
-        .password(request.getPassword())
+        .password(passwordEncoder.encode(request.getPassword()))
         .profileImageUrl(request.getProfileImageUrl())
         .businessLicenseImageUrl(request.getBusinessLicenseImageUrl())
         .submitDocumentImageUrl(request.getSubmitDocumentImageUrl())

@@ -10,6 +10,7 @@ import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,6 +19,7 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final HostRepository hostRepository;
+  private final PasswordEncoder passwordEncoder;
 
   // 사용자 회원가입
   public void registerUser(UserSignupRequest request) {
@@ -32,7 +34,7 @@ public class UserService {
     userRepository.save(User.builder()
         .email(request.getEmail())
         .nickname(request.getNickname())
-        .password(request.getPassword()) // 추후 BCrypt.hashpw 를 사용하여 비밀번호 암호화 예정
+        .password(passwordEncoder.encode(request.getPassword()))
         .profileImage(request.getProfileImage())
         .status(UserStatus.ACTIVE)
         .build());
