@@ -47,6 +47,7 @@ public class User {
   private UserStatus status;
 
   @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   private Role role;
 
   @CreatedDate
