@@ -41,7 +41,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 
 	// AWS S3
-//	implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.0'
+	implementation 'software.amazon.awssdk:s3:2.20.26'
+	implementation 'software.amazon.awssdk:auth:2.20.26'
+	implementation 'software.amazon.awssdk:regions:2.20.26'
 
 	// Redis
 //	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
@@ -63,6 +65,9 @@ dependencies {
 
 	// Port One (이니시스 결제 연동)
 //	implementation 'com.github.iamport:iamport-rest-client-java:0.2.23'
+
+	// env
+	implementation 'me.paulschwarz:spring-dotenv:3.0.0'
 
 	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
