@@ -22,8 +22,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
   private final AdminRepository adminRepository;
 
   /**
-   * UserRepository, HostRepository, AdminRepository를 이용하여 email을 기준으로 사용자 정보를 검색
-   * 해당하는 엔티티를 찾아 UserDetailsImpl 객체로 변환
+   * UserRepository, HostRepository, AdminRepository를 이용하여 email을 기준으로 사용자 정보를 검색 해당하는 엔티티를 찾아
+   * UserDetailsImpl 객체로 변환
    */
   @Override
   public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -47,7 +47,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     Optional<Admin> adminOptional = adminRepository.findByEmail(email);
     if (adminOptional.isPresent()) {
       Admin admin = adminOptional.get();
-      return new UserDetailsImpl(admin.getId(), admin.getEmail(), admin.getPassword(), admin.getRole(),
+      return new UserDetailsImpl(admin.getId(), admin.getEmail(), admin.getPassword(),
+          admin.getRole(),
           null, null); // Admin 에는 nickname, status 없음
     }
 

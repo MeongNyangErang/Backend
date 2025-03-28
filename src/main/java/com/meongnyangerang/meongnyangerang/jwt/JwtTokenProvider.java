@@ -1,6 +1,10 @@
 package com.meongnyangerang.meongnyangerang.jwt;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EXPIRED_JWT;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_JWT_FORMAT;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_JWT_SIGNATURE;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.JWT_VALIDATION_ERROR;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.UNSUPPORTED_JWT;
 
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;

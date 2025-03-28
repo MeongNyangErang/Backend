@@ -11,8 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
- * User, Host, Admin을 처리할 수 있도록 role을 포함하여 관리
- * GrantedAuthority 목록을 role 기반으로 설정
+ * User, Host, Admin을 처리할 수 있도록 role을 포함하여 관리 GrantedAuthority 목록을 role 기반으로 설정
  */
 
 @Getter
@@ -26,7 +25,8 @@ public class UserDetailsImpl implements UserDetails {
   private final Enum<?> status; // UserStatus or HostStatus를 받을 수 있도록 Enum의 상위 타입 사용
   private final Collection<? extends GrantedAuthority> authorities;
 
-  public UserDetailsImpl(Long id, String email, String password, Role role, String nickname, Enum<?> status) {
+  public UserDetailsImpl(Long id, String email, String password, Role role, String nickname,
+      Enum<?> status) {
     this.id = id;
     this.email = email;
     this.password = password;
