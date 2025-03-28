@@ -18,31 +18,29 @@ public class ImageService {
 
   /**
    * 이미지 업로드
-   *
-   * @param image 업로드할 이미지
    */
-  public void storeImage(MultipartFile image, String filename) {
+  public String storeImage(MultipartFile image, String filename) {
     validateImageFormat(image.getContentType(), image.getOriginalFilename());
     imageStorage.uploadFile(image, filename);
+
+    return filename;
   }
 
   /**
    * 이미지 삭제
-   *
-   * @param fileUrl 이미지 URL
    */
   public void deleteImage(String fileUrl) {
     if (fileUrl == null || fileUrl.isEmpty()) {
       log.error("삭제할 파일이 비어있습니다.");
       throw new MeongnyangerangException(ErrorCode.FILE_NOT_EMPTY);
     }
-      imageStorage.deleteFile(fileUrl);
+    imageStorage.deleteFile(fileUrl);
   }
 
   /**
    * 다중 이미지 삭제
    */
-  public void deleteImages(List<String> fileUrls){
+  public void deleteImages(List<String> fileUrls) {
     if (fileUrls == null || fileUrls.isEmpty()) {
       log.error("삭제할 파일 목록이 비어있습니다.");
       throw new MeongnyangerangException(ErrorCode.FILE_NOT_EMPTY);
@@ -52,9 +50,6 @@ public class ImageService {
 
   /**
    * 지원하는 포맷인지 검증
-   *
-   * @param contentType MimeType
-   * @param imageName   이미지 이름
    */
   private void validateImageFormat(String contentType, String imageName) {
     if (!ImageType.isSupported(contentType, imageName)) {
