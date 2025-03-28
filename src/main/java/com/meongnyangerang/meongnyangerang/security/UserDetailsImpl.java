@@ -71,11 +71,11 @@ public class UserDetailsImpl implements UserDetails {
   // 계정 활성화
   @Override
   public boolean isEnabled() {
-    if (role == Role.ROLE_HOST && status instanceof HostStatus hostStatus) {
-      return hostStatus == HostStatus.ACTIVE; // 승인된 상태만 로그인 허용
-    }
     if (role == Role.ROLE_USER && status instanceof UserStatus userStatus) {
       return userStatus == UserStatus.ACTIVE;
+    }
+    if (role == Role.ROLE_HOST && status instanceof HostStatus hostStatus) {
+      return hostStatus == HostStatus.ACTIVE; // 승인된 상태만 로그인 허용
     }
     return true;
   }
