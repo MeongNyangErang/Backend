@@ -26,10 +26,16 @@ public enum ErrorCode {
   // 403 FORBIDDEN (접근 금지)
   INVALID_AUTHORIZED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
 
-  // 404  NOT_FOUND
+  // 404  NOT FOUND
   NOT_EXISTS_HOST(HttpStatus.NOT_FOUND, "존재하지 않는 호스트입니다."),
   FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일이 존재하지 않습니다."),
   FILE_NOT_EMPTY(HttpStatus.NOT_FOUND, "파일이 비어있습니다."),
+  USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저가 존재하지 않습니다."),
+  ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "객실이 존재하지 않습니다."),
+
+  // 409 Conflict
+  ROOM_ALREADY_RESERVED(HttpStatus.CONFLICT, "객실이 이미 예약되었습니다."),
+
 
   // 409 CONFLICT
   ACCOMMODATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 개설한 숙소가 존재합니다."),
