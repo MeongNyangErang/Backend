@@ -31,21 +31,24 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     Optional<User> userOptional = userRepository.findByEmail(email);
     if (userOptional.isPresent()) {
       User user = userOptional.get();
-      return new UserDetailsImpl(user.getId(), user.getEmail(), user.getPassword(), user.getRole());
+      return new UserDetailsImpl(user.getId(), user.getEmail(), user.getPassword(), user.getRole(),
+          user.getNickname(), user.getStatus());
     }
 
     // Host 조회
     Optional<Host> hostOptional = hostRepository.findByEmail(email);
     if (hostOptional.isPresent()) {
       Host host = hostOptional.get();
-      return new UserDetailsImpl(host.getId(), host.getEmail(), host.getPassword(), host.getRole());
+      return new UserDetailsImpl(host.getId(), host.getEmail(), host.getPassword(), host.getRole(),
+          host.getNickname(), host.getStatus());
     }
 
     // Admin 조회
     Optional<Admin> adminOptional = adminRepository.findByEmail(email);
     if (adminOptional.isPresent()) {
       Admin admin = adminOptional.get();
-      return new UserDetailsImpl(admin.getId(), admin.getEmail(), admin.getPassword(), admin.getRole());
+      return new UserDetailsImpl(admin.getId(), admin.getEmail(), admin.getPassword(), admin.getRole(),
+          null, null); // Admin 에는 nickname, status 없음
     }
 
     // 사용자를 찾을 수 없을 때 예외 발생
