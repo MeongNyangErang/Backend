@@ -20,13 +20,17 @@ public class UserDetailsImpl implements UserDetails {
   private final String email;
   private final String password;
   private final Role role;
+  private final String nickname;
+  private final String status;
   private final Collection<? extends GrantedAuthority> authorities;
 
-  public UserDetailsImpl(Long id, String email, String password, Role role) {
+  public UserDetailsImpl(Long id, String email, String password, Role role, String nickname, String status) {
     this.id = id;
     this.email = email;
     this.password = password;
     this.role = role;
+    this.nickname = nickname;
+    this.status = status;
     this.authorities = List.of(new SimpleGrantedAuthority(role.name())); // ROLE_XXX 형태로 권한 부여
   }
 
@@ -45,10 +49,9 @@ public class UserDetailsImpl implements UserDetails {
     return true;
   }
 
-  // 추후 상태에 따른 계정 잠금 고려
   @Override
   public boolean isAccountNonLocked() {
-    return true;
+    return !"DELETED".equals(status);  // 삭제된 계정이면 잠김 상태로 처리
   }
 
   @Override
@@ -56,9 +59,8 @@ public class UserDetailsImpl implements UserDetails {
     return true;
   }
 
-  // 추후 상태에 따른 계정 활성화 고려
   @Override
   public boolean isEnabled() {
-    return true;
+    return !"DELETED".equals(status);  // 삭제된 계정이면 비활성화
   }
 }
