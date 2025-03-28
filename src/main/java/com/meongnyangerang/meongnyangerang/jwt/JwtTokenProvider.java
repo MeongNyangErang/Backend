@@ -2,8 +2,11 @@ package com.meongnyangerang.meongnyangerang.jwt;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
 
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
+import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.exception.JwtCustomException;
+import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -17,6 +20,9 @@ import java.security.Key;
 import java.util.Date;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -40,14 +46,14 @@ public class JwtTokenProvider {
   }
 
   // 토큰 생성
-  public String createToken(String email, String role, String userStatus) {
+  public String createToken(Long id, String email, String role) {
     Date now = new Date();
     Date expiryDate = new Date(now.getTime() + tokenTime);
 
     return Jwts.builder()
         .setSubject(email) // JWT payload의 subject(email)
+        .claim("id", id) // 사용자 ID 추가
         .claim("role", role) // 권한 정보
-        .claim("status", userStatus) // UserStatus 추가
         .setIssuedAt(now) // 발급 시간
         .setExpiration(expiryDate) // 만료 시간
         .signWith(key, signatureAlgorithm) // 암호화 알고리즘
@@ -76,5 +82,24 @@ public class JwtTokenProvider {
       log.error("JWT 검증 중 알 수 없는 오류 발생: {}", e.getMessage());
       throw new JwtCustomException(JWT_VALIDATION_ERROR);
     }
+  }
+
+  // 사용자 인증 정보 생성
+  public Authentication getAuthentication(String token) {
+    Claims claims = Jwts.parserBuilder().setSigningKey(key).build()
+        .parseClaimsJws(token)
+        .getBody();
+
+    Long id = claims.get("id", Long.class); // JWT에서 ID 추출
+    String email = claims.getSubject(); // JWT에서 email 추출
+    String roleString = claims.get("role", String.class); // JWT에서 role을 String으로 가져옴
+
+    // String -> UserRole 변환
+    Role role = Role.valueOf(roleString);
+
+    // UserDetailsImpl에 JWT 정보만 전달
+    UserDetails userDetails = new UserDetailsImpl(id, email, "", role);
+
+    return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
   }
 }
