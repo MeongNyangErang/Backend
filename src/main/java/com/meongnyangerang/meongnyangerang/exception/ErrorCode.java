@@ -24,9 +24,15 @@ public enum ErrorCode {
 
   // 403 FORBIDDEN (접근 금지)
 
-  // 404  NOT_FOUND
+  // 404 NOT FOUND
   FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일이 존재하지 않습니다."),
   FILE_NOT_EMPTY(HttpStatus.NOT_FOUND, "파일이 비어있습니다."),
+  USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저가 존재하지 않습니다."),
+  ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "객실이 존재하지 않습니다."),
+
+  // 409 Conflict
+  ROOM_ALREADY_RESERVED(HttpStatus.CONFLICT, "객실이 이미 예약되었습니다."),
+
 
   // 500 INTERNAL SERVER ERROR (서버 내부 오류)
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "내부 서버 오류가 발생했습니다."),
