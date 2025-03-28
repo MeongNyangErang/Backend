@@ -2,17 +2,12 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationImage;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AllowPet;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationFacility;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacility;
@@ -30,10 +25,7 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepo
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,7 +33,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
@@ -79,10 +70,8 @@ class AccommodationServiceTest {
   private List<MultipartFile> additionalImages;
   private Accommodation accommodation;
 
-  private static final UUID MOCK_UUID = UUID
-      .fromString("123e4567-e89b-12d3-a456-426614174000");
-
-  private static final String IMAGE_PATH_PREFIX = "image/";
+  private static final String THUMBNAIL_URL = "https://test.com/image/thumbnail-123.jpg";
+  private static final String ADDITIONAL_IMAGE_URL = "https://test.com/image/image1-456.jpg";
 
   @BeforeEach
   void setUp() {
@@ -95,8 +84,22 @@ class AccommodationServiceTest {
         .status(HostStatus.ACTIVE)
         .build();
 
-    // 숙소 요청 Mock 생성
-    request = mock(AccommodationCreateRequest.class);
+    List<String> facilities = Arrays.asList("WIFI", "PUBLIC_SWIMMING_POOL");
+    List<String> petFacilities = Arrays.asList("PET_FOOD", "EXERCISE_AREA");
+    List<String> allowPets = Arrays.asList("SMALL_DOG", "MEDIUM_DOG");
+
+    request = AccommodationCreateRequest.builder()
+        .name("test-name")
+        .type(AccommodationType.DETACHED_HOUSE)
+        .address("test-address")
+        .detailedAddress("test-detailedAddress")
+        .description("test-description")
+        .latitude(37.123)
+        .longitude(127.123)
+        .facilities(facilities)
+        .petFacilities(petFacilities)
+        .allowPets(allowPets)
+        .build();
 
     // 이미지 파일 생성
     thumbnail = new MockMultipartFile(
@@ -122,7 +125,7 @@ class AccommodationServiceTest {
         .name("숙소명")
         .description("숙소 설명")
         .address("서울시 강남구")
-        .thumbnailUrl(IMAGE_PATH_PREFIX + MOCK_UUID + ".jpg")
+        .thumbnailUrl(THUMBNAIL_URL)
         .build();
   }
 
@@ -131,70 +134,49 @@ class AccommodationServiceTest {
   void createAccommodation_Success() {
     // given
     when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
-    when(accommodationRepository.existsByHost_Id(host.getId())).thenReturn(false);
+    when(accommodationRepository.existsByHostId(host.getId())).thenReturn(false);
 
-    List<String> facilities = Arrays.asList("WIFI", "PUBLIC_SWIMMING_POOL");
-    List<String> petFacilities = Arrays.asList("PET_FOOD", "EXERCISE_AREA");
-    List<String> allowPets = Arrays.asList("SMALL_DOG", "MEDIUM_DOG");
+    when(imageService.storeImage(thumbnail)).thenReturn(THUMBNAIL_URL);
+    when(imageService.storeImage(additionalImages.get(0))).thenReturn(ADDITIONAL_IMAGE_URL);
 
-    when(request.getFacilities()).thenReturn(facilities);
-    when(request.getPetFacilities()).thenReturn(petFacilities);
-    when(request.getAllowPets()).thenReturn(allowPets);
+    ArgumentCaptor<Accommodation> accommodationCaptor = ArgumentCaptor.forClass(Accommodation.class);
+    when(accommodationRepository.save(accommodationCaptor.capture())).thenReturn(accommodation);
 
-    // AccommodationCreateRequest.toEntity 모킹
-    doReturn(accommodation).when(request).toEntity(any(Host.class), anyString());
+    ArgumentCaptor<List<AccommodationFacility>> facilitiesCaptor = ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<List<AccommodationPetFacility>> petFacilitiesCaptor = ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<List<AllowPet>> allowPetsCaptor = ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<List<AccommodationImage>> accommodationImageCaptor = ArgumentCaptor.forClass(List.class);
 
-    // ArgumentCaptor 설정
-    ArgumentCaptor<List<AccommodationFacility>> facilitiesCaptor = ArgumentCaptor
-        .forClass(List.class);
-    ArgumentCaptor<List<AccommodationPetFacility>> petFacilitiesCaptor = ArgumentCaptor
-        .forClass(List.class);
-    ArgumentCaptor<List<AllowPet>> allowPetsCaptor = ArgumentCaptor
-        .forClass(List.class);
-    ArgumentCaptor<List<AccommodationImage>> accommodationImageCaptor = ArgumentCaptor
-        .forClass(List.class);
+    // when
+    accommodationService.createAccommodation(host.getId(), request, thumbnail, additionalImages);
 
-    // UUID 고정 및 파일명 생성 메서드 모킹
-    try (MockedStatic<UUID> mockedUUID = mockStatic(UUID.class)) {
-      mockedUUID.when(UUID::randomUUID).thenReturn(MOCK_UUID);
+    // then
+    verify(hostRepository).findById(host.getId());
+    verify(accommodationRepository).existsByHostId(host.getId());
 
-      String thumbnailFilename = createFilename(thumbnail.getOriginalFilename());
-      Map<String, MultipartFile> additionalImageFilenames =
-          createImageFilenameMap(additionalImages);
-      List<String> filenames = additionalImageFilenames.keySet().stream().toList();
+    verify(imageService).storeImage(thumbnail);
+    verify(imageService).storeImage(additionalImages.get(0));
 
-      // when
-      accommodationService.createAccommodation(host.getId(), request, thumbnail, additionalImages);
+    verify(accommodationRepository).save(accommodationCaptor.capture());
+    Accommodation savedAccommodation = accommodationCaptor.getValue();
+    assertEquals(THUMBNAIL_URL, savedAccommodation.getThumbnailUrl());
 
-      // then
-      // 호스트 검증 확인
-      verify(hostRepository).findById(host.getId());
-      verify(accommodationRepository).existsByHost_Id(host.getId());
+    verify(accommodationFacilityRepository).saveAll(facilitiesCaptor.capture());
+    List<AccommodationFacility> capturedFacilities = facilitiesCaptor.getValue();
+    assertEquals(2, capturedFacilities.size());
 
-      // 숙소 저장 확인
-      verify(accommodationRepository).save(accommodation);
+    verify(accommodationPetFacilityRepository).saveAll(petFacilitiesCaptor.capture());
+    List<AccommodationPetFacility> capturedPetFacilities = petFacilitiesCaptor.getValue();
+    assertEquals(2, capturedPetFacilities.size());
 
-      // 편의시설 저장 확인
-      verify(accommodationFacilityRepository).saveAll(facilitiesCaptor.capture());
-      List<AccommodationFacility> capturedFacilities = facilitiesCaptor.getValue();
-      assertEquals(2, capturedFacilities.size());
+    verify(allowPetRepository).saveAll(allowPetsCaptor.capture());
+    List<AllowPet> capturedAllowPets = allowPetsCaptor.getValue();
+    assertEquals(2, capturedAllowPets.size());
 
-      // 반려동물 편의시설 저장 확인
-      verify(accommodationPetFacilityRepository).saveAll(petFacilitiesCaptor.capture());
-      List<AccommodationPetFacility> capturedPetFacilities = petFacilitiesCaptor.getValue();
-      assertEquals(2, capturedPetFacilities.size());
-
-      // 허용 반려동물 저장 확인
-      verify(allowPetRepository).saveAll(allowPetsCaptor.capture());
-      List<AllowPet> capturedAllowPets = allowPetsCaptor.getValue();
-      assertEquals(2, capturedAllowPets.size());
-
-      // 추가 이미지 저장 확인
-      verify(accommodationImageRepository).saveAll(accommodationImageCaptor.capture());
-      verify(imageService).storeImage(thumbnail, thumbnailFilename);
-      verify(imageService, times(1))
-          .storeImage(additionalImages.get(0), filenames.get(0));
-    }
+    verify(accommodationImageRepository).saveAll(accommodationImageCaptor.capture());
+    List<AccommodationImage> capturedImages = accommodationImageCaptor.getValue();
+    assertEquals(1, capturedImages.size());
+    assertEquals(ADDITIONAL_IMAGE_URL, capturedImages.get(0).getImageUrl());
   }
 
   @Test
@@ -235,7 +217,7 @@ class AccommodationServiceTest {
   void createAccommodation_AccommodationAlreadyExists_ThrowsException() {
     // given
     when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
-    when(accommodationRepository.existsByHost_Id(host.getId())).thenReturn(true);
+    when(accommodationRepository.existsByHostId(host.getId())).thenReturn(true);
 
     // when
     // then
@@ -245,7 +227,7 @@ class AccommodationServiceTest {
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_ALREADY_EXISTS);
 
     verify(hostRepository).findById(host.getId());
-    verify(accommodationRepository).existsByHost_Id(host.getId());
+    verify(accommodationRepository).existsByHostId(host.getId());
   }
 
   private Host createNotAuthorizedHost(Long hostId) {
@@ -253,26 +235,5 @@ class AccommodationServiceTest {
         .id(hostId)
         .status(HostStatus.PENDING)
         .build();
-  }
-
-  private static String createFilename(String originalFilename) {
-    String fileName = UUID.randomUUID() + getExtension(originalFilename);
-    return IMAGE_PATH_PREFIX + fileName;
-  }
-
-  private Map<String, MultipartFile> createImageFilenameMap(List<MultipartFile> images) {
-    return images.stream()
-        .collect(Collectors.toMap(
-            image -> createFilename(image.getOriginalFilename()),
-            image -> image
-        ));
-  }
-
-  private static String getExtension(String originalFileName) {
-    try {
-      return originalFileName.substring(originalFileName.lastIndexOf("."));
-    } catch (StringIndexOutOfBoundsException e) {
-      throw new MeongnyangerangException(ErrorCode.INVALID_EXTENSION);
-    }
   }
 }
