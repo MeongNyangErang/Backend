@@ -1,6 +1,8 @@
 package com.meongnyangerang.meongnyangerang.security;
 
+import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
+import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
@@ -49,10 +51,16 @@ public class UserDetailsImpl implements UserDetails {
     return true;
   }
 
-  // 추후 상태에 따른 계정 잠금 고려
+  // 계정 잠금
   @Override
   public boolean isAccountNonLocked() {
-    return true;
+    if (role == Role.ROLE_USER && status instanceof UserStatus userStatus) {
+      return userStatus != UserStatus.DELETED;
+    }
+    if (role == Role.ROLE_HOST && status instanceof HostStatus hostStatus) {
+      return hostStatus != HostStatus.DELETED;
+    }
+    return true; // admin은 상태 없음
   }
 
   @Override
@@ -60,9 +68,15 @@ public class UserDetailsImpl implements UserDetails {
     return true;
   }
 
-  // 추후 상태에 따른 계정 활성화 고려
+  // 계정 활성화
   @Override
   public boolean isEnabled() {
+    if (role == Role.ROLE_HOST && status instanceof HostStatus hostStatus) {
+      return hostStatus == HostStatus.ACTIVE; // 승인된 상태만 로그인 허용
+    }
+    if (role == Role.ROLE_USER && status instanceof UserStatus userStatus) {
+      return userStatus == UserStatus.ACTIVE;
+    }
     return true;
   }
 }
