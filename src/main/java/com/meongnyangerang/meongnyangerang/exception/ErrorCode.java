@@ -31,8 +31,8 @@ public enum ErrorCode {
   FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일이 존재하지 않습니다."),
   FILE_NOT_EMPTY(HttpStatus.NOT_FOUND, "파일이 비어있습니다."),
 
-  // 405 CONFLICT
-  ACCOMMODATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 숙소가 존재합니다."),
+  // 409 CONFLICT
+  ACCOMMODATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 개설한 숙소가 존재합니다."),
 
   // 500 INTERNAL SERVER ERROR (서버 내부 오류)
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "내부 서버 오류가 발생했습니다."),
