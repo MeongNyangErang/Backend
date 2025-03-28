@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.jwt;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
 
+import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.exception.JwtCustomException;
@@ -46,7 +47,7 @@ public class JwtTokenProvider {
   }
 
   // 토큰 생성
-  public String createToken(Long id, String email, String role) {
+  public String createToken(Long id, String email, String role, Enum<?> status) {
     Date now = new Date();
     Date expiryDate = new Date(now.getTime() + tokenTime);
 
@@ -54,6 +55,7 @@ public class JwtTokenProvider {
         .setSubject(email) // JWT payload의 subject(email)
         .claim("id", id) // 사용자 ID 추가
         .claim("role", role) // 권한 정보
+        .claim("status", status.name())
         .setIssuedAt(now) // 발급 시간
         .setExpiration(expiryDate) // 만료 시간
         .signWith(key, signatureAlgorithm) // 암호화 알고리즘
@@ -93,12 +95,22 @@ public class JwtTokenProvider {
     Long id = claims.get("id", Long.class); // JWT에서 ID 추출
     String email = claims.getSubject(); // JWT에서 email 추출
     String roleString = claims.get("role", String.class); // JWT에서 role을 String으로 가져옴
+    String statusString = claims.get("status", String.class); // JWT에서 status를 String으로 가져옴
 
     // String -> UserRole 변환
     Role role = Role.valueOf(roleString);
 
+    // JWT 토큰에서 추출한 statusString -> Enum<?> 으로 형변환
+    Enum<?> status = null;
+
+    switch (role) {
+      case ROLE_USER -> status = UserStatus.valueOf(statusString);
+      case ROLE_HOST -> status = HostStatus.valueOf(statusString);
+      case ROLE_ADMIN -> status = null;
+    }
+
     // UserDetailsImpl에 JWT 정보만 전달
-    UserDetails userDetails = new UserDetailsImpl(id, email, "", role);
+    UserDetails userDetails = new UserDetailsImpl(id, email, "", role, "", status);
 
     return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
   }
