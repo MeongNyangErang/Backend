@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.jwt;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EXPIRED_JWT;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTHORIZED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_JWT_FORMAT;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_JWT_SIGNATURE;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.JWT_VALIDATION_ERROR;
@@ -110,7 +111,12 @@ public class JwtTokenProvider {
     switch (role) {
       case ROLE_USER -> status = UserStatus.valueOf(statusString);
       case ROLE_HOST -> status = HostStatus.valueOf(statusString);
-      case ROLE_ADMIN -> status = null;
+    }
+
+    // 추가 검증 (호스트 - 승인 대기중, 사용자 - 삭제 상태, 호스트 - 삭제 상태) -> 예외 처리
+    if ((role == Role.ROLE_HOST && status == HostStatus.PENDING) ||
+        (status == UserStatus.DELETED || status == HostStatus.DELETED)) {
+      throw new JwtCustomException(INVALID_AUTHORIZED);
     }
 
     // UserDetailsImpl에 JWT 정보만 전달
