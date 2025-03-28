@@ -2,8 +2,6 @@ package com.meongnyangerang.meongnyangerang.service.image;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -83,14 +81,17 @@ class S3FileServiceTest {
       mockedUUID.when(UUID::randomUUID).thenReturn(MOCK_UUID);
 
       // when
-      String response = s3FileService.uploadFile(mockImage);
+      s3FileService.uploadFile(mockImage, filename);
 
       // then
-      assertEquals(MOCK_FILE_URL, response);
       verify(s3Client, times(1)).putObject(
           putObjectRequestCaptor.capture(),
           requestBodyCaptor.capture()
       );
+
+      PutObjectRequest capturedRequest = putObjectRequestCaptor.getValue();
+      assertEquals(BUCKET, capturedRequest.bucket());
+      assertEquals(filename, capturedRequest.key());
     }
   }
 
@@ -113,7 +114,6 @@ class S3FileServiceTest {
 
     // 캡처된 DeleteObjectRequest 객체 가져오기
     DeleteObjectRequest capturedRequest = deleteRequestCaptor.getValue();
-
     assertEquals(BUCKET, capturedRequest.bucket());
     assertEquals(key, capturedRequest.key());
   }

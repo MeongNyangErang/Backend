@@ -40,9 +40,9 @@ public class AccommodationCreateRequest {
 
   private List<String> petFacilities;
 
-  private List<String> allowedPets;
+  private List<String> allowPets;
 
-  public Accommodation toEntity(Host host, String thumbnailImageUrl) {
+  public Accommodation toEntity(Host host, String thumbnailUrl) {
     return Accommodation.builder()
         .host(host)
         .name(this.name)
@@ -52,7 +52,7 @@ public class AccommodationCreateRequest {
         .latitude(this.latitude)
         .longitude(this.longitude)
         .type(this.type)
-        .thumbnailUrl(thumbnailImageUrl)
+        .thumbnailUrl(thumbnailUrl)
         .build();
   }
 }

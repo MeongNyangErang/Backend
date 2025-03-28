@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationImage;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AllowPet;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationFacility;
@@ -10,14 +11,22 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.Accommo
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
+import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationFacilityRepository;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,13 +36,19 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class AccommodationService {
 
+  private static final String IMAGE_PATH_PREFIX = "image/";
+
+  private final HostRepository hostRepository;
   private final AccommodationRepository accommodationRepository;
+  private final AccommodationImageRepository accommodationImageRepository;
   private final AccommodationFacilityRepository accommodationFacilityRepository;
   private final AccommodationPetFacilityRepository accommodationPetFacilityRepository;
   private final AllowPetRepository allowPetRepository;
   private final ImageService imageService;
 
   /**
+   * 숙소 등록
+   *
    * @param hostId           호스트 ID
    * @param request          숙소 등록 정보
    * @param thumbnail        숙소 대표 이미지
@@ -46,119 +61,219 @@ public class AccommodationService {
       MultipartFile thumbnail,
       List<MultipartFile> additionalImages
   ) {
-    Host host = validateHost(hostId); // 호스트 검증
+    // 호스트 검증
+    Host host = validateHost(hostId);
 
-    // S3 다중 이미지 파일 업로드
-    imageService.storeImage(thumbnail);
-    imageService.storeImages(additionalImages);
-    
-    // 썸네일 + 추가 이미지 한번에 업로드
-    List<String> additionalImageUrls = List.of(); // = imageService.storeImageFiles(images);
+    // 파일 이름 생성
+    String filename = createFilename(thumbnail.getOriginalFilename());
+    List<String> filenames = createFilenames(additionalImages);
 
     // 숙소 엔티티 생성
-    Accommodation accommodation = request.toEntity(host, additionalImageUrls.get(0));
+    Accommodation accommodation = request.toEntity(host, filename);
 
     // 숙소 저장
     accommodationRepository.save(accommodation);
 
-    // TODO: additionalImageUrls이 size() > 1일 시, DB에 저장하는 코드 추가
-
     // 편의시설 정보 저장
-    saveAccommodationFacilities(accommodation, request.getFacilities());
+    saveAccommodationFacilities(request.getFacilities(), accommodation);
 
     // 반려동물 편의시설 정보 저장
-    saveAccommodationPetFacilities(accommodation, request.getPetFacilities());
+    saveAccommodationPetFacilities(request.getPetFacilities(), accommodation);
 
     // 허용 반려동물 정보 저장
-    saveAllowedPets(accommodation, request.getAllowedPets());
+    saveAllowPets(request.getAllowPets(), accommodation);
+
+    // 추가 이미지 저장
+    saveAdditionalImages(filenames, accommodation);
+
+    // S3 이미지 파일 업로드
+    // DB 트랜잭션을 위해 맨 마지막에 배치
+    storeImageProcess(thumbnail, filename, additionalImages, filenames);
   }
 
+  /**
+   * 호스트 검증
+   *
+   * @param hostId 호스트 ID
+   * @return 검증된 호스트 객체
+   */
   private Host validateHost(Long hostId) {
-    Host host = null; // TODO: 호스트 존재하는지 검증 400
+    // 호스트 존재하는지 검증
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
 
-    if (host.getStatus() != HostStatus.ACTIVE) {
-      throw new RuntimeException(); // TODO: CustomException 으로 변경 403
-    }
+    // 유효한 호스트 상태인지 검증
+    HostStatus.isStatusByCreateAccommodation(host.getStatus());
 
-    // 호스트 숙소 있는지 검증
+    // 개설한 숙소가 있는지 검증
     if (accommodationRepository.existsByHost_Id(hostId)) {
-      throw new RuntimeException(); // TODO: CustomException 으로 변경 409
+      throw new MeongnyangerangException(ErrorCode.ACCOMMODATION_ALREADY_EXISTS);
     }
     return host;
+  }
+
+  /**
+   * 추가 이미지 URL DB 저장
+   *
+   * @param filenames     추가 이미지 URL
+   * @param accommodation 숙소 객체
+   */
+  private void saveAdditionalImages(@Nullable List<String> filenames, Accommodation accommodation) {
+    Optional.ofNullable(filenames)
+        .filter(names -> !names.isEmpty())
+        .ifPresent(names -> {
+          List<AccommodationImage> accommodationImages = new ArrayList<>();
+
+          for (String filename : filenames) {
+            AccommodationImage accommodationImage = AccommodationImage.builder()
+                .accommodation(accommodation)
+                .imageUrl(filename)
+                .build();
+
+            accommodationImages.add(accommodationImage);
+          }
+          accommodationImageRepository.saveAll(accommodationImages);
+        });
   }
 
   /**
    * 숙소 편의시설 저장
    */
   private void saveAccommodationFacilities(
-      Accommodation accommodation, List<String> facilityTypes
+      @Nullable List<String> facilityTypes, Accommodation accommodation
   ) {
-    if (facilityTypes != null && !facilityTypes.isEmpty()) {
-      for (String facilityType : facilityTypes) {
-        try {
-          AccommodationFacilityType type =
-              AccommodationFacilityType.valueOf(facilityType.toUpperCase());
+    Optional.ofNullable(facilityTypes)
+        .filter(types -> !types.isEmpty())
+        .ifPresent(types -> {
+          List<AccommodationFacility> facilities = new ArrayList<>();
 
-          AccommodationFacility facility = AccommodationFacility.builder()
-              .accommodation(accommodation)
-              .type(type)
-              .build();
+          for (String facilityType : types) {
+            AccommodationFacilityType type =
+                AccommodationFacilityType.valueOf(facilityType.toUpperCase());
 
-          accommodationFacilityRepository.save(facility);
-        } catch (IllegalArgumentException e) {
-          log.warn("Invalid facility type: {}", facilityType);
-          throw new RuntimeException(); // TODO: CustomException 으로 변경
-        }
-      }
-    }
+            AccommodationFacility facility = AccommodationFacility.builder()
+                .accommodation(accommodation)
+                .type(type)
+                .build();
+
+            facilities.add(facility);
+          }
+          accommodationFacilityRepository.saveAll(facilities);
+        });
   }
 
   /**
    * 숙소 반려동물 편의시설 저장
    */
   private void saveAccommodationPetFacilities(
-      Accommodation accommodation, List<String> petFacilityTypes
+      @Nullable List<String> petFacilityTypes, Accommodation accommodation
   ) {
-    if (petFacilityTypes != null && !petFacilityTypes.isEmpty()) {
-      for (String petFacilityType : petFacilityTypes) {
-        try {
-          AccommodationPetFacilityType type =
-              AccommodationPetFacilityType.valueOf(petFacilityType.toUpperCase());
+    Optional.ofNullable(petFacilityTypes)
+        .filter(types -> !types.isEmpty())
+        .ifPresent(types -> {
+          List<AccommodationPetFacility> petFacilities = new ArrayList<>();
 
-          AccommodationPetFacility petFacility = AccommodationPetFacility.builder()
-              .accommodation(accommodation)
-              .type(type)
-              .build();
+          for (String petFacilityType : petFacilityTypes) {
+            AccommodationPetFacilityType type =
+                AccommodationPetFacilityType.valueOf(petFacilityType.toUpperCase());
 
-          accommodationPetFacilityRepository.save(petFacility);
-        } catch (IllegalArgumentException e) {
-          log.warn("Invalid pet facility type: {}", petFacilityType);
-          throw new RuntimeException(); // TODO: CustomException 으로 변경
-        }
-      }
-    }
+            AccommodationPetFacility petFacility = AccommodationPetFacility.builder()
+                .accommodation(accommodation)
+                .type(type)
+                .build();
+
+            petFacilities.add(petFacility);
+          }
+          accommodationPetFacilityRepository.saveAll(petFacilities);
+        });
   }
 
   /**
    * 허용 반려동물 정보 저장
    */
-  private void saveAllowedPets(Accommodation accommodation, List<String> petTypes) {
-    if (petTypes != null && !petTypes.isEmpty()) {
-      for (String petType : petTypes) {
-        try {
-          PetType type = PetType.valueOf(petType.toUpperCase());
+  private void saveAllowPets(List<String> petTypes, Accommodation accommodation) {
+    if (petTypes == null || petTypes.isEmpty()) {
+      throw new MeongnyangerangException(ErrorCode.EMPTY_PET_TYPE);
+    }
 
-          AllowPet allowPet = AllowPet.builder()
-              .accommodation(accommodation)
-              .petType(type)
-              .build();
+    List<AllowPet> allowPets = new ArrayList<>();
 
-          allowPetRepository.save(allowPet);
-        } catch (IllegalArgumentException e) {
-          log.warn("Invalid pet type: {}", petType);
-          throw new RuntimeException(); // TODO: CustomException 으로 변경
-        }
-      }
+    for (String petType : petTypes) {
+      PetType type = PetType.valueOf(petType.toUpperCase());
+
+      AllowPet allowPet = AllowPet.builder()
+          .accommodation(accommodation)
+          .petType(type)
+          .build();
+
+      allowPets.add(allowPet);
+    }
+
+    allowPetRepository.saveAll(allowPets);
+  }
+
+  private void storeImageProcess(
+      MultipartFile thumbnail,
+      String filename,
+      @Nullable List<MultipartFile> additionalImages,
+      @Nullable List<String> filenames
+  ) {
+    imageService.storeImage(thumbnail, filename);
+    storeAdditionalImagesProcess(additionalImages, filenames);
+  }
+
+  private void storeAdditionalImagesProcess(
+      @Nullable List<MultipartFile> additionalImages,
+      @Nullable List<String> filenames
+  ) {
+    Optional.ofNullable(additionalImages)
+        .filter(images -> !images.isEmpty())
+        .ifPresent(images -> {
+          List<String> additionalImageUrls = Optional.ofNullable(filenames)
+              .filter(names -> !names.isEmpty())
+              .orElseThrow(() -> new MeongnyangerangException(ErrorCode.INTERNAL_SERVER_ERROR));
+
+          validateImageCount(images, additionalImageUrls);
+          storeAdditionalImages(images, additionalImageUrls);
+        });
+  }
+
+  private static void validateImageCount(
+      List<MultipartFile> images, List<String> additionalImageUrls
+  ) {
+    if (images.size() != additionalImageUrls.size()) {
+      throw new MeongnyangerangException(ErrorCode.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  private void storeAdditionalImages(
+      List<MultipartFile> images, List<String> additionalImageUrls
+  ) {
+    for (int i = 0; i < images.size(); i++) {
+      imageService.storeImage(images.get(i), additionalImageUrls.get(i));
+    }
+  }
+
+  private static String createFilename(String originalFilename) {
+    String fileName = UUID.randomUUID() + getExtension(originalFilename);
+    return IMAGE_PATH_PREFIX + fileName;
+  }
+
+  private static List<String> createFilenames(@Nullable List<MultipartFile> additionalImages) {
+    if (additionalImages != null && !additionalImages.isEmpty()) {
+      return additionalImages.stream()
+          .map(image -> createFilename(image.getOriginalFilename()))
+          .toList();
+    }
+    return null;
+  }
+
+  private static String getExtension(String originalFileName) {
+    try {
+      return originalFileName.substring(originalFileName.lastIndexOf("."));
+    } catch (StringIndexOutOfBoundsException e) {
+      log.error("파일의 확장자가 없습니다.");
+      throw new MeongnyangerangException(ErrorCode.INVALID_EXTENSION);
     }
   }
 }
