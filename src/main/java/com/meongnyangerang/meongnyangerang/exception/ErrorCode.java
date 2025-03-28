@@ -45,6 +45,7 @@ public enum ErrorCode {
   EMAIL_NOT_SEND(HttpStatus.INTERNAL_SERVER_ERROR, "이메일이 정상적으로 전송되지 않았습니다."),
   AMAZON_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "아마존 서비스 오류"),
   INVALID_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 IO 오류"),
+  REGISTRATION_ACCOMMODATION(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 등록 오류")
   ;
 
   private final HttpStatus status;

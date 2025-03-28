@@ -23,8 +23,6 @@ public class AccommodationController {
   /**
    * 숙소 등록 API 숙소 정보와 이미지 파일을 함께 등록
    *
-   * @param request 숙소 등록 요청 정보
-   * @param additionalImages  숙소 이미지 파일 목록
    * @return 201
    */
   // TODO: UserDetails 구현이 완료되면 주석 해제

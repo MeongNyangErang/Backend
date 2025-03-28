@@ -2,12 +2,16 @@ package com.meongnyangerang.meongnyangerang.service.image;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import java.net.URL;
 import java.util.List;
 import software.amazon.awssdk.core.sync.RequestBody;
 import java.net.MalformedURLException;
@@ -25,8 +29,10 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Utilities;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -36,23 +42,24 @@ class S3FileServiceTest {
   @Mock
   private S3Client s3Client;
 
+  @Mock
+  private S3Utilities s3Utilities;
+
   @InjectMocks
   private S3FileService s3FileService;
 
   private static final String IMAGE_PATH_PREFIX = "image";
-
   private static final String BUCKET = "test-bucket";
-
   private static final UUID MOCK_UUID =
       UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-
+  private static final String EXPECTED_KEY = IMAGE_PATH_PREFIX + MOCK_UUID + ".jpg";
   private static final String MOCK_FILE_URL =
       "https://" + BUCKET + ".s3.amazonaws.com/image/" + MOCK_UUID + ".jpg";
 
   private MockMultipartFile mockImage;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws MalformedURLException {
     ReflectionTestUtils.setField(s3FileService, "bucket", BUCKET);
 
     mockImage = new MockMultipartFile(
@@ -61,14 +68,15 @@ class S3FileServiceTest {
         "image/jpg",
         "test image content".getBytes()
     );
+
+    when(s3Client.utilities()).thenReturn(s3Utilities);
+    doReturn(new URL(MOCK_FILE_URL)).when(s3Utilities).getUrl(any(GetUrlRequest.class));
   }
 
   @Test
   @DisplayName("단일 이미지 업로드 성공")
   void uploadImage_Success() throws MalformedURLException {
     // given
-    String filename = createFilename(mockImage);
-
     // 업로드 요청 캡처
     ArgumentCaptor<PutObjectRequest> putObjectRequestCaptor = ArgumentCaptor
         .forClass(PutObjectRequest.class);
@@ -81,7 +89,7 @@ class S3FileServiceTest {
       mockedUUID.when(UUID::randomUUID).thenReturn(MOCK_UUID);
 
       // when
-      s3FileService.uploadFile(mockImage, filename);
+      String fileUrl = s3FileService.uploadFile(mockImage);
 
       // then
       verify(s3Client, times(1)).putObject(
@@ -91,7 +99,7 @@ class S3FileServiceTest {
 
       PutObjectRequest capturedRequest = putObjectRequestCaptor.getValue();
       assertEquals(BUCKET, capturedRequest.bucket());
-      assertEquals(filename, capturedRequest.key());
+      assertEquals(fileUrl, generateFileUrl(capturedRequest.key()));
     }
   }
 
@@ -115,7 +123,7 @@ class S3FileServiceTest {
     // 캡처된 DeleteObjectRequest 객체 가져오기
     DeleteObjectRequest capturedRequest = deleteRequestCaptor.getValue();
     assertEquals(BUCKET, capturedRequest.bucket());
-    assertEquals(key, capturedRequest.key());
+    assertEquals(key, generateFileUrl(capturedRequest.key()));
   }
 
   @Test
@@ -169,5 +177,14 @@ class S3FileServiceTest {
   private String extractKeyFromUrl(String fileUrl) {
     // 직접 URL에서 키 추출 (".com/" 이후부터 끝까지 추출)
     return fileUrl.substring(fileUrl.lastIndexOf(".com/") + 5);
+  }
+
+  private String generateFileUrl(String key) {
+    return s3Client.utilities()
+        .getUrl(GetUrlRequest.builder()
+            .bucket(BUCKET)
+            .key(key)
+            .build())
+        .toString();
   }
 }
