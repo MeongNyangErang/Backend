@@ -22,10 +22,10 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepo
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,8 +38,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class AccommodationService {
 
-  private static final String IMAGE_PATH_PREFIX = "image/";
-
   private final HostRepository hostRepository;
   private final AccommodationRepository accommodationRepository;
   private final AccommodationImageRepository accommodationImageRepository;
@@ -47,7 +45,6 @@ public class AccommodationService {
   private final AccommodationPetFacilityRepository accommodationPetFacilityRepository;
   private final AllowPetRepository allowPetRepository;
   private final ImageService imageService;
-  private List<String> successUploadImages;
 
   /**
    * 숙소 등록
@@ -62,18 +59,43 @@ public class AccommodationService {
     additionalImages = additionalImages == null ? Collections.emptyList() : additionalImages;
     Host host = validateHost(hostId);
 
-    String filename = createFilename(thumbnail.getOriginalFilename());
-    Map<String, MultipartFile> imageFilenameMap = createImageFilenameMap(additionalImages);
+    List<String> uploadedImageUrls = new ArrayList<>(); // 업로드 성공한 이미지 추적
 
-    Accommodation accommodation = request.toEntity(host, filename);
-    accommodationRepository.save(accommodation);
+    try {
+      String thumbnailUrl = imageService.storeImage(thumbnail);
+      uploadedImageUrls.add(thumbnailUrl);
 
-    saveAccommodationFacilities(request.getFacilities(), accommodation);
-    saveAccommodationPetFacilities(request.getPetFacilities(), accommodation);
-    saveAllowPets(request.getAllowPets(), accommodation);
-    saveAdditionalImages(imageFilenameMap.keySet(), accommodation);
+      Map<String, MultipartFile> imageUrlMap =
+          createImageUrlMap(additionalImages, uploadedImageUrls);
 
-    storeImageProcess(thumbnail, filename, imageFilenameMap); // S3 이미지 저장
+      Accommodation accommodation = request.toEntity(host, thumbnailUrl);
+      accommodationRepository.save(accommodation);
+
+      saveAccommodationFacilities(request.getFacilities(), accommodation);
+      saveAccommodationPetFacilities(request.getPetFacilities(), accommodation);
+      saveAllowPets(request.getAllowPets(), accommodation);
+      saveAdditionalImages(imageUrlMap.keySet(), accommodation);
+
+      log.info("숙소 등록 완료: 호스트 ID={}, 숙소 ID={}", hostId, accommodation.getId());
+    } catch (Exception e) {
+      log.error("숙소 등록 에러 발생, S3에 업로드된 이미지 삭제");
+      imageService.deleteImages(uploadedImageUrls);
+      throw new MeongnyangerangException(ErrorCode.REGISTRATION_ACCOMMODATION);
+    }
+  }
+
+  private Map<String, MultipartFile> createImageUrlMap(
+      List<MultipartFile> additionalImages,
+      List<String> uploadedImageUrls
+  ) {
+    Map<String, MultipartFile> imageUrlMap = new HashMap<>();
+
+    for (MultipartFile image : additionalImages) {
+      String imageUrl = imageService.storeImage(image);
+      imageUrlMap.put(imageUrl, image);
+      uploadedImageUrls.add(imageUrl);
+    }
+    return imageUrlMap;
   }
 
   private Host validateHost(Long hostId) {
@@ -85,7 +107,7 @@ public class AccommodationService {
     HostStatus.isStatusByCreateAccommodation(host.getStatus());
 
     // 개설한 숙소가 있는지 검증
-    if (accommodationRepository.existsByHost_Id(hostId)) {
+    if (accommodationRepository.existsByHostId(hostId)) {
       throw new MeongnyangerangException(ErrorCode.ACCOMMODATION_ALREADY_EXISTS);
     }
     return host;
@@ -151,52 +173,5 @@ public class AccommodationService {
         .collect(Collectors.toList());
 
     allowPetRepository.saveAll(allowPets);
-  }
-
-  private void storeImageProcess(
-      MultipartFile thumbnail,
-      String filename,
-      Map<String, MultipartFile> imageFilenameMap
-  ) {
-    try {
-      successUploadImages = new ArrayList<>();
-      String successUploadThumbnail = imageService.storeImage(thumbnail, filename);
-      successUploadImages.add(successUploadThumbnail);
-      storeAdditionalImages(imageFilenameMap);
-    } catch (Exception e) {
-      log.error("숙소 등록 에러 발생, S3에 업로드된 이미지 삭제");
-      imageService.deleteImages(successUploadImages);
-      throw new MeongnyangerangException(ErrorCode.REGISTRATION_ACCOMMODATION);
-    }
-  }
-
-  private void storeAdditionalImages(Map<String, MultipartFile> imageFilenameMap) {
-    imageFilenameMap.forEach((filename, image) -> {
-          String successUploadImage = imageService.storeImage(image, filename);
-          successUploadImages.add(successUploadImage);
-        }
-    );
-  }
-
-  private Map<String, MultipartFile> createImageFilenameMap(List<MultipartFile> images) {
-    return images.stream()
-        .collect(Collectors.toMap(
-            image -> createFilename(image.getOriginalFilename()),
-            image -> image
-        ));
-  }
-
-  private String createFilename(String originalFilename) {
-    String fileName = UUID.randomUUID() + getExtension(originalFilename);
-    return IMAGE_PATH_PREFIX + fileName;
-  }
-
-  private String getExtension(String originalFileName) {
-    try {
-      return originalFileName.substring(originalFileName.lastIndexOf("."));
-    } catch (StringIndexOutOfBoundsException e) {
-      log.error("파일의 확장자가 없습니다.");
-      throw new MeongnyangerangException(ErrorCode.INVALID_EXTENSION);
-    }
   }
 }

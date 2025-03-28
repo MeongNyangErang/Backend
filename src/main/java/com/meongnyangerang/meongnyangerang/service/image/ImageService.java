@@ -15,15 +15,14 @@ import org.springframework.web.multipart.MultipartFile;
 public class ImageService {
 
   private final ImageStorage imageStorage;
+  int i = 0;
 
   /**
    * 이미지 업로드
    */
-  public String storeImage(MultipartFile image, String filename) {
+  public String storeImage(MultipartFile image) {
     validateImageFormat(image.getContentType(), image.getOriginalFilename());
-    imageStorage.uploadFile(image, filename);
-
-    return filename;
+    return imageStorage.uploadFile(image);
   }
 
   /**
