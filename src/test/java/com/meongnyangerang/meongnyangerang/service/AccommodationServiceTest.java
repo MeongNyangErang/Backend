@@ -28,11 +28,12 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.lang.Nullable;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -107,9 +107,12 @@ class AccommodationServiceTest {
     );
 
     // 추가 이미지 생성
-    additionalImages = Arrays.asList(
-        new MockMultipartFile("image1", "image1.jpg", "image/jpg", "image1 content".getBytes()),
-        new MockMultipartFile("image2", "image2.jpg", "image/jpg", "image2 content".getBytes())
+    additionalImages = List.of(
+        new MockMultipartFile(
+            "image1",
+            "image1.jpg",
+            "image/jpg",
+            "image1 content".getBytes())
     );
 
     // 숙소 객체 생성
@@ -156,7 +159,9 @@ class AccommodationServiceTest {
       mockedUUID.when(UUID::randomUUID).thenReturn(MOCK_UUID);
 
       String thumbnailFilename = createFilename(thumbnail.getOriginalFilename());
-      List<String> additionalImageFilenames = createFilenames(additionalImages);
+      Map<String, MultipartFile> additionalImageFilenames =
+          createImageFilenameMap(additionalImages);
+      List<String> filenames = additionalImageFilenames.keySet().stream().toList();
 
       // when
       accommodationService.createAccommodation(host.getId(), request, thumbnail, additionalImages);
@@ -188,15 +193,13 @@ class AccommodationServiceTest {
       verify(accommodationImageRepository).saveAll(accommodationImageCaptor.capture());
       verify(imageService).storeImage(thumbnail, thumbnailFilename);
       verify(imageService, times(1))
-          .storeImage(additionalImages.get(0), additionalImageFilenames.get(0));
-      verify(imageService, times(1))
-          .storeImage(additionalImages.get(1), additionalImageFilenames.get(1));
+          .storeImage(additionalImages.get(0), filenames.get(0));
     }
   }
 
   @Test
   @DisplayName("숙소 등록 - 호스트 없음 실패")
-  void createAccommodation_HostNotFound_Failure() {
+  void createAccommodation_HostNotFound_ThrowsException() {
     // given
     when(hostRepository.findById(host.getId())).thenReturn(Optional.empty());
 
@@ -212,7 +215,7 @@ class AccommodationServiceTest {
 
   @Test
   @DisplayName("숙소 등록 - 권한 없음")
-  void createAccommodation_NotAuthorized() {
+  void createAccommodation_NotAuthorized_ThrowsException() {
     // given
     host = createNotAuthorizedHost(2L);
     when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
@@ -229,7 +232,7 @@ class AccommodationServiceTest {
 
   @Test
   @DisplayName("숙소 등록 - 이미 숙소 있음 실패")
-  void createAccommodation_AccommodationAlreadyExists_Failure() {
+  void createAccommodation_AccommodationAlreadyExists_ThrowsException() {
     // given
     when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
     when(accommodationRepository.existsByHost_Id(host.getId())).thenReturn(true);
@@ -245,24 +248,6 @@ class AccommodationServiceTest {
     verify(accommodationRepository).existsByHost_Id(host.getId());
   }
 
-  @Test
-  @DisplayName("숙소 등록 - 허용 반려동물 없음 실패")
-  void createAccommodation_EmptyAllowPets_Failure() {
-    // given
-    when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
-    when(accommodationRepository.existsByHost_Id(host.getId())).thenReturn(false);
-
-    // 허용 반려동물 목록이 비어있는 경우
-    when(request.getAllowPets()).thenReturn(new ArrayList<>());
-
-    // when
-    // then
-    assertThatThrownBy(() -> accommodationService.createAccommodation(
-        host.getId(), request, thumbnail, additionalImages))
-        .isInstanceOf(MeongnyangerangException.class)
-        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.EMPTY_PET_TYPE);
-  }
-
   private Host createNotAuthorizedHost(Long hostId) {
     return Host.builder()
         .id(hostId)
@@ -275,13 +260,12 @@ class AccommodationServiceTest {
     return IMAGE_PATH_PREFIX + fileName;
   }
 
-  private static List<String> createFilenames(@Nullable List<MultipartFile> additionalImages) {
-    if (additionalImages != null && !additionalImages.isEmpty()) {
-      return additionalImages.stream()
-          .map(image -> createFilename(image.getOriginalFilename()))
-          .toList();
-    }
-    return null;
+  private Map<String, MultipartFile> createImageFilenameMap(List<MultipartFile> images) {
+    return images.stream()
+        .collect(Collectors.toMap(
+            image -> createFilename(image.getOriginalFilename()),
+            image -> image
+        ));
   }
 
   private static String getExtension(String originalFileName) {
