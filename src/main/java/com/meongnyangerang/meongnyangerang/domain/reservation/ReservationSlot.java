@@ -1,22 +1,20 @@
 package com.meongnyangerang.meongnyangerang.domain.reservation;
 
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
-import com.meongnyangerang.meongnyangerang.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,53 +23,32 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
+@Table(uniqueConstraints = {
+    @UniqueConstraint(name = "unique_room_date", columnNames = {"room_id", "reserved_date"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @EntityListeners(AuditingEntityListener.class)
-public class Reservation {
+public class ReservationSlot {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
-
-  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "room_id", nullable = false)
   private Room room;
 
   @Column(nullable = false)
-  private LocalDate checkInDate;
+  private LocalDate reservedDate;
 
   @Column(nullable = false)
-  private LocalDate checkOutDate;
+  private Boolean isReserved;
 
+  @Version
   @Column(nullable = false)
-  private Integer peopleCount;
-
-  @Column(nullable = false)
-  private Integer petCount;
-
-  @Column(nullable = false, length = 50)
-  private String reserverName;
-
-  @Column(nullable = false, length = 20)
-  private String reserverPhoneNumber;
-
-  @Column(nullable = false)
-  private Boolean hasVehicle;
-
-  @Column(nullable = false)
-  private Long totalPrice;
-
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private ReservationStatus status;
+  private Integer version;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
@@ -81,7 +58,9 @@ public class Reservation {
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 
-  private LocalDateTime canceledAt;
+  public ReservationSlot(Room room, LocalDate reservedDate, boolean isReserved) {
+    this.room = room;
+    this.reservedDate = reservedDate;
+    this.isReserved = isReserved;
+  }
 }
-
-
