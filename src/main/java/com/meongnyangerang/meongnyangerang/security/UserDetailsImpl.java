@@ -21,10 +21,10 @@ public class UserDetailsImpl implements UserDetails {
   private final String password;
   private final Role role;
   private final String nickname;
-  private final String status;
+  private final Enum<?> status; // UserStatus or HostStatus를 받을 수 있도록 Enum의 상위 타입 사용
   private final Collection<? extends GrantedAuthority> authorities;
 
-  public UserDetailsImpl(Long id, String email, String password, Role role, String nickname, String status) {
+  public UserDetailsImpl(Long id, String email, String password, Role role, String nickname, Enum<?> status) {
     this.id = id;
     this.email = email;
     this.password = password;
@@ -49,9 +49,10 @@ public class UserDetailsImpl implements UserDetails {
     return true;
   }
 
+  // 추후 상태에 따른 계정 잠금 고려
   @Override
   public boolean isAccountNonLocked() {
-    return !"DELETED".equals(status);  // 삭제된 계정이면 잠김 상태로 처리
+    return true;
   }
 
   @Override
@@ -59,8 +60,9 @@ public class UserDetailsImpl implements UserDetails {
     return true;
   }
 
+  // 추후 상태에 따른 계정 활성화 고려
   @Override
   public boolean isEnabled() {
-    return !"DELETED".equals(status);  // 삭제된 계정이면 비활성화
+    return true;
   }
 }
