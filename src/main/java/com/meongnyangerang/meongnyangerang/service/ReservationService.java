@@ -189,10 +189,8 @@ public class ReservationService {
   }
 
   private ReservationResponse mapToReservationResponse(Reservation reservation) {
-    Room room = roomRepository.findById(reservation.getRoom().getId())
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ROOM_NOT_FOUND));
-    Accommodation accommodation = accommodationRepository.findById(room.getAccommodation().getId())
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
+    Room room = reservation.getRoom();
+    Accommodation accommodation = room.getAccommodation();
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
