@@ -22,17 +22,14 @@ public class UserDetailsImpl implements UserDetails {
   private final String email;
   private final String password;
   private final Role role;
-  private final String nickname;
   private final Enum<?> status; // UserStatus, HostStatus, AdminStatus 를 받을 수 있도록 Enum의 상위 타입 사용
   private final Collection<? extends GrantedAuthority> authorities;
 
-  public UserDetailsImpl(Long id, String email, String password, Role role, String nickname,
-      Enum<?> status) {
+  public UserDetailsImpl(Long id, String email, String password, Role role, Enum<?> status) {
     this.id = id;
     this.email = email;
     this.password = password;
     this.role = role;
-    this.nickname = nickname;
     this.status = status;
     this.authorities = List.of(new SimpleGrantedAuthority(role.name())); // ROLE_XXX 형태로 권한 부여
   }

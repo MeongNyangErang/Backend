@@ -32,7 +32,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     if (userOptional.isPresent()) {
       User user = userOptional.get();
       return new UserDetailsImpl(user.getId(), user.getEmail(), user.getPassword(), user.getRole(),
-          user.getNickname(), user.getStatus());
+          user.getStatus());
     }
 
     // Host 조회
@@ -40,7 +40,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     if (hostOptional.isPresent()) {
       Host host = hostOptional.get();
       return new UserDetailsImpl(host.getId(), host.getEmail(), host.getPassword(), host.getRole(),
-          host.getNickname(), host.getStatus());
+          host.getStatus());
     }
 
     // Admin 조회
@@ -48,9 +48,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     if (adminOptional.isPresent()) {
       Admin admin = adminOptional.get();
       return new UserDetailsImpl(admin.getId(), admin.getEmail(), admin.getPassword(),
-          admin.getRole(),
-          null, // nickname 없음
-          admin.getStatus());
+          admin.getRole(), admin.getStatus());
     }
 
     // 사용자를 찾을 수 없을 때 예외 발생

@@ -120,7 +120,7 @@ public class JwtTokenProvider {
     }
 
     // UserDetailsImpl에 JWT 정보만 전달
-    UserDetails userDetails = new UserDetailsImpl(id, email, "", role, "", status);
+    UserDetails userDetails = new UserDetailsImpl(id, email, "", role, status);
 
     return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
   }
