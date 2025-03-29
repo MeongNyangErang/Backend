@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.domain.host;
 
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -57,6 +58,9 @@ public class Host {
   @Enumerated(EnumType.STRING)
   @Column(length = 50, nullable = false)
   private HostStatus status;
+
+  @Enumerated(EnumType.STRING)
+  private Role role;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
