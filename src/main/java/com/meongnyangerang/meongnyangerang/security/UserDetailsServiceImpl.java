@@ -49,7 +49,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
       Admin admin = adminOptional.get();
       return new UserDetailsImpl(admin.getId(), admin.getEmail(), admin.getPassword(),
           admin.getRole(),
-          null, null); // Admin 에는 nickname, status 없음
+          null, // nickname 없음
+          admin.getStatus());
     }
 
     // 사용자를 찾을 수 없을 때 예외 발생

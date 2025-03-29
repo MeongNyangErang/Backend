@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.security;
 
+import com.meongnyangerang.meongnyangerang.domain.admin.AdminStatus;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
@@ -22,7 +23,7 @@ public class UserDetailsImpl implements UserDetails {
   private final String password;
   private final Role role;
   private final String nickname;
-  private final Enum<?> status; // UserStatus or HostStatus를 받을 수 있도록 Enum의 상위 타입 사용
+  private final Enum<?> status; // UserStatus, HostStatus, AdminStatus 를 받을 수 있도록 Enum의 상위 타입 사용
   private final Collection<? extends GrantedAuthority> authorities;
 
   public UserDetailsImpl(Long id, String email, String password, Role role, String nickname,
@@ -60,7 +61,7 @@ public class UserDetailsImpl implements UserDetails {
     if (role == Role.ROLE_HOST && status instanceof HostStatus hostStatus) {
       return hostStatus != HostStatus.DELETED;
     }
-    return true; // admin은 상태 없음
+    return true; // admin은 상태 ACTIVE 하나이므로 기본값 true 사용 가능
   }
 
   @Override
@@ -75,8 +76,11 @@ public class UserDetailsImpl implements UserDetails {
       return userStatus == UserStatus.ACTIVE;
     }
     if (role == Role.ROLE_HOST && status instanceof HostStatus hostStatus) {
-      return hostStatus == HostStatus.ACTIVE; // 승인된 상태만 로그인 허용
+      return hostStatus == HostStatus.ACTIVE; // 승인된 상태만 로그인 허용(PENDING 상태 제외)
     }
-    return true;
+    if (role == Role.ROLE_ADMIN && status instanceof AdminStatus adminStatus) {
+      return adminStatus == AdminStatus.ACTIVE;
+    }
+    return false; // 상태가 명확하지 않은 경우 로그인 차단
   }
 }

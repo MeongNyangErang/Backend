@@ -7,6 +7,7 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_JW
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.JWT_VALIDATION_ERROR;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.UNSUPPORTED_JWT;
 
+import com.meongnyangerang.meongnyangerang.domain.admin.AdminStatus;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
@@ -106,12 +107,11 @@ public class JwtTokenProvider {
     Role role = Role.valueOf(roleString);
 
     // JWT 토큰에서 추출한 statusString -> Enum<?> 으로 형변환
-    Enum<?> status = null;
-
-    switch (role) {
-      case ROLE_USER -> status = UserStatus.valueOf(statusString);
-      case ROLE_HOST -> status = HostStatus.valueOf(statusString);
-    }
+    Enum<?> status = switch (role) {
+      case ROLE_USER -> UserStatus.valueOf(statusString);
+      case ROLE_HOST -> HostStatus.valueOf(statusString);
+      case ROLE_ADMIN -> AdminStatus.valueOf(statusString);
+    };
 
     // 추가 검증 (호스트 - 승인 대기중, 사용자 - 삭제 상태, 호스트 - 삭제 상태) -> 예외 처리
     if ((role == Role.ROLE_HOST && status == HostStatus.PENDING) ||
