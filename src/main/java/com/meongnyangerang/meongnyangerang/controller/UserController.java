@@ -4,6 +4,7 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
+import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReservationService;
 import com.meongnyangerang.meongnyangerang.service.UserService;
 import jakarta.validation.Valid;
@@ -11,7 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Range;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,5 +67,16 @@ public class UserController {
         status);
 
     return ResponseEntity.ok(response);
+  }
+
+  @PatchMapping("/reservations/{reservationId}/cancel")
+  public ResponseEntity<Void> cancelReservation(
+//      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @PathVariable Long reservationId) {
+
+    // 로그인된 사용자의 ID를 받아서 예약을 취소 (Security 적용 후 userDetails.getId())
+    reservationService.cancelReservation(1L, reservationId);
+
+    return ResponseEntity.ok().build();
   }
 }
