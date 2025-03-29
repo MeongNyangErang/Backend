@@ -60,6 +60,7 @@ public class Host {
   private HostStatus status;
 
   @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   private Role role;
 
   @CreatedDate
