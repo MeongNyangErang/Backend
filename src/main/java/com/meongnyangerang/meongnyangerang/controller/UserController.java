@@ -33,6 +33,13 @@ public class UserController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
+  // 사용자 로그인 API
+  @PostMapping("/login")
+  public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    String token = userService.login(request);
+    return ResponseEntity.ok(new LoginResponse(token));
+  }
+
   @PostMapping("/reservations")
   public ResponseEntity<Void> createReservation(
 //      @AuthenticationPrincipal CustomUserDetails userDetails,
