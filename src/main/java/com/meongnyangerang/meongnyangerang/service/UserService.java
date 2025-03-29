@@ -2,16 +2,21 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.domain.user.Role.*;
 import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.USER_ALREADY_EXISTS;
 
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
+import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +28,7 @@ public class UserService {
   private final UserRepository userRepository;
   private final HostRepository hostRepository;
   private final PasswordEncoder passwordEncoder;
+  private final JwtTokenProvider jwtTokenProvider;
 
   // 사용자 회원가입
   public void registerUser(UserSignupRequest request) {
@@ -42,5 +48,22 @@ public class UserService {
         .status(ACTIVE)
         .role(ROLE_USER)
         .build());
+  }
+
+  public String login(@Valid LoginRequest request) {
+
+    // 사용자 조회
+    User user = userRepository.findByEmail(request.getEmail())
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    // 비밀번호 검증
+    if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+      throw new MeongnyangerangException(INVALID_PASSWORD);
+    }
+
+    // 상태 검증은 JwtTokenProvider 내부에서 수행됨
+
+    return jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole().name(),
+        user.getStatus());
   }
 }
