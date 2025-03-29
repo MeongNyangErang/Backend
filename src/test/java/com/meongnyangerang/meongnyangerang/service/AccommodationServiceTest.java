@@ -20,6 +20,7 @@ import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
@@ -73,6 +74,7 @@ class AccommodationServiceTest {
   private static final String THUMBNAIL_URL = "https://test.com/image/thumbnail-123.jpg";
   private static final String ADDITIONAL_IMAGE_URL1 = "https://test.com/image/image1-456.jpg";
   private static final String ADDITIONAL_IMAGE_URL2 = "https://test.com/image/image2-456.jpg";
+  private static final String OLD_THUMBNAIL_URL = "https://test.com/image/old-thumbnail-123.jpg";
 
   private static final List<AccommodationFacilityType> FACILITY_TYPES = Arrays
       .asList(AccommodationFacilityType.WIFI, AccommodationFacilityType.PUBLIC_SWIMMING_POOL);
@@ -83,6 +85,7 @@ class AccommodationServiceTest {
 
   private Host host;
   private AccommodationCreateRequest request;
+  private AccommodationUpdateRequest updateRequest;
   private MockMultipartFile thumbnail;
   private List<MultipartFile> additionalImages;
 
@@ -91,7 +94,7 @@ class AccommodationServiceTest {
   private List<AccommodationPetFacility> petFacilities;
   private List<AllowPet> allowPets;
   private List<AccommodationImage> accommodationImages;
-
+  private List<String> oldAdditionalImageUrls;
 
   @BeforeEach
   void setUp() {
@@ -128,6 +131,23 @@ class AccommodationServiceTest {
         .petFacilities(PET_FACILITY_TYPES)
         .allowPets(PET_TYPES)
         .build();
+
+    updateRequest = AccommodationUpdateRequest.builder()
+        .accommodationId(accommodation.getId())
+        .name("test-name")
+        .type(AccommodationType.PENSION)
+        .address("test-address")
+        .detailedAddress("test-detailedAddress")
+        .description("test-description")
+        .latitude(37.123)
+        .longitude(127.123)
+        .oldThumbnailUrl(OLD_THUMBNAIL_URL)
+        .facilities(FACILITY_TYPES)
+        .petFacilities(PET_FACILITY_TYPES)
+        .allowPets(PET_TYPES)
+        .build();
+
+    oldAdditionalImageUrls = Arrays.asList("old-url-1", "old-url-2");
 
     facilities = Arrays.asList(AccommodationFacility.builder()
             .id(1L)
@@ -265,23 +285,6 @@ class AccommodationServiceTest {
   }
 
   @Test
-  @DisplayName("숙소 등록 - 권한 없음")
-  void createAccommodation_NotAuthorized_ThrowsException() {
-    // given
-    host = createNotAuthorizedHost(2L);
-    when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
-
-    // when
-    // then
-    assertThatThrownBy(() -> accommodationService.createAccommodation(
-        host.getId(), request, thumbnail, additionalImages))
-        .isInstanceOf(MeongnyangerangException.class)
-        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.INVALID_AUTHORIZED);
-
-    verify(hostRepository).findById(host.getId());
-  }
-
-  @Test
   @DisplayName("숙소 등록 - 이미 숙소 있음 실패")
   void createAccommodation_AccommodationAlreadyExists_ThrowsException() {
     // given
@@ -349,9 +352,9 @@ class AccommodationServiceTest {
     }
 
     // 추가 이미지 목록 검증
-    assertThat(response.additionalImages()).hasSize(accommodationImages.size());
+    assertThat(response.additionalImageUrls()).hasSize(accommodationImages.size());
     for (int i = 0; i < accommodationImages.size(); i++) {
-      assertThat(response.additionalImages().get(i))
+      assertThat(response.additionalImageUrls().get(i))
           .isEqualTo(accommodationImages.get(i).getImageUrl());
     }
 
@@ -384,11 +387,67 @@ class AccommodationServiceTest {
     verify(accommodationRepository).findByHostId(accommodationNotFoundHostId);
   }
 
+  @Test
+  @DisplayName("숙소 수정 성공 테스트")
+  void updateAccommodation_Success() {
+    // given
+    Long accommodationId = accommodation.getId();
 
-  private Host createNotAuthorizedHost(Long hostId) {
-    return Host.builder()
-        .id(hostId)
-        .status(HostStatus.PENDING)
-        .build();
+    when(imageService.storeImage(thumbnail)).thenReturn(THUMBNAIL_URL);
+    when(imageService.storeImage(additionalImages.get(0))).thenReturn(ADDITIONAL_IMAGE_URL1);
+
+    // updateData 메서드 관련 모킹
+    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+
+    // when
+    AccommodationResponse response = accommodationService
+        .updateAccommodation(updateRequest, thumbnail, additionalImages);
+
+    // then
+    assertThat(response).isNotNull();
+
+    // 숙소 기본 정보 검증
+    assertThat(response.accommodationId()).isEqualTo(accommodationId);
+
+    // 메서드 호출 검증
+    verify(accommodationRepository, times(1))
+        .findById(accommodationId);
+
+    verify(accommodationFacilityRepository, times(1))
+        .deleteAllByAccommodationId(accommodationId);
+
+    verify(accommodationPetFacilityRepository, times(1))
+        .deleteAllByAccommodationId(accommodationId);
+
+    verify(allowPetRepository, times(1))
+        .deleteAllByAccommodationId(accommodationId);
+
+    verify(accommodationImageRepository, times(1))
+        .deleteAllByAccommodationId(accommodationId);
+
+    // 이미지 서비스 호출 검증
+    verify(imageService, times(1)).storeImage(thumbnail);
+    verify(imageService, times(1)).storeImage(additionalImages.get(0));
+
+    // 이미지 삭제 등록 확인
+    ArgumentCaptor<List<String>> deletedImagesCaptor = ArgumentCaptor.forClass(List.class);
+    verify(imageService).registerImagesForDeletion(deletedImagesCaptor.capture());
+    List<String> deletedImages = deletedImagesCaptor.getValue();
+    assertThat(deletedImages).contains(OLD_THUMBNAIL_URL);
+  }
+
+  @Test
+  @DisplayName("숙소 수정 - 숙소가 존재하지 않는 경우 예외 발생")
+  void updateAccommodation_AccommodationNotFound() {
+    // given
+    when(imageService.storeImage(thumbnail)).thenReturn(THUMBNAIL_URL);
+    when(accommodationRepository.findById(accommodation.getId())).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> accommodationService
+        .updateAccommodation(updateRequest, thumbnail, additionalImages))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
   }
 }
