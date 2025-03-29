@@ -4,7 +4,6 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PA
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
-import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;

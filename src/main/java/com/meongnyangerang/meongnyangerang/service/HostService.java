@@ -1,20 +1,17 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.domain.host.HostStatus.*;
-import static com.meongnyangerang.meongnyangerang.domain.user.Role.*;
+import static com.meongnyangerang.meongnyangerang.domain.host.HostStatus.PENDING;
+import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_HOST;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
-import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
-import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
-import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,6 +50,7 @@ public class HostService {
         .build());
   }
 
+  // 호스트 로그인
   public String login(@Valid LoginRequest request) {
 
     // 호스트 조회
@@ -66,6 +64,7 @@ public class HostService {
 
     // 상태 검증은 JwtTokenProvider 내부에서 수행됨
 
-    return jwtTokenProvider.createToken(host.getId(), host.getEmail(), host.getRole().name(), host.getStatus());
+    return jwtTokenProvider.createToken(host.getId(), host.getEmail(), host.getRole().name(),
+        host.getStatus());
   }
 }

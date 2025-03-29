@@ -1,20 +1,16 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.domain.user.Role.*;
-import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.*;
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_USER;
+import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.ACTIVE;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.USER_ALREADY_EXISTS;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 
-import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
-import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
-import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
