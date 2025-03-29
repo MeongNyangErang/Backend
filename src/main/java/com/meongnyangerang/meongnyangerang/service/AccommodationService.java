@@ -11,6 +11,7 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.Accommo
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
@@ -40,10 +41,10 @@ public class AccommodationService {
 
   private final HostRepository hostRepository;
   private final AccommodationRepository accommodationRepository;
-  private final AccommodationImageRepository accommodationImageRepository;
   private final AccommodationFacilityRepository accommodationFacilityRepository;
   private final AccommodationPetFacilityRepository accommodationPetFacilityRepository;
   private final AllowPetRepository allowPetRepository;
+  private final AccommodationImageRepository accommodationImageRepository;
   private final ImageService imageService;
 
   /**
@@ -82,6 +83,35 @@ public class AccommodationService {
       imageService.deleteImages(uploadedImageUrls);
       throw new MeongnyangerangException(ErrorCode.REGISTRATION_ACCOMMODATION);
     }
+  }
+
+  /**
+   * 숙소 조회
+   */
+  public AccommodationResponse getAccommodation(Long hostId) {
+    Accommodation accommodation = accommodationRepository.findByHostId(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
+
+   Long accommodationId = accommodation.getId();
+
+    List<AccommodationFacility> facilities = accommodationFacilityRepository
+        .findAllByAccommodationId(accommodationId);
+
+    List<AccommodationPetFacility> petFacilities = accommodationPetFacilityRepository
+        .findAllByAccommodationId(accommodationId);
+
+    List<AllowPet> allowPets = allowPetRepository.findAllByAccommodationId(accommodationId);
+
+    List<AccommodationImage> additionalImages = accommodationImageRepository
+        .findAllByAccommodationId(accommodationId);
+
+    return AccommodationResponse.of(
+        accommodation,
+        facilities,
+        petFacilities,
+        allowPets,
+        additionalImages
+    );
   }
 
   private Map<String, MultipartFile> createImageUrlMap(
