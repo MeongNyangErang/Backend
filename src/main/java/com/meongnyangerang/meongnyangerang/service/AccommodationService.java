@@ -243,8 +243,9 @@ public class AccommodationService {
     return allowPetRepository.saveAll(allowPets);
   }
 
-  private List<AccommodationImage> saveAdditionalImages(List<String> filenames,
-      Accommodation accommodation) {
+  private List<AccommodationImage> saveAdditionalImages(
+      List<String> filenames, Accommodation accommodation
+  ) {
     List<AccommodationImage> accommodationImages = filenames.stream()
         .map(filename -> AccommodationImage.builder()
             .accommodation(accommodation)
@@ -260,8 +261,9 @@ public class AccommodationService {
         .orElseGet(Collections::emptyList);
   }
 
-  private static List<String> imagesDeleted(String oldThumbnailUrl,
-      List<String> oldAdditionalImageUrls) {
+  private static List<String> imagesDeleted(
+      String oldThumbnailUrl, List<String> oldAdditionalImageUrls
+  ) {
     List<String> oldImages = new ArrayList<>();
     oldImages.add(oldThumbnailUrl);
     oldImages.addAll(oldAdditionalImageUrls);
