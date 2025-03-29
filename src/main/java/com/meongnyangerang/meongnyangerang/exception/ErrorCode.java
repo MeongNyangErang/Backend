@@ -31,6 +31,7 @@ public enum ErrorCode {
   FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일이 존재하지 않습니다."),
   FILE_NOT_EMPTY(HttpStatus.NOT_FOUND, "파일이 비어있습니다."),
   USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저가 존재하지 않습니다."),
+  ACCOMMODATION_NOT_FOUND(HttpStatus.NOT_FOUND, "숙소가 존재하지 않습니다."),
   ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "객실이 존재하지 않습니다."),
 
   // 409 Conflict
