@@ -155,51 +155,37 @@ public class AccommodationService {
   }
 
   private void saveAccommodationFacilities(
-      List<String> facilityTypes, Accommodation accommodation
+      List<AccommodationFacilityType> facilityTypes, Accommodation accommodation
   ) {
     List<AccommodationFacility> facilities = facilityTypes.stream()
-        .map(facilityType -> {
-          AccommodationFacilityType type =
-              AccommodationFacilityType.valueOf(facilityType.toUpperCase());
-
-          return AccommodationFacility.builder()
-              .accommodation(accommodation)
-              .type(type)
-              .build();
-        })
+        .map(facilityType -> AccommodationFacility.builder()
+            .accommodation(accommodation)
+            .type(facilityType)
+            .build())
         .collect(Collectors.toList());
 
     accommodationFacilityRepository.saveAll(facilities);
   }
 
   private void saveAccommodationPetFacilities(
-      List<String> petFacilityTypes, Accommodation accommodation
+      List<AccommodationPetFacilityType> petFacilityTypes, Accommodation accommodation
   ) {
     List<AccommodationPetFacility> petFacilities = petFacilityTypes.stream()
-        .map(petFacilityType -> {
-          AccommodationPetFacilityType type =
-              AccommodationPetFacilityType.valueOf(petFacilityType.toUpperCase());
-
-          return AccommodationPetFacility.builder()
-              .accommodation(accommodation)
-              .type(type)
-              .build();
-        })
+        .map(petFacilityType -> AccommodationPetFacility.builder()
+            .accommodation(accommodation)
+            .type(petFacilityType)
+            .build())
         .collect(Collectors.toList());
 
     accommodationPetFacilityRepository.saveAll(petFacilities);
   }
 
-  private void saveAllowPets(List<String> petTypes, Accommodation accommodation) {
+  private void saveAllowPets(List<PetType> petTypes, Accommodation accommodation) {
     List<AllowPet> allowPets = petTypes.stream()
-        .map(petType -> {
-          PetType type = PetType.valueOf(petType.toUpperCase());
-
-          return AllowPet.builder()
-              .accommodation(accommodation)
-              .petType(type)
-              .build();
-        })
+        .map(petType -> AllowPet.builder()
+            .accommodation(accommodation)
+            .petType(petType)
+            .build())
         .collect(Collectors.toList());
 
     allowPetRepository.saveAll(allowPets);
