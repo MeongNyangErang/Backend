@@ -3,16 +3,16 @@ package com.meongnyangerang.meongnyangerang.controller;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
+import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
-import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReservationService;
+import com.meongnyangerang.meongnyangerang.service.ReviewService;
 import com.meongnyangerang.meongnyangerang.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Range;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
   private final UserService userService;
+  private final ReviewService reviewService;
   private final ReservationService reservationService;
 
   // 사용자 회원가입 API
@@ -71,5 +72,16 @@ public class UserController {
     reservationService.cancelReservation(1L, reservationId);
 
     return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/reviews")
+  public ResponseEntity<Void> createReview(
+      //      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @Valid @RequestBody ReviewRequest reviewRequest) {
+
+    // 로그인 기능 추가 되면 userDetails.getId()로 변경
+    reviewService.createReview(1L, reviewRequest);
+
+    return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 }
