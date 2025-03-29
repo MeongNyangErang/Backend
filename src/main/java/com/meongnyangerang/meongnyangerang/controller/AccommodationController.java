@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
 import com.meongnyangerang.meongnyangerang.service.AccommodationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,7 +31,7 @@ public class AccommodationController {
   // TODO: host만 호출할 수 있도록 수정
   @PostMapping
   public ResponseEntity<Void> createAccommodation(
-      //@AuthenticationPrincipal UserDetail userDetail
+      //@AuthenticationPrincipal UserDetail userDetail,
       @Valid @RequestPart AccommodationCreateRequest request,
       @RequestPart MultipartFile thumbnail,
       @RequestPart(required = false) List<MultipartFile> additionalImages
@@ -48,5 +50,18 @@ public class AccommodationController {
       //@AuthenticationPrincipal UserDetail userDetail
   ){
     return ResponseEntity.ok(accommodationService.getAccommodation(1L));
+  }
+
+  /**
+   * 숙소 수정 API
+   */
+  @PutMapping
+  public ResponseEntity<AccommodationResponse> updateAccommodation(
+      @Valid @RequestPart AccommodationUpdateRequest request,
+      @RequestPart MultipartFile newThumbnail,
+      @RequestPart(required = false) List<MultipartFile> newAdditionalImages
+  ){
+    return ResponseEntity.ok(
+        accommodationService.updateAccommodation(request, newThumbnail, newAdditionalImages));
   }
 }
