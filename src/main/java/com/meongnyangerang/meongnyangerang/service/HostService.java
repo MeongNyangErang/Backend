@@ -28,9 +28,8 @@ public class HostService {
   // 호스트 회원가입
   public void registerHost(HostSignupRequest request) {
 
-    // 이메일 중복 가입 방지
-    if (userRepository.existsByEmail(request.getEmail()) ||
-        hostRepository.existsByEmail(request.getEmail())) {
+    // 호스트 중복 가입 방지
+    if (hostRepository.existsByEmail(request.getEmail())) {
       throw new MeongnyangerangException(DUPLICATE_EMAIL);
     }
 
