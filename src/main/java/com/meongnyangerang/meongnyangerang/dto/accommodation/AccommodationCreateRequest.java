@@ -2,8 +2,12 @@ package com.meongnyangerang.meongnyangerang.dto.accommodation;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationFacilityType;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -36,11 +40,14 @@ public class AccommodationCreateRequest {
   @NotNull(message = "숙소의 위치 정보를 제공해 주세요.")
   private Double longitude;
 
-  private List<String> facilities;
+  @NotEmpty(message = "숙소 편의시설을 하나 이상 선택해 주세요.")
+  private List<AccommodationFacilityType> facilities;
 
-  private List<String> petFacilities;
+  @NotEmpty(message = "반려동물 편의시설을 하나 이상 선택해 주세요.")
+  private List<AccommodationPetFacilityType> petFacilities;
 
-  private List<String> allowPets;
+  @NotEmpty(message = "허용 가능한 반려동물 유형을 하나 이상 선택해 주세요.")
+  private List<PetType> allowPets;
 
   public Accommodation toEntity(Host host, String thumbnailUrl) {
     return Accommodation.builder()

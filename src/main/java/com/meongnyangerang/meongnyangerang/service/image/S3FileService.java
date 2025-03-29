@@ -5,6 +5,7 @@ import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.service.adptor.ImageStorage;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
@@ -36,18 +38,17 @@ public class S3FileService implements ImageStorage {
 
   /**
    * 단일 파일 업로드
-   *
-   * @param file 업로드할 파일
    * @return 업로드된 파일의 URL
    */
   @Override
-  public void uploadFile(MultipartFile file, String fileUrl) {
+  public String uploadFile(MultipartFile file) {
     validateFileName(file);
+    String filename = createFilename(file.getOriginalFilename());
 
     try {
       PutObjectRequest putObjectRequest = PutObjectRequest.builder()
           .bucket(bucket)
-          .key(fileUrl)
+          .key(filename)
           .contentType(file.getContentType())
           .build();
 
@@ -57,6 +58,7 @@ public class S3FileService implements ImageStorage {
       );
 
       log.info("파일 업로드 성공");
+      return generateFileUrl(filename);
     } catch (SdkException e) {
       log.error("파일 업로드 도중 아마존 서비스 에러 발생 : {}", e.getMessage(), e);
       throw new MeongnyangerangException(ErrorCode.FILE_NOT_EMPTY);
@@ -68,8 +70,6 @@ public class S3FileService implements ImageStorage {
 
   /**
    * 파일 삭제
-   *
-   * @param fileUrl 삭제할 파일의 URL
    */
   @Override
   public void deleteFile(String fileUrl) {
@@ -93,8 +93,6 @@ public class S3FileService implements ImageStorage {
 
   /**
    * 다중 파일 삭제
-   *
-   * @param fileUrls 삭제할 파일들의 URL 목록
    */
   @Override
   public void deleteFiles(List<String> fileUrls) {
@@ -161,5 +159,28 @@ public class S3FileService implements ImageStorage {
       log.error("파일명이 유효하지 않습니다.");
       throw new MeongnyangerangException(ErrorCode.INVALID_FILENAME);
     }
+  }
+
+  private String createFilename(String originalFilename) {
+    String fileName = UUID.randomUUID() + getExtension(originalFilename);
+    return IMAGE_PATH_PREFIX + fileName;
+  }
+
+  private String getExtension(String originalFileName) {
+    try {
+      return originalFileName.substring(originalFileName.lastIndexOf("."));
+    } catch (StringIndexOutOfBoundsException e) {
+      log.error("파일의 확장자가 없습니다.");
+      throw new MeongnyangerangException(ErrorCode.INVALID_EXTENSION);
+    }
+  }
+
+  private String generateFileUrl(String key) {
+    return s3Client.utilities()
+        .getUrl(GetUrlRequest.builder()
+            .bucket(bucket)
+            .key(key)
+            .build())
+        .toString();
   }
 }
