@@ -42,6 +42,10 @@ public class Admin {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
+  private AdminStatus status;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   private Role role;
 
   @CreatedDate
