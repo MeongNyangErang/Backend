@@ -3,14 +3,19 @@ package com.meongnyangerang.meongnyangerang.service;
 import static com.meongnyangerang.meongnyangerang.domain.host.HostStatus.*;
 import static com.meongnyangerang.meongnyangerang.domain.user.Role.*;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
+import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +28,7 @@ public class HostService {
 
   private final HostRepository hostRepository;
   private final PasswordEncoder passwordEncoder;
+  private final JwtTokenProvider jwtTokenProvider;
 
   // 호스트 회원가입
   public void registerHost(HostSignupRequest request) {
@@ -45,5 +51,21 @@ public class HostService {
         .status(PENDING) // 기본적으로 대기 상태
         .role(ROLE_HOST)
         .build());
+  }
+
+  public String login(@Valid LoginRequest request) {
+
+    // 호스트 조회
+    Host host = hostRepository.findByEmail(request.getEmail())
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_ACCOUNT));
+
+    // 비밀번호 검증
+    if (!passwordEncoder.matches(request.getPassword(), host.getPassword())) {
+      throw new MeongnyangerangException(INVALID_PASSWORD);
+    }
+
+    // 상태 검증은 JwtTokenProvider 내부에서 수행됨
+
+    return jwtTokenProvider.createToken(host.getId(), host.getEmail(), host.getRole().name(), host.getStatus());
   }
 }
