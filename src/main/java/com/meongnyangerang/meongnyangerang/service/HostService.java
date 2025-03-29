@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class HostService {
 
-  private final UserRepository userRepository;
   private final HostRepository hostRepository;
   private final PasswordEncoder passwordEncoder;
 

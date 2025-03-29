@@ -26,16 +26,14 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
   private final UserRepository userRepository;
-  private final HostRepository hostRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
 
   // 사용자 회원가입
   public void registerUser(UserSignupRequest request) {
 
-    // 중복 가입 확인
-    if (userRepository.existsByEmail(request.getEmail()) ||
-        hostRepository.existsByEmail(request.getEmail())) {
+    // 사용자 중복 가입 방지
+    if (userRepository.existsByEmail(request.getEmail())) {
       throw new MeongnyangerangException(DUPLICATE_EMAIL);
     }
 
