@@ -1,21 +1,28 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationSlot;
+import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
+import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import com.meongnyangerang.meongnyangerang.repository.RoomRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import jakarta.persistence.OptimisticLockException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,19 +30,20 @@ import org.springframework.transaction.annotation.Transactional;
  * 예약 관련 비즈니스 로직을 처리하는 서비스
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ReservationService {
 
   private final ReservationRepository reservationRepository;
   private final ReservationSlotRepository reservationSlotRepository;
+  private final AccommodationRepository accommodationRepository;
   private final UserRepository userRepository;
   private final RoomRepository roomRepository;
 
   /**
-   * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드.
-   * 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
+   * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드. 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
    *
-   * @param userId            사용자 ID
+   * @param userId             사용자 ID
    * @param reservationRequest 예약 요청 정보
    */
   @Transactional
@@ -59,8 +67,7 @@ public class ReservationService {
   }
 
   /**
-   * 사용자 ID에 해당하는 사용자가 존재하는지 확인합니다.
-   * 존재하지 않으면 예외를 발생시킵니다.
+   * 사용자 ID에 해당하는 사용자가 존재하는지 확인합니다. 존재하지 않으면 예외를 발생시킵니다.
    *
    * @param userId 사용자 ID
    * @return 검증된 사용자 객체
@@ -72,8 +79,7 @@ public class ReservationService {
   }
 
   /**
-   * 객실 ID에 해당하는 객실이 존재하는지 확인합니다.
-   * 존재하지 않으면 예외를 발생시킵니다.
+   * 객실 ID에 해당하는 객실이 존재하는지 확인합니다. 존재하지 않으면 예외를 발생시킵니다.
    *
    * @param roomId 객실 ID
    * @return 검증된 객실 객체
@@ -85,8 +91,7 @@ public class ReservationService {
   }
 
   /**
-   * 주어진 체크인 날짜와 체크아웃 날짜 범위 내에 해당 객실이 이미 예약된 날짜가 있는지 확인합니다.
-   * 예약된 날짜가 있으면 예외를 발생시킵니다.
+   * 주어진 체크인 날짜와 체크아웃 날짜 범위 내에 해당 객실이 이미 예약된 날짜가 있는지 확인합니다. 예약된 날짜가 있으면 예외를 발생시킵니다.
    *
    * @param room         예약하려는 객실
    * @param checkInDate  체크인 날짜
@@ -104,8 +109,7 @@ public class ReservationService {
   }
 
   /**
-   * 체크인부터 체크아웃 전날까지 예약 슬롯을 확인하고 예약되지 않은 슬롯에 대해 예약을 진행합니다.
-   * 예약된 슬롯은 예외를 발생시키고, 예약되지 않은 슬롯은 예약 처리합니다.
+   * 체크인부터 체크아웃 전날까지 예약 슬롯을 확인하고 예약되지 않은 슬롯에 대해 예약을 진행합니다. 예약된 슬롯은 예외를 발생시키고, 예약되지 않은 슬롯은 예약 처리합니다.
    *
    * @param room         예약하려는 객실
    * @param checkInDate  체크인 날짜
@@ -157,4 +161,53 @@ public class ReservationService {
     reservationRepository.save(reservation);
   }
 
+  /**
+   * 사용자가 예약 상태(RESERVED, COMPLETED, CANCELED)에 따라 예약 목록을 조회합니다.
+   *
+   * @param userId
+   * @param cursorId
+   * @param size
+   * @param status
+   */
+  public CustomReservationResponse findByStatus(Long userId, Long cursorId, int size,
+      ReservationStatus status) {
+    // 해당 유저의 예약 내역만 조회
+    List<Reservation> reservationList = reservationRepository.findByUserIdAndStatus(userId,
+        cursorId, size + 1, status.name());
+
+    // 예약 정보 -> DTO 변환
+    List<ReservationResponse> content = reservationList.stream()
+        .limit(size)
+        .map(this::mapToReservationResponse)
+        .toList();
+
+    // 다음 데이터 존재 여부 확인
+    boolean hasNext = reservationList.size() > size;
+    String cursor = hasNext ? String.valueOf(reservationList.get(size).getId()) : null;
+
+    return new CustomReservationResponse(content, cursor, hasNext);
+  }
+
+  private ReservationResponse mapToReservationResponse(Reservation reservation) {
+    Room room = roomRepository.findById(reservation.getRoom().getId())
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ROOM_NOT_FOUND));
+    Accommodation accommodation = accommodationRepository.findById(room.getAccommodation().getId())
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
+
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+    return ReservationResponse.builder()
+        .reservationDate(reservation.getCreatedAt().format(dateFormatter))
+        .accommodationName(accommodation.getName())
+        .roomName(room.getName())
+        .checkInDate(reservation.getCheckInDate().format(dateFormatter))
+        .checkOutDate(reservation.getCheckOutDate().format(dateFormatter))
+        .checkInTime(room.getCheckInTime().format(timeFormatter))
+        .checkOutTime(room.getCheckOutTime().format(timeFormatter))
+        .peopleCount(reservation.getPeopleCount())
+        .petCount(reservation.getPetCount())
+        .totalPrice(reservation.getTotalPrice())
+        .build();
+  }
 }
