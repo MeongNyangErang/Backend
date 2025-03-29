@@ -28,7 +28,8 @@ public class HostSignupRequest {
   @NotBlank(message = "닉네임은 필수 입력 항목입니다.")
   private String nickname;
 
-  @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$") // 최소 8자, 영문+숫자
+  @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$])[A-Za-z\\d!@#$]{8,}$",
+      message = "비밀번호는 최소 8자 이상이며, 영문, 숫자, 특수문자(!,@,#,$)를 각각 하나 이상 포함해야 합니다.")
   @NotBlank(message = "비밀번호는 필수 입력 항목입니다.")
   private String password;
 
