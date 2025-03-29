@@ -11,6 +11,7 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.Accommo
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
@@ -40,10 +41,10 @@ public class AccommodationService {
 
   private final HostRepository hostRepository;
   private final AccommodationRepository accommodationRepository;
-  private final AccommodationImageRepository accommodationImageRepository;
   private final AccommodationFacilityRepository accommodationFacilityRepository;
   private final AccommodationPetFacilityRepository accommodationPetFacilityRepository;
   private final AllowPetRepository allowPetRepository;
+  private final AccommodationImageRepository accommodationImageRepository;
   private final ImageService imageService;
 
   /**
@@ -82,6 +83,35 @@ public class AccommodationService {
       imageService.deleteImages(uploadedImageUrls);
       throw new MeongnyangerangException(ErrorCode.REGISTRATION_ACCOMMODATION);
     }
+  }
+
+  /**
+   * 숙소 조회
+   */
+  public AccommodationResponse getAccommodation(Long hostId) {
+    Accommodation accommodation = accommodationRepository.findByHostId(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
+
+   Long accommodationId = accommodation.getId();
+
+    List<AccommodationFacility> facilities = accommodationFacilityRepository
+        .findAllByAccommodationId(accommodationId);
+
+    List<AccommodationPetFacility> petFacilities = accommodationPetFacilityRepository
+        .findAllByAccommodationId(accommodationId);
+
+    List<AllowPet> allowPets = allowPetRepository.findAllByAccommodationId(accommodationId);
+
+    List<AccommodationImage> additionalImages = accommodationImageRepository
+        .findAllByAccommodationId(accommodationId);
+
+    return AccommodationResponse.of(
+        accommodation,
+        facilities,
+        petFacilities,
+        allowPets,
+        additionalImages
+    );
   }
 
   private Map<String, MultipartFile> createImageUrlMap(
@@ -125,51 +155,37 @@ public class AccommodationService {
   }
 
   private void saveAccommodationFacilities(
-      List<String> facilityTypes, Accommodation accommodation
+      List<AccommodationFacilityType> facilityTypes, Accommodation accommodation
   ) {
     List<AccommodationFacility> facilities = facilityTypes.stream()
-        .map(facilityType -> {
-          AccommodationFacilityType type =
-              AccommodationFacilityType.valueOf(facilityType.toUpperCase());
-
-          return AccommodationFacility.builder()
-              .accommodation(accommodation)
-              .type(type)
-              .build();
-        })
+        .map(facilityType -> AccommodationFacility.builder()
+            .accommodation(accommodation)
+            .type(facilityType)
+            .build())
         .collect(Collectors.toList());
 
     accommodationFacilityRepository.saveAll(facilities);
   }
 
   private void saveAccommodationPetFacilities(
-      List<String> petFacilityTypes, Accommodation accommodation
+      List<AccommodationPetFacilityType> petFacilityTypes, Accommodation accommodation
   ) {
     List<AccommodationPetFacility> petFacilities = petFacilityTypes.stream()
-        .map(petFacilityType -> {
-          AccommodationPetFacilityType type =
-              AccommodationPetFacilityType.valueOf(petFacilityType.toUpperCase());
-
-          return AccommodationPetFacility.builder()
-              .accommodation(accommodation)
-              .type(type)
-              .build();
-        })
+        .map(petFacilityType -> AccommodationPetFacility.builder()
+            .accommodation(accommodation)
+            .type(petFacilityType)
+            .build())
         .collect(Collectors.toList());
 
     accommodationPetFacilityRepository.saveAll(petFacilities);
   }
 
-  private void saveAllowPets(List<String> petTypes, Accommodation accommodation) {
+  private void saveAllowPets(List<PetType> petTypes, Accommodation accommodation) {
     List<AllowPet> allowPets = petTypes.stream()
-        .map(petType -> {
-          PetType type = PetType.valueOf(petType.toUpperCase());
-
-          return AllowPet.builder()
-              .accommodation(accommodation)
-              .petType(type)
-              .build();
-        })
+        .map(petType -> AllowPet.builder()
+            .accommodation(accommodation)
+            .petType(petType)
+            .build())
         .collect(Collectors.toList());
 
     allowPetRepository.saveAll(allowPets);
