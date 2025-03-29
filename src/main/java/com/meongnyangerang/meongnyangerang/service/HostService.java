@@ -1,9 +1,12 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.domain.host.HostStatus.*;
+import static com.meongnyangerang.meongnyangerang.domain.user.Role.*;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
@@ -41,7 +44,8 @@ public class HostService {
         .businessLicenseImageUrl(request.getBusinessLicenseImageUrl())
         .submitDocumentImageUrl(request.getSubmitDocumentImageUrl())
         .phoneNumber(request.getPhoneNumber())
-        .status(HostStatus.PENDING) // 기본적으로 대기 상태
+        .status(PENDING) // 기본적으로 대기 상태
+        .role(ROLE_HOST)
         .build());
   }
 }
