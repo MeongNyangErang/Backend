@@ -50,6 +50,7 @@ public class UserService {
         .build());
   }
 
+  // 사용자 로그인
   public String login(@Valid LoginRequest request) {
 
     // 사용자 조회
