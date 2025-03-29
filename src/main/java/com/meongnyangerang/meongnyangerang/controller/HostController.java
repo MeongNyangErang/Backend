@@ -1,6 +1,8 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
+import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
+import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.service.HostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,5 +25,12 @@ public class HostController {
   public ResponseEntity<Void> registerHost(@Valid @RequestBody HostSignupRequest request) {
     hostService.registerHost(request);
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  // 호스트 로그인 API
+  @PostMapping("/login")
+  public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    String token = hostService.login(request);
+    return ResponseEntity.ok(new LoginResponse(token));
   }
 }
