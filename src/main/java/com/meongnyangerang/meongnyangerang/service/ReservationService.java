@@ -208,4 +208,24 @@ public class ReservationService {
         .totalPrice(reservation.getTotalPrice())
         .build();
   }
+
+  @Transactional
+  public void cancelReservation(Long userId, Long reservationId) {
+    // 예약 정보 가져오기
+    Reservation reservation = reservationRepository.findById(reservationId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.RESERVATION_NOT_FOUND));
+
+    // 사용자가 예약한 내역인지 확인
+    if (!reservation.getUser().getId().equals(userId)) {
+      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
+
+    // 이미 취소된 예약인지 확인
+    if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+      throw new MeongnyangerangException(ErrorCode.RESERVATION_ALREADY_CANCELED);
+    }
+
+    // 예약 상태 변경
+    reservation.setStatus(ReservationStatus.CANCELLED);
+  }
 }

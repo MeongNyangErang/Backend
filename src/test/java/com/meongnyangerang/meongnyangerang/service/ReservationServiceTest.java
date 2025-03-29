@@ -392,4 +392,124 @@ class ReservationServiceTest {
     assertEquals(2, response.getContent().size());
     assertFalse(response.isHasNext());
   }
+
+  @Test
+  @DisplayName("유저는 이용 전 상태인 예약을 취소할 수 있다.")
+  void cancelReservation_success() {
+    // given
+    User user = User.builder().id(1L).build();
+    Room room = Room.builder().id(1L).build();
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.RESERVED)
+        .user(user)
+        .room(room)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    when(reservationRepository.findById(reservation.getId())).thenReturn(Optional.of(reservation));
+
+    // when
+    reservationService.cancelReservation(user.getId(), reservation.getId());
+
+    // then
+    verify(reservationRepository, times(1)).findById(reservation.getId());
+    assertEquals(ReservationStatus.CANCELLED, reservation.getStatus());
+  }
+
+  @Test
+  @DisplayName("예약 정보가 없을 경우, RESERVATION_NOT_FOUND 예외가 발생해야 한다.")
+  void cancelReservation_reservation_not_found() {
+    // given
+    User user = User.builder().id(1L).build();
+    Room room = Room.builder().id(1L).build();
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.RESERVED)
+        .user(user)
+        .room(room)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    when(reservationRepository.findById(reservation.getId())).thenReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
+        reservationService.cancelReservation(user.getId(), reservation.getId()));
+
+    // then
+    assertEquals(ErrorCode.RESERVATION_NOT_FOUND, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("예약 유저 ID와 로그인한 유저 ID가 같지 않은 경우, INVALID_AUTHORIZED 예외가 발생해야 한다.")
+  void cancelReservation_invalid_authorized() {
+    // given
+    User user = User.builder().id(1L).build();
+    Room room = Room.builder().id(1L).build();
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.RESERVED)
+        .user(user)
+        .room(room)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    when(reservationRepository.findById(reservation.getId())).thenReturn(Optional.of(reservation));
+
+    // when
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
+        reservationService.cancelReservation(100L, reservation.getId()));
+
+    // then
+    assertEquals(ErrorCode.INVALID_AUTHORIZED, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("이미 취소된 예약인 경우, RESERVATION_ALREADY_CANCELED 예외가 발생해야 한다.")
+  void cancelReservation_reservation_already_canceled() {
+    // given
+    User user = User.builder().id(1L).build();
+    Room room = Room.builder().id(1L).build();
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.CANCELLED)
+        .user(user)
+        .room(room)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    when(reservationRepository.findById(reservation.getId())).thenReturn(Optional.of(reservation));
+
+    // when
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
+        reservationService.cancelReservation(user.getId(), reservation.getId()));
+
+    // then
+    assertEquals(ErrorCode.RESERVATION_ALREADY_CANCELED, e.getErrorCode());
+  }
 }
