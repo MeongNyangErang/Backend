@@ -15,7 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class ImageService {
 
   private final ImageStorage imageStorage;
-  int i = 0;
 
   /**
    * 이미지 업로드
