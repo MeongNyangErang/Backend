@@ -1,15 +1,21 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
+import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationSlot;
+import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
@@ -17,12 +23,18 @@ import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import com.meongnyangerang.meongnyangerang.repository.RoomRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +50,9 @@ class ReservationServiceTest {
 
   @Mock
   private ReservationSlotRepository reservationSlotRepository;
+
+  @Mock
+  private AccommodationRepository accommodationRepository;
 
   @Mock
   private UserRepository userRepository;
@@ -278,5 +293,232 @@ class ReservationServiceTest {
     // then
     assertEquals(1, successCount.get());
     assertEquals(2, failCount.get());
+  }
+
+  @Test
+  @DisplayName("해당 유저가 예약한 내역만 볼 수 있고 상태에 따라 조회를 할 수 있다.")
+  void findByStatus_success() {
+    Long userId = 1L;
+    Long cursorId = 0L;
+    Long accommodationId = 1L;
+    int size = 20;
+    ReservationStatus status = ReservationStatus.RESERVED;
+
+    User user = User.builder().id(1L).build();
+    User user2 = User.builder().id(2L).build();
+    Host host = Host.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).host(host).build();
+    Room room1 = Room.builder().id(101L).accommodation(accommodation).name("room").
+        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room2 = Room.builder().id(102L).accommodation(accommodation).name("room").
+        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room3 = Room.builder().id(103L).accommodation(accommodation).name("room").
+        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+
+    List<Reservation> list = new ArrayList<>();
+
+    Reservation r1 = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.RESERVED)
+        .user(user)
+        .room(room1)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Reservation r2 = Reservation.builder()
+        .id(2L)
+        .status(ReservationStatus.RESERVED)
+        .user(user)
+        .room(room2)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Reservation r3 = Reservation.builder()
+        .id(3L)
+        .status(ReservationStatus.COMPLETED)
+        .user(user)
+        .room(room3)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Reservation r4 = Reservation.builder()
+        .id(3L)
+        .status(ReservationStatus.RESERVED)
+        .user(user2)
+        .room(room3)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    list.add(r1);
+    list.add(r2);
+    list.add(r3);
+    list.add(r4);
+
+    when(reservationRepository.findByUserIdAndStatus(userId, cursorId, size + 1,
+        String.valueOf(status)))
+        .thenReturn(list.stream()
+            .filter(reservation -> reservation.getStatus() == status &&
+                reservation.getUser().getId().equals(userId))
+            .collect(Collectors.toList()));
+
+    when(roomRepository.findById(101L)).thenReturn(Optional.of(room1));
+    when(roomRepository.findById(102L)).thenReturn(Optional.of(room2));
+
+    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+
+    CustomReservationResponse response = reservationService.findByStatus(userId, cursorId, size,
+        status);
+
+    assertEquals(2, response.getContent().size());
+    assertFalse(response.isHasNext());
+  }
+
+  @Test
+  @DisplayName("숙소가 존재하지 않으면, ACCOMMODATION_NOT_FOUND 예외가 발생해야 한다.")
+  void findByStatus_accommodation_not_found() {
+    Long userId = 1L;
+    Long cursorId = 0L;
+    Long accommodationId = 1L;
+    int size = 20;
+    ReservationStatus status = ReservationStatus.RESERVED;
+
+    User user = User.builder().id(1L).build();
+    Host host = Host.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).host(host).build();
+    Room room1 = Room.builder().id(101L).accommodation(accommodation).name("room").
+        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room2 = Room.builder().id(102L).accommodation(accommodation).name("room").
+        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+
+    List<Reservation> list = new ArrayList<>();
+
+    Reservation r1 = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.RESERVED)
+        .user(user)
+        .room(room1)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Reservation r2 = Reservation.builder()
+        .id(2L)
+        .status(ReservationStatus.RESERVED)
+        .user(user)
+        .room(room2)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    list.add(r1);
+    list.add(r2);
+
+    when(reservationRepository.findByUserIdAndStatus(userId, cursorId, size + 1,
+        String.valueOf(status)))
+        .thenReturn(list.stream()
+            .filter(reservation -> reservation.getStatus() == status &&
+                reservation.getUser().getId().equals(userId))
+            .collect(Collectors.toList()));
+
+    when(roomRepository.findById(101L)).thenReturn(Optional.of(room1));
+
+    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.empty());
+
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reservationService.findByStatus(userId, cursorId, size, status);
+    });
+
+    assertEquals(ErrorCode.ACCOMMODATION_NOT_FOUND, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("객실이 존재하지 않으면, ROOM_NOT_FOUND 예외가 발생해야 한다.")
+  void findByStatus_room_not_found() {
+    Long userId = 1L;
+    Long cursorId = 0L;
+    int size = 20;
+    ReservationStatus status = ReservationStatus.RESERVED;
+
+    User user = User.builder().id(1L).build();
+    Host host = Host.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).host(host).build();
+    Room room1 = Room.builder().id(101L).accommodation(accommodation).name("room").
+        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room2 = Room.builder().id(102L).accommodation(accommodation).name("room").
+        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+
+    List<Reservation> list = new ArrayList<>();
+
+    Reservation r1 = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.RESERVED)
+        .user(user)
+        .room(room1)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Reservation r2 = Reservation.builder()
+        .id(2L)
+        .status(ReservationStatus.RESERVED)
+        .user(user)
+        .room(room2)
+        .checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    list.add(r1);
+    list.add(r2);
+
+    when(reservationRepository.findByUserIdAndStatus(userId, cursorId, size + 1,
+        String.valueOf(status)))
+        .thenReturn(list.stream()
+            .filter(reservation -> reservation.getStatus() == status &&
+                reservation.getUser().getId().equals(userId))
+            .collect(Collectors.toList()));
+
+    when(roomRepository.findById(101L)).thenReturn(Optional.empty());
+
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reservationService.findByStatus(userId, cursorId, size, status);
+    });
+
+    assertEquals(ErrorCode.ROOM_NOT_FOUND, e.getErrorCode());
   }
 }
