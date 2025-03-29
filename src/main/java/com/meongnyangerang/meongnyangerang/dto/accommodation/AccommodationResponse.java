@@ -20,7 +20,7 @@ public record AccommodationResponse(
     List<String> facilities,
     List<String> petFacilities,
     List<String> allowPets,
-    List<String> additionalImages
+    List<String> additionalImageUrls
 ) {
 
   public static AccommodationResponse of(
