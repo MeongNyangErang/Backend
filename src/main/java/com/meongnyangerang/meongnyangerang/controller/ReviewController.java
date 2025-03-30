@@ -4,6 +4,7 @@ import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
+import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReviewService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Range;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,11 +43,14 @@ public class ReviewController {
 
   @GetMapping("/users/reviews")
   public ResponseEntity<CustomReviewResponse<MyReviewResponse>> getUsersReviews(
-      //      @AuthenticationPrincipal UserDetailsImpl userDetails,
-      @RequestParam(defaultValue = "0") Long cursorId,
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @RequestParam(defaultValue = "0") Long cursor,
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size) {
 
-    CustomReviewResponse<MyReviewResponse> response = reviewService.getUsersReviews(1L, cursorId, size);
+    CustomReviewResponse<MyReviewResponse> response = reviewService.getUsersReviews(
+        userDetails.getId(),
+        cursor,
+        size);
 
     return ResponseEntity.ok(response);
   }
@@ -53,10 +58,11 @@ public class ReviewController {
   @GetMapping("/accommodations/{accommodationId}/reviews")
   public ResponseEntity<CustomReviewResponse<AccommodationReviewResponse>> getAccommodationReviews(
       @PathVariable Long accommodationId,
-      @RequestParam(defaultValue = "0") Long cursorId,
+      @RequestParam(defaultValue = "0") Long cursor,
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size) {
 
-    CustomReviewResponse<AccommodationReviewResponse> response = reviewService.getAccommodationReviews(accommodationId, cursorId, size);
+    CustomReviewResponse<AccommodationReviewResponse> response = reviewService.getAccommodationReviews(
+        accommodationId, cursor, size);
 
     return ResponseEntity.ok(response);
   }

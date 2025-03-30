@@ -96,7 +96,7 @@ public class ReviewService {
         .toList();
 
     boolean hasNext = reviews.size() > size;
-    String cursor = hasNext ? String.valueOf(reviews.get(size).getId()) : null;
+    Long cursor = hasNext ? reviews.get(size).getId() : null;
 
     return new CustomReviewResponse<>(content, cursor, hasNext);
   }
@@ -132,7 +132,7 @@ public class ReviewService {
         .toList();
 
     boolean hasNext = reviews.size() > size;
-    String cursor = hasNext ? String.valueOf(reviews.get(size).getId()) : null;
+    Long cursor = hasNext ? reviews.get(size).getId() : null;
 
     return new CustomReviewResponse<>(content, cursor, hasNext);
   }

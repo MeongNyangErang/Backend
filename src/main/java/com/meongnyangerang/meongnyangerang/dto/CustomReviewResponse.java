@@ -9,6 +9,6 @@ import lombok.Getter;
 public class CustomReviewResponse<T> {
 
   private List<T> content;
-  private String cursor;
+  private Long cursor;
   private boolean hasNext;
 }

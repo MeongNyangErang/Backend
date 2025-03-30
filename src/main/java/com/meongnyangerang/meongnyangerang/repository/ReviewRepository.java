@@ -14,7 +14,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
   @Query(value = "SELECT * FROM review r " +
       "WHERE r.user_id = :userId " +
-      "AND (:cursorId = 0 OR r.id > :cursorId) " +
+      "AND (:cursorId = 0 OR r.id <= :cursorId) " +
       "ORDER BY r.created_at DESC LIMIT :size",
       nativeQuery = true)
   List<Review> findByUserId(
@@ -24,7 +24,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
   @Query(value = "SELECT * FROM review r " +
       "WHERE r.accommodation_id = :accommodationId " +
-      "AND (:cursorId = 0 OR r.id > :cursorId) " +
+      "AND (:cursorId = 0 OR r.id <= :cursorId) " +
       "ORDER BY r.created_at DESC LIMIT :size",
       nativeQuery = true)
   List<Review> findByAccommodationId(
