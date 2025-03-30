@@ -6,10 +6,10 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class CustomReservationResponse {
+public class CustomReservationResponse<T> {
 
-  private List<ReservationResponse> content;
-  private String cursor;
+  private List<T> content;
+  private Long cursor;
   private boolean hasNext;
 
 }
