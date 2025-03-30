@@ -10,6 +10,7 @@ public enum ErrorCode {
 
   // 400 BAD REQUEST (잘못된 요청)
   INVALID_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
+  INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호가 올바르지 않습니다."),
   DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "이미 가입된 이메일입니다"),
   DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "이미 등록된 닉네임입니다."),
   EXPIRED_AUTH_CODE(HttpStatus.BAD_REQUEST, "인증코드가 만료되었습니다. 다시 발급받아주세요"),
@@ -19,6 +20,7 @@ public enum ErrorCode {
   INVALID_FILENAME(HttpStatus.BAD_REQUEST, "파일명이 유효하지 않습니다."),
   INVALID_EXTENSION(HttpStatus.BAD_REQUEST, "파일 확장자가 유효하지 않습니다."),
   NOT_SUPPORTED_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다."),
+  NOT_EXIST_ACCOUNT(HttpStatus.BAD_REQUEST, "해당 계정은 존재하지 않습니다."),
   EMPTY_PET_TYPE(HttpStatus.BAD_REQUEST, "허용 반려동물 타입을 지정해 주세요."),
   RESERVATION_ALREADY_CANCELED(HttpStatus.BAD_REQUEST, "이미 취소된 예약입니다."),
   REVIEW_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "리뷰가 이미 존재합니다."),
@@ -35,6 +37,8 @@ public enum ErrorCode {
 
   // 403 FORBIDDEN (접근 금지)
   INVALID_AUTHORIZED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
+  ACCOUNT_DELETED(HttpStatus.FORBIDDEN, "현재 계정 상태는 삭제 상태입니다."),
+  ACCOUNT_PENDING(HttpStatus.FORBIDDEN, "관리자 승인 대기 중입니다."),
   REVIEW_CREATION_NOT_ALLOWED (HttpStatus.FORBIDDEN, "리뷰 작성 가능 기간이 만료되었습니다."),
 
   // 404  NOT FOUND
