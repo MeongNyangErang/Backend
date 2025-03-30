@@ -74,7 +74,7 @@ class AccommodationServiceTest {
   private static final String THUMBNAIL_URL = "https://test.com/image/thumbnail-123.jpg";
   private static final String ADDITIONAL_IMAGE_URL1 = "https://test.com/image/image1-456.jpg";
   private static final String ADDITIONAL_IMAGE_URL2 = "https://test.com/image/image2-456.jpg";
-  private static final String OLD_THUMBNAIL_URL = "https://test.com/image/old-thumbnail-123.jpg";
+  private static final String OLD_THUMBNAIL_URL = "https://test.com/image/thumbnail-123.jpg";
 
   private static final List<AccommodationFacilityType> FACILITY_TYPES = Arrays
       .asList(AccommodationFacilityType.WIFI, AccommodationFacilityType.PUBLIC_SWIMMING_POOL);
@@ -106,7 +106,7 @@ class AccommodationServiceTest {
         .build();
 
     accommodation = Accommodation.builder()
-        .id(1L)
+        .id(host.getId())
         .host(host)
         .name("숙소명")
         .description("숙소 설명")
@@ -387,30 +387,25 @@ class AccommodationServiceTest {
   }
 
   @Test
-  @DisplayName("숙소 수정 성공 테스트")
+  @DisplayName("숙소 수정 - 성공")
   void updateAccommodation_Success() {
     // given
     Long accommodationId = accommodation.getId();
 
+    when(accommodationRepository.findByHostId(host.getId()))
+        .thenReturn(Optional.ofNullable(accommodation));
     when(imageService.storeImage(thumbnail)).thenReturn(THUMBNAIL_URL);
     when(imageService.storeImage(additionalImages.get(0))).thenReturn(ADDITIONAL_IMAGE_URL1);
 
-    // updateData 메서드 관련 모킹
-    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
-
     // when
     AccommodationResponse response = accommodationService
-        .updateAccommodation(updateRequest, thumbnail, additionalImages);
+        .updateAccommodation(host.getId(), updateRequest, thumbnail, additionalImages);
 
     // then
     assertThat(response).isNotNull();
 
     // 숙소 기본 정보 검증
     assertThat(response.accommodationId()).isEqualTo(accommodationId);
-
-    // 메서드 호출 검증
-    verify(accommodationRepository, times(1))
-        .findById(accommodationId);
 
     verify(accommodationFacilityRepository, times(1))
         .deleteAllByAccommodationId(accommodationId);
@@ -439,13 +434,13 @@ class AccommodationServiceTest {
   @DisplayName("숙소 수정 - 숙소가 존재하지 않는 경우 예외 발생")
   void updateAccommodation_AccommodationNotFound() {
     // given
-    when(imageService.storeImage(thumbnail)).thenReturn(THUMBNAIL_URL);
-    when(accommodationRepository.findById(accommodation.getId())).thenReturn(Optional.empty());
+    when(accommodationRepository.findByHostId(accommodation.getId()))
+        .thenReturn(Optional.empty());
 
     // when
     // then
     assertThatThrownBy(() -> accommodationService
-        .updateAccommodation(updateRequest, thumbnail, additionalImages))
+        .updateAccommodation(host.getId(), updateRequest, thumbnail, additionalImages))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
   }
