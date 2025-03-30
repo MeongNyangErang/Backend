@@ -224,31 +224,31 @@ public class AccommodationService {
     }
   }
 
-  private List<AccommodationFacility> updateFacilities(
+  private void updateFacilities(
       Long accommodationId,
       List<AccommodationFacilityType> newFacilityTypes,
       Accommodation accommodation
   ) {
     accommodationFacilityRepository.deleteAllByAccommodationId(accommodationId);
-    return saveAccommodationFacilities(newFacilityTypes, accommodation);
+    saveAccommodationFacilities(newFacilityTypes, accommodation);
   }
 
-  private List<AccommodationPetFacility> updatePetFacilities(
+  private void updatePetFacilities(
       Long accommodationId,
       List<AccommodationPetFacilityType> newPetFacilityTypes,
       Accommodation accommodation
   ) {
     accommodationPetFacilityRepository.deleteAllByAccommodationId(accommodationId);
-    return saveAccommodationPetFacilities(newPetFacilityTypes, accommodation);
+    saveAccommodationPetFacilities(newPetFacilityTypes, accommodation);
   }
 
-  private List<AllowPet> updateAllowPets(
+  private void updateAllowPets(
       Long accommodationId,
       List<PetType> newPetTypes,
       Accommodation accommodation
   ) {
     allowPetRepository.deleteAllByAccommodationId(accommodationId);
-    return saveAllowPets(newPetTypes, accommodation);
+    saveAllowPets(newPetTypes, accommodation);
   }
 
   private List<String> uploadImages(
@@ -265,7 +265,7 @@ public class AccommodationService {
     return imageUrls;
   }
 
-  private List<AccommodationFacility> saveAccommodationFacilities(
+  private void saveAccommodationFacilities(
       List<AccommodationFacilityType> facilityTypes, Accommodation accommodation
   ) {
     List<AccommodationFacility> facilities = facilityTypes.stream()
@@ -275,10 +275,10 @@ public class AccommodationService {
             .build())
         .collect(Collectors.toList());
 
-    return accommodationFacilityRepository.saveAll(facilities);
+    accommodationFacilityRepository.saveAll(facilities);
   }
 
-  private List<AccommodationPetFacility> saveAccommodationPetFacilities(
+  private void saveAccommodationPetFacilities(
       List<AccommodationPetFacilityType> petFacilityTypes, Accommodation accommodation
   ) {
     List<AccommodationPetFacility> petFacilities = petFacilityTypes.stream()
@@ -288,10 +288,10 @@ public class AccommodationService {
             .build())
         .collect(Collectors.toList());
 
-    return accommodationPetFacilityRepository.saveAll(petFacilities);
+    accommodationPetFacilityRepository.saveAll(petFacilities);
   }
 
-  private List<AllowPet> saveAllowPets(List<PetType> petTypes, Accommodation accommodation) {
+  private void saveAllowPets(List<PetType> petTypes, Accommodation accommodation) {
     List<AllowPet> allowPets = petTypes.stream()
         .map(petType -> AllowPet.builder()
             .accommodation(accommodation)
@@ -299,7 +299,7 @@ public class AccommodationService {
             .build())
         .collect(Collectors.toList());
 
-    return allowPetRepository.saveAll(allowPets);
+    allowPetRepository.saveAll(allowPets);
   }
 
   private void saveAdditionalImages(List<String> filenames, Accommodation accommodation) {
