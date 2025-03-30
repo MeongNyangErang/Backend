@@ -94,7 +94,6 @@ class AccommodationServiceTest {
   private List<AccommodationPetFacility> petFacilities;
   private List<AllowPet> allowPets;
   private List<AccommodationImage> accommodationImages;
-  private List<String> oldAdditionalImageUrls;
 
   @BeforeEach
   void setUp() {
@@ -127,27 +126,26 @@ class AccommodationServiceTest {
         .description("test-description")
         .latitude(37.123)
         .longitude(127.123)
-        .facilities(FACILITY_TYPES)
-        .petFacilities(PET_FACILITY_TYPES)
-        .allowPets(PET_TYPES)
-        .build();
-
-    updateRequest = AccommodationUpdateRequest.builder()
-        .accommodationId(accommodation.getId())
-        .name("test-name")
-        .type(AccommodationType.PENSION)
-        .address("test-address")
-        .detailedAddress("test-detailedAddress")
-        .description("test-description")
-        .latitude(37.123)
-        .longitude(127.123)
-        .oldThumbnailUrl(OLD_THUMBNAIL_URL)
         .facilityTypes(FACILITY_TYPES)
         .petFacilityTypes(PET_FACILITY_TYPES)
         .allowPetTypes(PET_TYPES)
         .build();
 
-    oldAdditionalImageUrls = Arrays.asList("old-url-1", "old-url-2");
+    updateRequest = AccommodationUpdateRequest.of(
+        accommodation.getId(),
+        "test-name",
+        AccommodationType.PENSION,
+        "test-address",
+        "test-detailedAddress",
+        "test-description",
+        37.123,
+        127.123,
+        OLD_THUMBNAIL_URL,
+        null,  // oldAdditionalImageUrls
+        FACILITY_TYPES,
+        PET_FACILITY_TYPES,
+        PET_TYPES
+    );
 
     facilities = Arrays.asList(AccommodationFacility.builder()
             .id(1L)
@@ -348,7 +346,8 @@ class AccommodationServiceTest {
     // 허용 반려동물 목록 검증
     assertThat(response.allowPetTypes()).hasSize(allowPets.size());
     for (int i = 0; i < allowPets.size(); i++) {
-      assertThat(response.allowPetTypes().get(i)).isEqualTo(allowPets.get(i).getPetType().getValue());
+      assertThat(response.allowPetTypes().get(i)).isEqualTo(
+          allowPets.get(i).getPetType().getValue());
     }
 
     // 추가 이미지 목록 검증
