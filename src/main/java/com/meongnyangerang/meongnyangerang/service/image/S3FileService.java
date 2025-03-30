@@ -18,11 +18,13 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Slf4j
 @Service
@@ -38,6 +40,7 @@ public class S3FileService implements ImageStorage {
 
   /**
    * 단일 파일 업로드
+   *
    * @return 업로드된 파일의 URL
    */
   @Override
@@ -100,7 +103,12 @@ public class S3FileService implements ImageStorage {
         .map(this::extractKeyFromUrl)
         .toList();
 
-    keys.forEach(this::existKey);
+    List<String> existingKeys = filterExistingKeys(keys); // 존재하는 키만 필터링
+
+    if (existingKeys.isEmpty()) {
+      log.info("삭제할 S3 객체가 없습니다.");
+      return;
+    }
 
     List<ObjectIdentifier> objectsToDelete = keys.stream()
         .map(key -> ObjectIdentifier.builder()
@@ -110,15 +118,44 @@ public class S3FileService implements ImageStorage {
 
     DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
         .bucket(bucket)
-        .delete(Delete.builder().objects(objectsToDelete).build())
+        .delete(Delete.builder()
+            .objects(objectsToDelete)
+            .quiet(false) // 삭제 결과를 개별로 받음
+            .build())
         .build();
 
     try {
-      s3Client.deleteObjects(deleteObjectsRequest);
-      log.info("{}개의 파일이 성공적으로 삭제되었습니다", keys.size());
-    } catch (SdkException e) {
-      log.error("다중 파일 삭제 중 아마존 서비스 에러 발생: {}", e.getMessage());
+      DeleteObjectsResponse response = s3Client.deleteObjects(deleteObjectsRequest);
+      responseResultMessage(response);
+    } catch (Exception e) {
+      log.error("다중 파일 삭제 중 에러 발생: {}", e.getMessage());
       throw new MeongnyangerangException(ErrorCode.AMAZON_SERVICE_ERROR);
+    }
+  }
+
+  /**
+   * 존재하는 S3 키만 필터링
+   */
+  private List<String> filterExistingKeys(List<String> keys) {
+    return keys.stream()
+        .filter(this::objectExists)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * S3 객체 존재 여부 확인
+   */
+  private boolean objectExists(String key) {
+    try {
+      HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+          .bucket(bucket)
+          .key(key)
+          .build();
+
+      s3Client.headObject(headObjectRequest);
+      return true;
+    } catch (S3Exception e) {
+      return false; // S3 관련 예외는 객체가 없음을 의미
     }
   }
 
@@ -140,6 +177,7 @@ public class S3FileService implements ImageStorage {
         .build();
 
     try {
+      log.info("S3에 해당 객체가 존재하는지 확인: {}", key);
       s3Client.headObject(headObjectRequest);
     } catch (NoSuchKeyException e) {
       log.warn("S3에 해당 객체가 존재하지 않습니다. Bucket : {}, key: {}", bucket, key);
@@ -182,5 +220,15 @@ public class S3FileService implements ImageStorage {
             .key(key)
             .build())
         .toString();
+  }
+
+  private static void responseResultMessage(DeleteObjectsResponse response) {
+    if (response != null) {
+      log.info("S3 다중 삭제 결과: 성공 {}, 실패 {}",
+          response.deleted() != null ? response.deleted().size() : 0,
+          response.errors() != null ? response.errors().size() : 0);
+    } else {
+      log.warn("S3 응답이 null입니다 - 삭제 상태를 확인할 수 없습니다");
+    }
   }
 }

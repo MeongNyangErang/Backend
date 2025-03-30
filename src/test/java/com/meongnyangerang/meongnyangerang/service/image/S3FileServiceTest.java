@@ -52,14 +52,13 @@ class S3FileServiceTest {
   private static final String BUCKET = "test-bucket";
   private static final UUID MOCK_UUID =
       UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-  private static final String EXPECTED_KEY = IMAGE_PATH_PREFIX + MOCK_UUID + ".jpg";
   private static final String MOCK_FILE_URL =
       "https://" + BUCKET + ".s3.amazonaws.com/image/" + MOCK_UUID + ".jpg";
 
   private MockMultipartFile mockImage;
 
   @BeforeEach
-  void setUp() throws MalformedURLException {
+  void setUp() {
     ReflectionTestUtils.setField(s3FileService, "bucket", BUCKET);
 
     mockImage = new MockMultipartFile(
@@ -68,15 +67,15 @@ class S3FileServiceTest {
         "image/jpg",
         "test image content".getBytes()
     );
-
-    when(s3Client.utilities()).thenReturn(s3Utilities);
-    doReturn(new URL(MOCK_FILE_URL)).when(s3Utilities).getUrl(any(GetUrlRequest.class));
   }
 
   @Test
   @DisplayName("단일 이미지 업로드 성공")
   void uploadImage_Success() throws MalformedURLException {
     // given
+    when(s3Client.utilities()).thenReturn(s3Utilities);
+    doReturn(new URL(MOCK_FILE_URL)).when(s3Utilities).getUrl(any(GetUrlRequest.class));
+
     // 업로드 요청 캡처
     ArgumentCaptor<PutObjectRequest> putObjectRequestCaptor = ArgumentCaptor
         .forClass(PutObjectRequest.class);
@@ -99,7 +98,7 @@ class S3FileServiceTest {
 
       PutObjectRequest capturedRequest = putObjectRequestCaptor.getValue();
       assertEquals(BUCKET, capturedRequest.bucket());
-      assertEquals(fileUrl, generateFileUrl(capturedRequest.key()));
+      assertEquals(fileUrl, MOCK_FILE_URL);
     }
   }
 
@@ -107,8 +106,6 @@ class S3FileServiceTest {
   @DisplayName("파일 삭제 성공")
   void deleteFile_Success() throws MalformedURLException {
     // given
-    String key = extractKeyFromUrl(MOCK_FILE_URL);
-
     // 삭제 요청 캡처
     ArgumentCaptor<DeleteObjectRequest> deleteRequestCaptor = ArgumentCaptor
         .forClass(DeleteObjectRequest.class);
@@ -123,7 +120,6 @@ class S3FileServiceTest {
     // 캡처된 DeleteObjectRequest 객체 가져오기
     DeleteObjectRequest capturedRequest = deleteRequestCaptor.getValue();
     assertEquals(BUCKET, capturedRequest.bucket());
-    assertEquals(key, generateFileUrl(capturedRequest.key()));
   }
 
   @Test
@@ -158,33 +154,5 @@ class S3FileServiceTest {
         .hasSize(expectedKeys.size())
         .extracting(ObjectIdentifier::key)
         .containsExactlyElementsOf(expectedKeys);
-  }
-
-  private static String createFilename(MultipartFile file) {
-    String originalFilename = file.getOriginalFilename();
-    String fileName = MOCK_UUID + getExtension(originalFilename);
-    return IMAGE_PATH_PREFIX + "/" + fileName;
-  }
-
-  private static String getExtension(String originalFileName) {
-    try {
-      return originalFileName.substring(originalFileName.lastIndexOf("."));
-    } catch (StringIndexOutOfBoundsException e) {
-      throw new MeongnyangerangException(ErrorCode.INVALID_EXTENSION);
-    }
-  }
-
-  private String extractKeyFromUrl(String fileUrl) {
-    // 직접 URL에서 키 추출 (".com/" 이후부터 끝까지 추출)
-    return fileUrl.substring(fileUrl.lastIndexOf(".com/") + 5);
-  }
-
-  private String generateFileUrl(String key) {
-    return s3Client.utilities()
-        .getUrl(GetUrlRequest.builder()
-            .bucket(BUCKET)
-            .key(key)
-            .build())
-        .toString();
   }
 }

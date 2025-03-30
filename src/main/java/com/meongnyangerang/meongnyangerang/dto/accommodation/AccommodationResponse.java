@@ -17,10 +17,10 @@ public record AccommodationResponse(
     Double latitude,
     Double longitude,
     String thumbnailUrl,
-    List<String> facilities,
-    List<String> petFacilities,
-    List<String> allowPets,
-    List<String> additionalImages
+    List<String> facilityTypes,
+    List<String> petFacilityTypes,
+    List<String> allowPetTypes,
+    List<String> additionalImageUrls
 ) {
 
   public static AccommodationResponse of(

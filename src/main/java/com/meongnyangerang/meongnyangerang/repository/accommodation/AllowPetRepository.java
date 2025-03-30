@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 public interface AllowPetRepository extends JpaRepository<AllowPet, Long> {
 
   List<AllowPet> findAllByAccommodationId(Long accommodationId);
+
+  void deleteAllByAccommodationId(Long accommodationId);
 }

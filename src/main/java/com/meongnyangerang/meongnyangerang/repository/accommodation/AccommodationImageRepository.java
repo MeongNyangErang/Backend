@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 public interface AccommodationImageRepository extends JpaRepository<AccommodationImage, Long> {
 
   List<AccommodationImage> findAllByAccommodationId(Long accommodationId);
+
+  void deleteAllByAccommodationId(Long accommodationId);
 }

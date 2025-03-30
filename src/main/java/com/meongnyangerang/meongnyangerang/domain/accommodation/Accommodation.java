@@ -1,6 +1,8 @@
 package com.meongnyangerang.meongnyangerang.domain.accommodation;
 
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -67,4 +69,15 @@ public class Accommodation {
   @LastModifiedDate
   @Column(nullable = false)
   private LocalDateTime updatedAt;
+
+  public void updateAccommodation(AccommodationUpdateRequest request, String thumbnailUrl) {
+    this.name = request.name();
+    this.description = request.description();
+    this.address = request.address();
+    this.detailedAddress = request.detailedAddress();
+    this.latitude = request.latitude();
+    this.longitude = request.longitude();
+    this.type = request.type();
+    this.thumbnailUrl = thumbnailUrl;
+  }
 }

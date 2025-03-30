@@ -10,4 +10,6 @@ public interface AccommodationPetFacilityRepository extends
     JpaRepository<AccommodationPetFacility, Long> {
 
   List<AccommodationPetFacility> findAllByAccommodationId(Long accommodationId);
+
+  void deleteAllByAccommodationId(Long accommodationId);
 }
