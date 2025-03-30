@@ -54,6 +54,9 @@ public class Room {
   private Integer maxPetCount;
 
   @Column(nullable = false)
+  private String imageUrl;
+
+  @Column(nullable = false)
   private Long price;
 
   private Long extraPeopleFee;
