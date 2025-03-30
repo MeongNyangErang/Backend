@@ -1,8 +1,12 @@
 package com.meongnyangerang.meongnyangerang.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meongnyangerang.meongnyangerang.jwt.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 @EnableWebSecurity
@@ -50,11 +55,26 @@ public class SecurityConfig {
         // 예외 처리 추가(추후 더 자세하게 수정 예정)
         .exceptionHandling(ex -> ex
             .authenticationEntryPoint((request, response, authException) -> {
-              response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                  "Unauthorized");  // 인증 실패(401)
+              log.error("[401 Unauthorized] 인증 실패: {}", authException.getMessage());
+
+              response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+              response.setContentType("application/json");
+              response.setCharacterEncoding("UTF-8");
+
+              Map<String, String> error = new HashMap<>();
+              error.put("message", "인증되지 않은 사용자입니다. (401)");
+              new ObjectMapper().writeValue(response.getWriter(), error);
             })
             .accessDeniedHandler((request, response, accessDeniedException) -> {
-              response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");  // 권한 부족(403)
+              log.error("[403 Forbidden] 권한 부족: {}", accessDeniedException.getMessage());
+
+              response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+              response.setContentType("application/json");
+              response.setCharacterEncoding("UTF-8");
+
+              Map<String, String> error = new HashMap<>();
+              error.put("message", "접근 권한이 없습니다. (403)");
+              new ObjectMapper().writeValue(response.getWriter(), error);
             })
         );
     return http.build();
