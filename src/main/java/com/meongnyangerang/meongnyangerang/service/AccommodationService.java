@@ -170,14 +170,14 @@ public class AccommodationService {
 
     accommodationFacilityRepository.deleteAllByAccommodationId(accommodationId);
     List<AccommodationFacility> facilities =
-        saveAccommodationFacilities(request.getFacilities(), accommodation);
+        saveAccommodationFacilities(request.getFacilityTypes(), accommodation);
 
     accommodationPetFacilityRepository.deleteAllByAccommodationId(accommodationId);
     List<AccommodationPetFacility> petFacilities =
-        saveAccommodationPetFacilities(request.getPetFacilities(), accommodation);
+        saveAccommodationPetFacilities(request.getPetFacilityTypes(), accommodation);
 
     allowPetRepository.deleteAllByAccommodationId(accommodationId);
-    List<AllowPet> allowPets = saveAllowPets(request.getAllowPets(), accommodation);
+    List<AllowPet> allowPets = saveAllowPets(request.getAllowPetTypes(), accommodation);
 
     accommodationImageRepository.deleteAllByAccommodationId(accommodationId);
     List<AccommodationImage> accommodationImages = saveAdditionalImages(imageUrls, accommodation);

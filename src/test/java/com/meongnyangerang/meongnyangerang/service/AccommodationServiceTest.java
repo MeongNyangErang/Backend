@@ -142,9 +142,9 @@ class AccommodationServiceTest {
         .latitude(37.123)
         .longitude(127.123)
         .oldThumbnailUrl(OLD_THUMBNAIL_URL)
-        .facilities(FACILITY_TYPES)
-        .petFacilities(PET_FACILITY_TYPES)
-        .allowPets(PET_TYPES)
+        .facilityTypes(FACILITY_TYPES)
+        .petFacilityTypes(PET_FACILITY_TYPES)
+        .allowPetTypes(PET_TYPES)
         .build();
 
     oldAdditionalImageUrls = Arrays.asList("old-url-1", "old-url-2");
@@ -333,22 +333,22 @@ class AccommodationServiceTest {
     assertThat(response.thumbnailUrl()).isEqualTo(accommodation.getThumbnailUrl());
 
     // 시설 목록 검증
-    assertThat(response.facilities()).hasSize(facilities.size());
+    assertThat(response.facilityTypes()).hasSize(facilities.size());
     for (int i = 0; i < facilities.size(); i++) {
-      assertThat(response.facilities().get(i)).isEqualTo(facilities.get(i).getType().getValue());
+      assertThat(response.facilityTypes().get(i)).isEqualTo(facilities.get(i).getType().getValue());
     }
 
     // 반려동물 시설 목록 검증
-    assertThat(response.petFacilities()).hasSize(petFacilities.size());
+    assertThat(response.petFacilityTypes()).hasSize(petFacilities.size());
     for (int i = 0; i < petFacilities.size(); i++) {
-      assertThat(response.petFacilities().get(i))
+      assertThat(response.petFacilityTypes().get(i))
           .isEqualTo(petFacilities.get(i).getType().getValue());
     }
 
     // 허용 반려동물 목록 검증
-    assertThat(response.allowPets()).hasSize(allowPets.size());
+    assertThat(response.allowPetTypes()).hasSize(allowPets.size());
     for (int i = 0; i < allowPets.size(); i++) {
-      assertThat(response.allowPets().get(i)).isEqualTo(allowPets.get(i).getPetType().getValue());
+      assertThat(response.allowPetTypes().get(i)).isEqualTo(allowPets.get(i).getPetType().getValue());
     }
 
     // 추가 이미지 목록 검증
