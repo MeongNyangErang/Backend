@@ -36,6 +36,7 @@ public enum ErrorCode {
   // 403 FORBIDDEN (접근 금지)
   INVALID_AUTHORIZED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
   ACCOUNT_DELETED(HttpStatus.FORBIDDEN, "현재 계정 상태는 삭제 상태입니다."),
+  ACCOUNT_PENDING(HttpStatus.FORBIDDEN, "관리자 승인 대기 중입니다."),
 
   // 404  NOT FOUND
   NOT_EXISTS_HOST(HttpStatus.NOT_FOUND, "존재하지 않는 호스트입니다."),

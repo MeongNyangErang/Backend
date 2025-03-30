@@ -6,6 +6,7 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
+import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
@@ -62,7 +63,15 @@ public class HostService {
       throw new MeongnyangerangException(INVALID_PASSWORD);
     }
 
-    // 상태 검증은 JwtTokenProvider 내부에서 수행됨
+    // 호스트 상태 검증
+
+    if (host.getStatus() == HostStatus.DELETED) {
+      throw new MeongnyangerangException(ErrorCode.ACCOUNT_DELETED);
+    }
+
+    if (host.getStatus() == HostStatus.PENDING) {
+      throw new MeongnyangerangException(ErrorCode.ACCOUNT_PENDING);
+    }
 
     return jwtTokenProvider.createToken(host.getId(), host.getEmail(), host.getRole().name(),
         host.getStatus());
