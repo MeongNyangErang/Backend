@@ -64,7 +64,7 @@ public class S3FileService implements ImageStorage {
       return generateFileUrl(filename);
     } catch (SdkException e) {
       log.error("파일 업로드 도중 아마존 서비스 에러 발생 : {}", e.getMessage(), e);
-      throw new MeongnyangerangException(ErrorCode.FILE_NOT_EMPTY);
+      throw new MeongnyangerangException(ErrorCode.FILE_IS_EMPTY);
     } catch (IOException e) {
       log.error("파일 업로드 도중 IO 에러 발생 : {}", e.getMessage(), e);
       throw new MeongnyangerangException(ErrorCode.INVALID_IO_ERROR);
