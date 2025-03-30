@@ -37,7 +37,8 @@ public class SecurityConfig {
                 "/api/v1/users/signup",
                 "/api/v1/hosts/signup",
                 "/api/v1/users/login",
-                "/api/v1/hosts/login"
+                "/api/v1/hosts/login",
+                "/api/v1/admin/login"
             ).permitAll()
             .requestMatchers("/api/v1/users/**").hasAuthority("ROLE_USER")
             .requestMatchers("/api/v1/hosts/**").hasAuthority("ROLE_HOST")
