@@ -256,12 +256,12 @@ public class AccommodationService {
     return accommodationImageRepository.saveAll(accommodationImages);
   }
 
-  private static List<MultipartFile> initAdditionalImages(List<MultipartFile> additionalImages) {
+  private List<MultipartFile> initAdditionalImages(List<MultipartFile> additionalImages) {
     return Optional.ofNullable(additionalImages)
         .orElseGet(Collections::emptyList);
   }
 
-  private static List<String> imagesDeleted(
+  private List<String> imagesDeleted(
       String oldThumbnailUrl, List<String> oldAdditionalImageUrls
   ) {
     List<String> oldImages = new ArrayList<>();
