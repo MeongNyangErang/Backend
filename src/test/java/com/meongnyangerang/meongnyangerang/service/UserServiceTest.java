@@ -74,4 +74,15 @@ class UserServiceTest {
     assertDoesNotThrow(() -> userService.registerUser(request, imageFile));
     verify(userRepository).save(any(User.class));
   }
+
+  @Test
+  @DisplayName("중복 이메일 회원가입 실패 테스트")
+  void registerUserDuplicateEmail() {
+    // given
+    when(userRepository.existsByEmail(any())).thenReturn(true);
+
+    // when & then
+    assertThrows(MeongnyangerangException.class,
+        () -> userService.registerUser(new UserSignupRequest(), null));
+  }
 }
