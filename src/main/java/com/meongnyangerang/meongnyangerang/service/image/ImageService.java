@@ -73,6 +73,7 @@ public class ImageService {
 
   // TODO: 젠킨스 사용 고려
   @Scheduled(cron = "0 0/10 * * * ?") // 10분마다 실행
+  //@Scheduled(cron = "0/10 * * * * ?") // 10초마다 실행 (테스트)
   @Transactional
   public void processImageDeletionQueue() {
     log.info("이미지 삭제 큐 처리 시작");
@@ -90,8 +91,8 @@ public class ImageService {
           .toList();
 
       deleteImages(imageUrls);
-      deleteImageQueue(images);
 
+      imageDeletionQueueRepository.deleteAll(images);
       log.info("이미지 삭제 큐 처리 완료");
     } catch (Exception e) {
       log.error("이미지 삭제 큐 처리 중 오류 발생: {}", e.getMessage(), e);
@@ -101,10 +102,6 @@ public class ImageService {
   private List<ImageDeletionQueue> fetchPendingImages() {
     return imageDeletionQueueRepository
         .findAllByOrderByRegisteredAtAsc(PageRequest.of(0, BATCH_SIZE));
-  }
-
-  private void deleteImageQueue(List<ImageDeletionQueue> images) {
-    imageDeletionQueueRepository.deleteAll(images);
   }
 
   /**
