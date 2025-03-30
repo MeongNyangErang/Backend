@@ -17,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/accommodations")
+@RequestMapping("/api/v1/hosts/accommodations")
 public class AccommodationController {
 
   private final AccommodationService accommodationService;
