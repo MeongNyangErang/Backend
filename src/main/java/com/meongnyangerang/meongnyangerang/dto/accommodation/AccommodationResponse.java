@@ -20,7 +20,7 @@ public record AccommodationResponse(
     List<String> facilityTypes,
     List<String> petFacilityTypes,
     List<String> allowPetTypes,
-    List<String> additionalImages
+    List<String> additionalImageUrls
 ) {
 
   public static AccommodationResponse of(
@@ -30,15 +30,15 @@ public record AccommodationResponse(
       List<AllowPet> allowedPets,
       List<AccommodationImage> additionalImages
   ) {
-    List<String> facilityDescriptions = facilities.stream()
+    List<String> facilityValues = facilities.stream()
         .map(facility -> facility.getType().getValue())
         .toList();
 
-    List<String> petFacilityDescriptions = petFacilities.stream()
+    List<String> petFacilityValues = petFacilities.stream()
         .map(petFacility -> petFacility.getType().getValue())
         .toList();
 
-    List<String> allowPetDescriptions = allowedPets.stream()
+    List<String> allowPetValues = allowedPets.stream()
         .map(allowPet -> allowPet.getPetType().getValue())
         .toList();
 
@@ -56,9 +56,9 @@ public record AccommodationResponse(
         accommodation.getLatitude(),
         accommodation.getLongitude(),
         accommodation.getThumbnailUrl(),
-        facilityDescriptions,
-        petFacilityDescriptions,
-        allowPetDescriptions,
+        facilityValues,
+        petFacilityValues,
+        allowPetValues,
         imageUrls
     );
   }
