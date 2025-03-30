@@ -4,6 +4,9 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
+import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
@@ -12,6 +15,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -79,5 +83,76 @@ public class ReviewService {
         reservation.getStatus() != ReservationStatus.RESERVED) {
       throw new MeongnyangerangException(ErrorCode.REVIEW_CREATION_NOT_ALLOWED);
     }
+  }
+
+  public CustomReviewResponse<MyReviewResponse> getUsersReviews(Long userId, Long cursorId,
+      Integer size) {
+    // 해당 유저의 리뷰 내역만 조회
+    List<Review> reviews = reviewRepository.findByUserId(userId, cursorId, size + 1);
+
+    List<MyReviewResponse> content = reviews.stream()
+        .limit(size)
+        .map(this::mapToMyReviewResponse)
+        .toList();
+
+    boolean hasNext = reviews.size() > size;
+    Long cursor = hasNext ? reviews.get(size).getId() : null;
+
+    return new CustomReviewResponse<>(content, cursor, hasNext);
+  }
+
+  private MyReviewResponse mapToMyReviewResponse(Review review) {
+    ReviewImage reviewImage = reviewImageRepository.findByReviewId(review.getId());
+
+    // 소숫점 한자리까지만 필요
+    double totalRating =
+        Math.round(((review.getUserRating() + review.getPetFriendlyRating()) / 2) * 10) / 10.0;
+
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    return MyReviewResponse.builder()
+        .accommodationName(review.getAccommodation().getName())
+        .reviewImageUrl(reviewImage.getImageUrl())
+        .totalRating(totalRating)
+        .content(review.getContent())
+        .createdAt(review.getCreatedAt().format(dateFormatter))
+        .build();
+  }
+
+  public CustomReviewResponse<AccommodationReviewResponse> getAccommodationReviews(
+      Long accommodationId,
+      Long cursorId, Integer size) {
+    // 해당 숙소의 리뷰 내역만 조회
+    List<Review> reviews = reviewRepository.findByAccommodationId(accommodationId, cursorId,
+        size + 1);
+
+    List<AccommodationReviewResponse> content = reviews.stream()
+        .limit(size)
+        .map(this::mapToAccommodationReviewResponse)
+        .toList();
+
+    boolean hasNext = reviews.size() > size;
+    Long cursor = hasNext ? reviews.get(size).getId() : null;
+
+    return new CustomReviewResponse<>(content, cursor, hasNext);
+  }
+
+  private AccommodationReviewResponse mapToAccommodationReviewResponse(Review review) {
+    ReviewImage reviewImage = reviewImageRepository.findByReviewId(review.getId());
+
+    // 소숫점 한자리까지만 필요
+    double totalRating =
+        Math.round(((review.getUserRating() + review.getPetFriendlyRating()) / 2) * 10) / 10.0;
+
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    return AccommodationReviewResponse.builder()
+        .roomName(review.getReservation().getRoom().getName())
+        .profileImageUrl(review.getUser().getProfileImage())
+        .reviewImageUrl(reviewImage.getImageUrl())
+        .totalRating(totalRating)
+        .content(review.getContent())
+        .createdAt(review.getCreatedAt().format(dateFormatter))
+        .build();
   }
 }

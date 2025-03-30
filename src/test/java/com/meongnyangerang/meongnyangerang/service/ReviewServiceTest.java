@@ -1,18 +1,24 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
+import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -21,6 +27,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -43,7 +50,7 @@ class ReviewServiceTest {
   private ReviewRepository reviewRepository;
 
   @Mock
-  private ReviewImageRepository imageRepository;
+  private ReviewImageRepository reviewImageRepository;
 
   @Mock
   private ImageService imageService;
@@ -95,7 +102,7 @@ class ReviewServiceTest {
 
     // then
     ArgumentCaptor<ReviewImage> imageCaptor = ArgumentCaptor.forClass(ReviewImage.class);
-    verify(imageRepository, times(1)).save(imageCaptor.capture());
+    verify(reviewImageRepository, times(1)).save(imageCaptor.capture());
 
     ArgumentCaptor<Review> reviewCaptor = ArgumentCaptor.forClass(Review.class);
     verify(reviewRepository, times(1)).save(reviewCaptor.capture());
@@ -383,5 +390,101 @@ class ReviewServiceTest {
 
     // then
     assertEquals(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("유저는 자신의 리뷰만 조회가 가능하다.")
+  void getUserReviews_success() {
+    // given
+    User user = User.builder().id(1L).build();
+
+    Accommodation accommodation = Accommodation.builder().id(1L).build();
+
+    Review review = Review.builder()
+        .id(1L)
+        .accommodation(accommodation)
+        .user(user)
+        .content("content")
+        .userRating(3.0)
+        .petFriendlyRating(4.0)
+        .createdAt(LocalDateTime.now())
+        .reportCount(0)
+        .build();
+
+    ReviewImage reviewImage = ReviewImage.builder().id(1L).review(review)
+        .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
+
+    MyReviewResponse expectedResponse = MyReviewResponse.builder()
+        .accommodationName(review.getAccommodation().getName())
+        .reviewImageUrl(reviewImage.getImageUrl())
+        .totalRating(3.5)
+        .content(review.getContent())
+        .createdAt(review.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+        .build();
+
+    when(reviewRepository.findByUserId(user.getId(), 0L, 5 + 1)).thenReturn(List.of(review));
+    when(reviewImageRepository.findByReviewId(review.getId())).thenReturn(reviewImage);
+
+    // when
+    CustomReviewResponse<MyReviewResponse> customResponse = reviewService.getUsersReviews(user.getId(), 0L, 5);
+
+    // then
+    assertEquals(expectedResponse.getAccommodationName(),
+        customResponse.getContent().get(0).getAccommodationName());
+    assertEquals(expectedResponse.getTotalRating(),
+        customResponse.getContent().get(0).getTotalRating());
+    assertNull(customResponse.getCursor());
+    assertFalse(customResponse.isHasNext());
+  }
+
+  @Test
+  @DisplayName("비로그인 사용자는 숙소 리뷰 조회가 가능하다.")
+  void getAccommodationReviews_success() {
+    // given
+    User user = User.builder().id(1L).profileImage("https://test.com/images/image.jpg").build();
+
+    Accommodation accommodation = Accommodation.builder().id(1L).build();
+    Room room = Room.builder().id(1L).name("test").build();
+
+    Review review = Review.builder()
+        .id(1L)
+        .accommodation(accommodation)
+        .reservation(Reservation.builder().id(1L).room(room).build())
+        .user(user)
+        .content("content")
+        .userRating(3.0)
+        .petFriendlyRating(4.0)
+        .createdAt(LocalDateTime.now())
+        .reportCount(0)
+        .build();
+
+    ReviewImage reviewImage = ReviewImage.builder().id(1L).review(review)
+        .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
+
+    double totalRating =
+        Math.round(((review.getUserRating() + review.getPetFriendlyRating()) / 2) * 10) / 10.0;
+
+    AccommodationReviewResponse expectedResponse = AccommodationReviewResponse.builder()
+        .roomName(review.getReservation().getRoom().getName())
+        .profileImageUrl(review.getUser().getProfileImage())
+        .reviewImageUrl(reviewImage.getImageUrl())
+        .totalRating(totalRating)
+        .content(review.getContent())
+        .createdAt(review.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+        .build();
+
+    when(reviewRepository.findByAccommodationId(accommodation.getId(), 0L, 5 + 1)).thenReturn(List.of(review));
+    when(reviewImageRepository.findByReviewId(review.getId())).thenReturn(reviewImage);
+
+    // when
+    CustomReviewResponse<AccommodationReviewResponse> customResponse = reviewService.getAccommodationReviews(accommodation.getId(), 0L, 5);
+
+    // then
+    assertEquals(expectedResponse.getNickname(),
+        customResponse.getContent().get(0).getNickname());
+    assertEquals(expectedResponse.getTotalRating(),
+        customResponse.getContent().get(0).getTotalRating());
+    assertNull(customResponse.getCursor());
+    assertFalse(customResponse.isHasNext());
   }
 }
