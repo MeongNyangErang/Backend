@@ -67,17 +67,18 @@ class HostServiceTest {
     verify(hostRepository).save(any(Host.class));
   }
 
-//  @Test
-//  @DisplayName("중복 이메일 호스트 회원가입 실패 테스트")
-//  void registerHostDuplicateEmail() {
-//    // given
-//    HostSignupRequest request = new HostSignupRequest();
-//    request.setEmail("existing@example.com");
-//
-//    when(hostRepository.existsByEmail(anyString())).thenReturn(true);
-//
-//    // when & then
-//    assertThrows(MeongnyangerangException.class, () -> hostService.registerHost(request));
-//    verify(hostRepository, never()).save(any(Host.class));
-//  }
+  @Test
+  @DisplayName("중복 이메일 호스트 회원가입 실패 테스트")
+  void registerHostDuplicateEmail() {
+    // given
+    HostSignupRequest request = new HostSignupRequest();
+    request.setEmail("existing@example.com");
+
+    when(hostRepository.existsByEmail(anyString())).thenReturn(true);
+
+    // when & then
+    assertThrows(MeongnyangerangException.class,
+        () -> hostService.registerHost(request, null, null, null));
+    verify(hostRepository, never()).save(any(Host.class));
+  }
 }
