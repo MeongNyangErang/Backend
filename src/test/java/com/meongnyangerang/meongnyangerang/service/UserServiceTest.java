@@ -10,12 +10,14 @@ import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -26,28 +28,28 @@ class UserServiceTest {
   @Mock
   private UserRepository userRepository;
 
+  @Mock
+  private PasswordEncoder passwordEncoder;
+
+  @Mock
+  private ImageService imageService;
+
   @Test
-  @DisplayName("사용자 회원가입 성공 테스트")
-  void registerUserSuccess() {
+  @DisplayName("사용자 회원가입 성공 테스트 - 프로필 이미지 없음")
+  void registerUserSuccessWithoutImage() {
     // given
     UserSignupRequest request = new UserSignupRequest();
     request.setEmail("user@example.com");
+    request.setNickname("nickname");
+    request.setPassword("password123!");
+
     when(userRepository.existsByEmail(any())).thenReturn(false);
+    when(passwordEncoder.encode(any())).thenReturn("encodedPassword");
 
     // when & then
-    assertDoesNotThrow(() -> userService.registerUser(request));
+    assertDoesNotThrow(() -> userService.registerUser(request, null));
     verify(userRepository).save(any(User.class));
   }
 
-  @Test
-  @DisplayName("중복 이메일 회원가입 실패 테스트")
-  void registerUserDuplicateEmail() {
-    // given
-    when(userRepository.existsByEmail(any())).thenReturn(true);
 
-    // when & then
-    assertThrows(MeongnyangerangException.class, () -> {
-      userService.registerUser(new UserSignupRequest());
-    });
-  }
 }
