@@ -2,11 +2,13 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_USER;
 import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.ACTIVE;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
@@ -56,7 +58,10 @@ public class UserService {
       throw new MeongnyangerangException(INVALID_PASSWORD);
     }
 
-    // 상태 검증은 JwtTokenProvider 내부에서 수행됨
+    // 사용자 상태 검증
+    if (user.getStatus() == UserStatus.DELETED) {
+      throw new MeongnyangerangException(ACCOUNT_DELETED);
+    }
 
     return jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole().name(),
         user.getStatus());
