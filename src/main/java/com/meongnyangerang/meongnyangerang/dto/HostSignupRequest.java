@@ -33,14 +33,6 @@ public class HostSignupRequest {
   @NotBlank(message = "비밀번호는 필수 입력 항목입니다.")
   private String password;
 
-  private String profileImageUrl;
-
-  @NotBlank(message = "사업자 등록증 이미지는 필수입니다")
-  private String businessLicenseImageUrl;
-
-  @NotBlank(message = "숙박업 허가증 이미지는 필수입니다")
-  private String submitDocumentImageUrl;
-
   @Pattern(regexp = "^01(?:0|1|[6-9])-(?:\\d{3}|\\d{4})-\\d{4}$", message = "유효하지 않은 전화번호 형식입니다")
   private String phoneNumber;
 
