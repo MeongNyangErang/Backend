@@ -124,9 +124,9 @@ class AccommodationServiceTest {
         .description("test-description")
         .latitude(37.123)
         .longitude(127.123)
-        .facilities(FACILITY_TYPES)
-        .petFacilities(PET_FACILITY_TYPES)
-        .allowPets(PET_TYPES)
+        .facilityTypes(FACILITY_TYPES)
+        .petFacilityTypes(PET_FACILITY_TYPES)
+        .allowPetTypes(PET_TYPES)
         .build();
 
     facilities = Arrays.asList(AccommodationFacility.builder()

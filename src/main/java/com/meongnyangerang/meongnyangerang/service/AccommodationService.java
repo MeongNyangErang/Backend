@@ -72,9 +72,9 @@ public class AccommodationService {
       Accommodation accommodation = request.toEntity(host, thumbnailUrl);
       accommodationRepository.save(accommodation);
 
-      saveAccommodationFacilities(request.getFacilities(), accommodation);
-      saveAccommodationPetFacilities(request.getPetFacilities(), accommodation);
-      saveAllowPets(request.getAllowPets(), accommodation);
+      saveAccommodationFacilities(request.getFacilityTypes(), accommodation);
+      saveAccommodationPetFacilities(request.getPetFacilityTypes(), accommodation);
+      saveAllowPets(request.getAllowPetTypes(), accommodation);
       saveAdditionalImages(imageUrlMap.keySet(), accommodation);
 
       log.info("숙소 등록 완료: 호스트 ID={}, 숙소 ID={}", hostId, accommodation.getId());
