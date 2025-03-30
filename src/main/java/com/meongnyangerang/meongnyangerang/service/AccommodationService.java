@@ -85,9 +85,9 @@ public class AccommodationService {
       List<String> imageUrls
   ) {
     accommodationRepository.save(accommodation);
-    saveAccommodationFacilities(request.getFacilities(), accommodation);
-    saveAccommodationPetFacilities(request.getPetFacilities(), accommodation);
-    saveAllowPets(request.getAllowPets(), accommodation);
+    saveAccommodationFacilities(request.getFacilityTypes(), accommodation);
+    saveAccommodationPetFacilities(request.getPetFacilityTypes(), accommodation);
+    saveAllowPets(request.getAllowPetTypes(), accommodation);
     saveAdditionalImages(imageUrls, accommodation);
   }
 
@@ -141,10 +141,10 @@ public class AccommodationService {
       AccommodationResponse accommodationResponse = updateData(request, thumbnailUrl, imageUrls);
 
       List<String> oldImages =
-          imagesDeleted(request.getOldThumbnailUrl(), request.getOldAdditionalImageUrls());
+          imagesDeleted(request.oldThumbnailUrl(), request.oldAdditionalImageUrls());
       imageService.registerImagesForDeletion(oldImages);
 
-      log.info("숙소 수정 성공, 숙소 ID : {}", request.getAccommodationId());
+      log.info("숙소 수정 성공, 숙소 ID : {}", request.accommodationId());
       return accommodationResponse;
 
     } catch (MeongnyangerangException e) {
@@ -162,7 +162,7 @@ public class AccommodationService {
       String thumbnailUrl,
       List<String> imageUrls
   ) {
-    Long accommodationId = request.getAccommodationId();
+    Long accommodationId = request.accommodationId();
 
     Accommodation accommodation = accommodationRepository.findById(accommodationId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
@@ -170,14 +170,14 @@ public class AccommodationService {
 
     accommodationFacilityRepository.deleteAllByAccommodationId(accommodationId);
     List<AccommodationFacility> facilities =
-        saveAccommodationFacilities(request.getFacilityTypes(), accommodation);
+        saveAccommodationFacilities(request.facilityTypes(), accommodation);
 
     accommodationPetFacilityRepository.deleteAllByAccommodationId(accommodationId);
     List<AccommodationPetFacility> petFacilities =
-        saveAccommodationPetFacilities(request.getPetFacilityTypes(), accommodation);
+        saveAccommodationPetFacilities(request.petFacilityTypes(), accommodation);
 
     allowPetRepository.deleteAllByAccommodationId(accommodationId);
-    List<AllowPet> allowPets = saveAllowPets(request.getAllowPetTypes(), accommodation);
+    List<AllowPet> allowPets = saveAllowPets(request.allowPetTypes(), accommodation);
 
     accommodationImageRepository.deleteAllByAccommodationId(accommodationId);
     List<AccommodationImage> accommodationImages = saveAdditionalImages(imageUrls, accommodation);

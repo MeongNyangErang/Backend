@@ -71,13 +71,13 @@ public class Accommodation {
   private LocalDateTime updatedAt;
 
   public void updateAccommodation(AccommodationUpdateRequest request, String thumbnailUrl) {
-    this.name = request.getName();
-    this.description = request.getDescription();
-    this.address = request.getAddress();
-    this.detailedAddress = request.getDetailedAddress();
-    this.latitude = request.getLatitude();
-    this.longitude = request.getLongitude();
-    this.type = request.getType();
+    this.name = request.name();
+    this.description = request.description();
+    this.address = request.address();
+    this.detailedAddress = request.detailedAddress();
+    this.latitude = request.latitude();
+    this.longitude = request.longitude();
+    this.type = request.type();
     this.thumbnailUrl = thumbnailUrl;
   }
 }
