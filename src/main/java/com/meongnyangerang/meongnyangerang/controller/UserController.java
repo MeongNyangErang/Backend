@@ -40,8 +40,7 @@ public class UserController {
   // 사용자 로그인 API
   @PostMapping("/login")
   public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-    String token = userService.login(request);
-    return ResponseEntity.ok(new LoginResponse(token));
+    return ResponseEntity.ok(new LoginResponse(userService.login(request)));
   }
 
   @PostMapping("/reservations")

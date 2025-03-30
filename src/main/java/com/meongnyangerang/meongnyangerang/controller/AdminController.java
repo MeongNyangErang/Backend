@@ -21,8 +21,6 @@ public class AdminController {
   // 관리자 로그인 API
   @PostMapping("/login")
   public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-    String token = adminService.login(request);
-    return ResponseEntity.ok(new LoginResponse(token));
+    return ResponseEntity.ok(new LoginResponse(adminService.login(request)));
   }
-
 }
