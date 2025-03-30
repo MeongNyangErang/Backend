@@ -23,6 +23,8 @@ public enum ErrorCode {
   NOT_EXIST_ACCOUNT(HttpStatus.BAD_REQUEST, "해당 계정은 존재하지 않습니다."),
   EMPTY_PET_TYPE(HttpStatus.BAD_REQUEST, "허용 반려동물 타입을 지정해 주세요."),
   RESERVATION_ALREADY_CANCELED(HttpStatus.BAD_REQUEST, "이미 취소된 예약입니다."),
+  REVIEW_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "리뷰가 이미 존재합니다."),
+  MAX_IMAGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "최대 이미지 개수는 3개입니다."),
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
   INVALID_JWT_FORMAT(HttpStatus.BAD_REQUEST, "JWT 형식이 올바르지 않습니다."),
@@ -37,6 +39,7 @@ public enum ErrorCode {
   INVALID_AUTHORIZED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
   ACCOUNT_DELETED(HttpStatus.FORBIDDEN, "현재 계정 상태는 삭제 상태입니다."),
   ACCOUNT_PENDING(HttpStatus.FORBIDDEN, "관리자 승인 대기 중입니다."),
+  REVIEW_CREATION_NOT_ALLOWED (HttpStatus.FORBIDDEN, "리뷰 작성 가능 기간이 만료되었습니다."),
 
   // 404  NOT FOUND
   NOT_EXISTS_HOST(HttpStatus.NOT_FOUND, "존재하지 않는 호스트입니다."),
@@ -59,7 +62,8 @@ public enum ErrorCode {
   EMAIL_NOT_SEND(HttpStatus.INTERNAL_SERVER_ERROR, "이메일이 정상적으로 전송되지 않았습니다."),
   AMAZON_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "아마존 서비스 오류"),
   INVALID_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 IO 오류"),
-  REGISTRATION_ACCOMMODATION(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 등록 오류")
+  REGISTRATION_ACCOMMODATION(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 등록 오류"),
+  UPDATE_ACCOMMODATION(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 수정 오류"),
   ;
 
   private final HttpStatus status;

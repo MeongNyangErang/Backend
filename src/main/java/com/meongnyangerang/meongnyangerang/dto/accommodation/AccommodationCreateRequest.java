@@ -41,13 +41,13 @@ public class AccommodationCreateRequest {
   private Double longitude;
 
   @NotEmpty(message = "숙소 편의시설을 하나 이상 선택해 주세요.")
-  private List<AccommodationFacilityType> facilities;
+  private List<AccommodationFacilityType> facilityTypes;
 
   @NotEmpty(message = "반려동물 편의시설을 하나 이상 선택해 주세요.")
-  private List<AccommodationPetFacilityType> petFacilities;
+  private List<AccommodationPetFacilityType> petFacilityTypes;
 
   @NotEmpty(message = "허용 가능한 반려동물 유형을 하나 이상 선택해 주세요.")
-  private List<PetType> allowPets;
+  private List<PetType> allowPetTypes;
 
   public Accommodation toEntity(Host host, String thumbnailUrl) {
     return Accommodation.builder()
