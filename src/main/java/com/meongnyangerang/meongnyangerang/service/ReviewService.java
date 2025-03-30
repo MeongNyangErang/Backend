@@ -3,17 +3,21 @@ package com.meongnyangerang.meongnyangerang.service;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
+import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -22,9 +26,10 @@ public class ReviewService {
   private final ImageService imageService;
   private final ReviewRepository reviewRepository;
   private final ReservationRepository reservationRepository;
+  private final ReviewImageRepository reviewImageRepository;
 
   @Transactional
-  public void createReview(Long userId, ReviewRequest reviewRequest) {
+  public void createReview(Long userId, ReviewRequest reviewRequest, List<MultipartFile> images) {
     // 예약 정보 가져오기
     Reservation reservation = reservationRepository.findById(reviewRequest.getReservationId())
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.RESERVATION_NOT_FOUND));
@@ -32,11 +37,30 @@ public class ReviewService {
     // 리뷰 작성 가능 여부 검증
     validateReviewCreation(userId, reservation);
 
-    // 이미지 등록 코드 추가 예정
-
     Review review = reviewRequest.toEntity(reservation.getUser(),
         reservation.getRoom().getAccommodation(), reservation);
+
+    // 이미지 등록 (있는 경우에만)
+    if (images != null) {
+      validateImageSize(images);
+      addImages(images, review);
+    }
+
     reviewRepository.save(review);
+  }
+
+  private void validateImageSize(List<MultipartFile> images) {
+    if (images.size() > 3) {
+      throw new MeongnyangerangException(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED);
+    }
+  }
+
+  private void addImages(List<MultipartFile> images, Review review) {
+    images.stream()
+        .filter(image -> !image.isEmpty())
+        .map(imageService::storeImage)
+        .map(url -> ReviewImage.builder().review(review).imageUrl(url).build())
+        .forEach(reviewImageRepository::save);
   }
 
   private void validateReviewCreation(Long userId, Reservation reservation) {
