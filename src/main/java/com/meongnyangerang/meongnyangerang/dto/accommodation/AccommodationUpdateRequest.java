@@ -7,9 +7,7 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.Accommo
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public record AccommodationUpdateRequest(
 
@@ -35,11 +33,6 @@ public record AccommodationUpdateRequest(
     @NotNull(message = "숙소의 위치 정보를 제공해 주세요.")
     Double longitude,
 
-    @NotEmpty(message = "대표 이미지의 URL은 비어 있을 수 없습니다.")
-    String oldThumbnailUrl,
-
-    List<String> oldAdditionalImageUrls,
-
     @NotEmpty(message = "숙소 편의시설을 하나 이상 선택해 주세요.")
     List<AccommodationFacilityType> facilityTypes,
 
@@ -50,11 +43,6 @@ public record AccommodationUpdateRequest(
     List<PetType> allowPetTypes
 ) {
 
-  public AccommodationUpdateRequest {
-    oldAdditionalImageUrls = Optional.ofNullable(oldAdditionalImageUrls)
-        .orElseGet(ArrayList::new);
-  }
-
   public static AccommodationUpdateRequest of(
       Long accommodationId,
       String name,
@@ -64,16 +52,22 @@ public record AccommodationUpdateRequest(
       String description,
       Double latitude,
       Double longitude,
-      String oldThumbnailUrl,
-      List<String> oldAdditionalImageUrls,
       List<AccommodationFacilityType> facilityTypes,
       List<AccommodationPetFacilityType> petFacilityTypes,
       List<PetType> allowPetTypes
   ) {
     return new AccommodationUpdateRequest(
-        accommodationId, name, type, address, detailedAddress,
-        description, latitude, longitude, oldThumbnailUrl,
-        oldAdditionalImageUrls, facilityTypes, petFacilityTypes, allowPetTypes
+        accommodationId,
+        name,
+        type,
+        address,
+        detailedAddress,
+        description,
+        latitude,
+        longitude,
+        facilityTypes,
+        petFacilityTypes,
+        allowPetTypes
     );
   }
 }
