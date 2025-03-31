@@ -167,7 +167,7 @@ public class ReviewService {
     }
 
     // 리뷰 & 리뷰 이미지 삭제
-    reviewRepository.delete(review);
     reviewImageRepository.deleteAll(reviewImageRepository.findAllByReviewId(reviewId));
+    reviewRepository.delete(review);
   }
 }
