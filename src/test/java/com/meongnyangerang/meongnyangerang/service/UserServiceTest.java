@@ -115,4 +115,12 @@ class UserServiceTest {
     assertNotNull(user.getDeletedAt());
   }
 
+  @Test
+  @DisplayName("사용자 탈퇴 실패 - 예약 존재")
+  void deleteUserFailDueToReservation() {
+    when(userRepository.findById(anyLong())).thenReturn(Optional.of(new User()));
+    when(reservationRepository.existsByUserIdAndStatus(anyLong(), eq(ReservationStatus.RESERVED))).thenReturn(true);
+
+    assertThrows(MeongnyangerangException.class, () -> userService.deleteUser(1L));
+  }
 }
