@@ -140,8 +140,6 @@ class AccommodationServiceTest {
         "test-description",
         37.123,
         127.123,
-        OLD_THUMBNAIL_URL,
-        null,  // oldAdditionalImageUrls
         FACILITY_TYPES,
         PET_FACILITY_TYPES,
         PET_TYPES
