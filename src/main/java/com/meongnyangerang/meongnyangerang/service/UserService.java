@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -84,6 +85,7 @@ public class UserService {
   }
 
   // 사용자 회원 탈퇴
+  @Transactional
   public void deleteUser(Long userId) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));

@@ -98,6 +98,7 @@ public class HostService {
   }
 
   // 호스트 회원 탈퇴
+  @Transactional
   public void deleteHost(Long hostId) {
 
     Host host = hostRepository.findById(hostId)
