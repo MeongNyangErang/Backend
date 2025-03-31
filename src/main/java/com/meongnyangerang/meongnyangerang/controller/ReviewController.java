@@ -74,6 +74,6 @@ public class ReviewController {
 
     reviewService.deleteReview(reviewId, userDetails.getId());
 
-    return ResponseEntity.ok().build();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 }

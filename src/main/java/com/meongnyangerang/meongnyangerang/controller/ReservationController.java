@@ -60,7 +60,7 @@ public class ReservationController {
 
     reservationService.cancelReservation(userDetails.getId(), reservationId);
 
-    return ResponseEntity.ok().build();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
   @GetMapping("/hosts/reservations")
