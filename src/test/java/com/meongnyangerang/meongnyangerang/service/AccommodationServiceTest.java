@@ -118,18 +118,18 @@ class AccommodationServiceTest {
         .thumbnailUrl(THUMBNAIL_URL)
         .build();
 
-    request = AccommodationCreateRequest.builder()
-        .name("test-name")
-        .type(AccommodationType.DETACHED_HOUSE)
-        .address("test-address")
-        .detailedAddress("test-detailedAddress")
-        .description("test-description")
-        .latitude(37.123)
-        .longitude(127.123)
-        .facilityTypes(FACILITY_TYPES)
-        .petFacilityTypes(PET_FACILITY_TYPES)
-        .allowPetTypes(PET_TYPES)
-        .build();
+    request = new AccommodationCreateRequest(
+        "test-name",
+        AccommodationType.DETACHED_HOUSE,
+        "test-address",
+        "test-detailedAddress",
+        "test-description",
+        37.123,
+        127.123,
+        FACILITY_TYPES,
+        PET_FACILITY_TYPES,
+        PET_TYPES
+    );
 
     updateRequest = AccommodationUpdateRequest.of(
         accommodation.getId(),
