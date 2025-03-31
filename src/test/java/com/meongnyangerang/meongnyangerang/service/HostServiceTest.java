@@ -54,19 +54,23 @@ class HostServiceTest {
   @DisplayName("호스트 회원가입 성공 테스트")
   void registerHostSuccess() throws IOException {
     // given
+    String email = "host@example.com";
+    String password = "password123";
+    String encodedPassword = "encodedPassword";
+
     HostSignupRequest request = new HostSignupRequest();
-    request.setEmail("host@example.com");
+    request.setEmail(email);
     request.setName("호스트");
     request.setNickname("호스트닉네임");
-    request.setPassword("password123");
+    request.setPassword(password);
     request.setPhoneNumber("010-1234-5678");
 
     MultipartFile profileImage = new MockMultipartFile("profile", "profile.jpg", "image/jpeg", new byte[0]);
     MultipartFile businessLicense = new MockMultipartFile("license", "license.jpg", "image/jpeg", new byte[0]);
     MultipartFile submitDocument = new MockMultipartFile("document", "document.jpg", "image/jpeg", new byte[0]);
 
-    when(hostRepository.existsByEmail(anyString())).thenReturn(false);
-    when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+    when(hostRepository.existsByEmail(email)).thenReturn(false);
+    when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
     when(imageService.storeImage(profileImage)).thenReturn("http://s3.com/profile.jpg");
     when(imageService.storeImage(businessLicense)).thenReturn("http://s3.com/license.jpg");
     when(imageService.storeImage(submitDocument)).thenReturn("http://s3.com/document.jpg");
@@ -82,10 +86,12 @@ class HostServiceTest {
   @DisplayName("중복 이메일 호스트 회원가입 실패 테스트")
   void registerHostDuplicateEmail() {
     // given
-    HostSignupRequest request = new HostSignupRequest();
-    request.setEmail("existing@example.com");
+    String email = "existing@example.com";
 
-    when(hostRepository.existsByEmail(anyString())).thenReturn(true);
+    HostSignupRequest request = new HostSignupRequest();
+    request.setEmail(email);
+
+    when(hostRepository.existsByEmail(email)).thenReturn(true);
 
     // when & then
     assertThrows(MeongnyangerangException.class,
@@ -96,17 +102,22 @@ class HostServiceTest {
   @Test
   @DisplayName("호스트 탈퇴 성공")
   void deleteHostSuccess() {
+    // given
+    Long hostId = 1L;
+
     Host host = Host.builder()
-        .id(1L)
+        .id(hostId)
         .email("host@example.com")
         .status(HostStatus.ACTIVE)
         .build();
 
-    when(hostRepository.findById(anyLong())).thenReturn(Optional.of(host));
-    when(reservationRepository.existsByHostIdAndStatus(anyLong(), eq(ReservationStatus.RESERVED))).thenReturn(false);
+    when(hostRepository.findById(hostId)).thenReturn(Optional.of(host));
+    when(reservationRepository.existsByHostIdAndStatus(hostId, ReservationStatus.RESERVED)).thenReturn(false);
 
-    hostService.deleteHost(1L);
+    // when
+    hostService.deleteHost(hostId);
 
+    // then
     assertEquals(HostStatus.DELETED, host.getStatus());
     assertNotNull(host.getDeletedAt());
   }
@@ -114,9 +125,13 @@ class HostServiceTest {
   @Test
   @DisplayName("호스트 탈퇴 실패 - 예약 존재")
   void deleteHostFailDueToReservation() {
-    when(hostRepository.findById(anyLong())).thenReturn(Optional.of(new Host()));
-    when(reservationRepository.existsByHostIdAndStatus(anyLong(), eq(ReservationStatus.RESERVED))).thenReturn(true);
+    // given
+    Long hostId = 1L;
 
-    assertThrows(MeongnyangerangException.class, () -> hostService.deleteHost(1L));
+    when(hostRepository.findById(hostId)).thenReturn(Optional.of(new Host()));
+    when(reservationRepository.existsByHostIdAndStatus(hostId, ReservationStatus.RESERVED)).thenReturn(true);
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () -> hostService.deleteHost(hostId));
   }
 }
