@@ -104,7 +104,7 @@ public class HostService {
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_ACCOUNT));
 
     // 호스트가 등록한 숙소 중 예약 상태가 RESERVED인 것이 있으면 탈퇴 불가
-    boolean hasReserved = reservationRepository.existsByHostIdAndReservationStatus(hostId, RESERVED);
+    boolean hasReserved = reservationRepository.existsByHostIdAndStatus(hostId, RESERVED);
     if (hasReserved) {
       throw new MeongnyangerangException(RESERVED_RESERVATION_EXISTS);
     }

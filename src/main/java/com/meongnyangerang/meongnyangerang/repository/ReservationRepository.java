@@ -38,4 +38,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
       @Param("status") String status);
 
   boolean existsByUserIdAndStatus(Long userId, ReservationStatus status);
+
+  @Query("""
+        SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
+        FROM Reservation r
+        WHERE r.room.accommodation.host.id = :hostId
+        AND r.status = :status
+    """)
+  boolean existsByHostIdAndStatus(Long hostId, ReservationStatus status);
 }
