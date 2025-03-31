@@ -132,7 +132,6 @@ class AccommodationServiceTest {
     );
 
     updateRequest = AccommodationUpdateRequest.of(
-        accommodation.getId(),
         "test-name",
         AccommodationType.PENSION,
         "test-address",
