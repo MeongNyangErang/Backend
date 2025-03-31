@@ -5,15 +5,14 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class ReservationResponse {
+public class HostReservationResponse {
 
   private String reservationDate;
-  private String accommodationName;
-  private String roomName;
+  private String reserverName;
+  private String reserverPhoneNumber;
+  private boolean hasVehicle;
   private String checkInDate;
   private String checkOutDate;
-  private String checkInTime;
-  private String checkOutTime;
   private int peopleCount;
   private int petCount;
   private long totalPrice;

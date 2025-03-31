@@ -7,8 +7,9 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
+import com.meongnyangerang.meongnyangerang.dto.HostReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
-import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
+import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -169,33 +170,34 @@ public class ReservationService {
    * @param size
    * @param status
    */
-  public CustomReservationResponse findByStatus(Long userId, Long cursorId, int size,
+  public CustomReservationResponse<UserReservationResponse> getUserReservations(Long userId,
+      Long cursorId, int size,
       ReservationStatus status) {
     // 해당 유저의 예약 내역만 조회
     List<Reservation> reservationList = reservationRepository.findByUserIdAndStatus(userId,
         cursorId, size + 1, status.name());
 
     // 예약 정보 -> DTO 변환
-    List<ReservationResponse> content = reservationList.stream()
+    List<UserReservationResponse> content = reservationList.stream()
         .limit(size)
-        .map(this::mapToReservationResponse)
+        .map(this::mapToUserReservationResponse)
         .toList();
 
     // 다음 데이터 존재 여부 확인
     boolean hasNext = reservationList.size() > size;
-    String cursor = hasNext ? String.valueOf(reservationList.get(size).getId()) : null;
+    Long cursor = hasNext ? reservationList.get(size).getId() : null;
 
-    return new CustomReservationResponse(content, cursor, hasNext);
+    return new CustomReservationResponse<>(content, cursor, hasNext);
   }
 
-  private ReservationResponse mapToReservationResponse(Reservation reservation) {
+  private UserReservationResponse mapToUserReservationResponse(Reservation reservation) {
     Room room = reservation.getRoom();
     Accommodation accommodation = room.getAccommodation();
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
-    return ReservationResponse.builder()
+    return UserReservationResponse.builder()
         .reservationDate(reservation.getCreatedAt().format(dateFormatter))
         .accommodationName(accommodation.getName())
         .roomName(room.getName())
@@ -221,11 +223,47 @@ public class ReservationService {
     }
 
     // 이미 취소된 예약인지 확인
-    if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+    if (reservation.getStatus() == ReservationStatus.CANCELED) {
       throw new MeongnyangerangException(ErrorCode.RESERVATION_ALREADY_CANCELED);
     }
 
     // 예약 상태 변경
-    reservation.setStatus(ReservationStatus.CANCELLED);
+    reservation.setStatus(ReservationStatus.CANCELED);
+  }
+
+  public CustomReservationResponse<HostReservationResponse> getHostReservation(Long hostId,
+      Long cursorId, int size,
+      ReservationStatus status) {
+    // 자신의 숙소 예약 내역만 조회
+    List<Reservation> reservationList = reservationRepository.findByHostIdAndStatus(hostId,
+        cursorId, size + 1, status.name());
+
+    // 예약 정보 -> DTO 변환
+    List<HostReservationResponse> content = reservationList.stream()
+        .limit(size)
+        .map(this::mapToHostReservationResponse)
+        .toList();
+
+    // 다음 데이터 존재 여부 확인
+    boolean hasNext = reservationList.size() > size;
+    Long cursor = hasNext ? reservationList.get(size).getId() : null;
+
+    return new CustomReservationResponse<>(content, cursor, hasNext);
+  }
+
+  private HostReservationResponse mapToHostReservationResponse(Reservation reservation) {
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    return HostReservationResponse.builder()
+        .reservationDate(reservation.getCreatedAt().format(dateFormatter))
+        .reserverName(reservation.getReserverName())
+        .reserverPhoneNumber(reservation.getReserverPhoneNumber())
+        .hasVehicle(reservation.getHasVehicle())
+        .checkInDate(reservation.getCheckInDate().format(dateFormatter))
+        .checkOutDate(reservation.getCheckOutDate().format(dateFormatter))
+        .peopleCount(reservation.getPeopleCount())
+        .petCount(reservation.getPetCount())
+        .totalPrice(reservation.getTotalPrice())
+        .build();
   }
 }
