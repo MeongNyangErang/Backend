@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -10,6 +11,7 @@ import com.meongnyangerang.meongnyangerang.domain.user.Personality;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
 import com.meongnyangerang.meongnyangerang.dto.UserPetRequest;
+import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import java.time.LocalDate;
@@ -66,5 +68,28 @@ public class UserPetServiceTest {
     assertEquals(Personality.EXTROVERT, savedPet.getPersonality());
     assertEquals(ActivityLevel.HIGH, savedPet.getActivityLevel());
     assertEquals(user, savedPet.getUser());
+  }
+
+  @Test
+  @DisplayName("반려동물 10마리 초과 등록 시 실패")
+  void registerPetFailDueToLimit() {
+    // given
+    Long userId = 2L;
+    User user = User.builder().id(userId).build();
+
+    UserPetRequest request = new UserPetRequest(
+        "냥이",
+        LocalDate.of(2022, 6, 15),
+        PetType.CAT,
+        Personality.INTROVERT,
+        ActivityLevel.LOW
+    );
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(userPetRepository.countByUserId(userId)).thenReturn(10L);
+
+    // when & then
+    assertThrows(MeongnyangerangException.class,
+        () -> userPetService.registerPet(userId, request));
   }
 }
