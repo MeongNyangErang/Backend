@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.repository;
 
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
+import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -35,4 +36,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
       @Param("cursorId") Long cursorId,
       @Param("size") int size,
       @Param("status") String status);
+
+  boolean existsByUserIdAndStatus(Long userId, ReservationStatus status);
+
+  @Query("""
+        SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
+        FROM Reservation r
+        WHERE r.room.accommodation.host.id = :hostId
+        AND r.status = :status
+    """)
+  boolean existsByHostIdAndStatus(Long hostId, ReservationStatus status);
 }

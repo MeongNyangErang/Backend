@@ -75,7 +75,7 @@ public class ImageService {
 
   // TODO: 젠킨스 사용 고려
   //@Scheduled(cron = "0 0/10 * * * ?") // 10분마다 실행
-  @Scheduled(cron = "0/10 * * * * ?") // 10초마다 실행 (테스트)
+//  @Scheduled(cron = "0/10 * * * * ?") // 10초마다 실행 (테스트)
   @Transactional
   public void processImageDeletionQueue() {
     log.info("이미지 삭제 큐 처리 시작");

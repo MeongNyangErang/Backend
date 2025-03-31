@@ -3,12 +3,15 @@ package com.meongnyangerang.meongnyangerang.controller;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
+import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.HostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,5 +42,12 @@ public class HostController {
   @PostMapping("/login")
   public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
     return ResponseEntity.ok(new LoginResponse(hostService.login(request)));
+  }
+
+  // 호스트 회원 탈퇴 API
+  @DeleteMapping("/me")
+  public ResponseEntity<Void> deleteHost(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+    hostService.deleteHost(userDetails.getId());
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 }
