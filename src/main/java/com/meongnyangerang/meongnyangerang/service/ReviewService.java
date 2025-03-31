@@ -155,4 +155,19 @@ public class ReviewService {
         .createdAt(review.getCreatedAt().format(dateFormatter))
         .build();
   }
+
+  public void deleteReview(Long reviewId, Long userId) {
+    // 리뷰 조회
+    Review review = reviewRepository.findById(reviewId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.REVIEW_NOT_FOUND));
+
+    // 요청한 사용자가 작성자인지 확인
+    if (!review.getUser().getId().equals(userId)) {
+      throw new MeongnyangerangException(ErrorCode.REVIEW_NOT_AUTHORIZED);
+    }
+
+    // 리뷰 & 리뷰 이미지 삭제
+    reviewImageRepository.deleteAll(reviewImageRepository.findAllByReviewId(reviewId));
+    reviewRepository.delete(review);
+  }
 }
