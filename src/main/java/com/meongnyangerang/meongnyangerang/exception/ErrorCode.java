@@ -42,6 +42,7 @@ public enum ErrorCode {
   ACCOUNT_DELETED(HttpStatus.FORBIDDEN, "현재 계정 상태는 삭제 상태입니다."),
   ACCOUNT_PENDING(HttpStatus.FORBIDDEN, "관리자 승인 대기 중입니다."),
   REVIEW_CREATION_NOT_ALLOWED (HttpStatus.FORBIDDEN, "리뷰 작성 가능 기간이 만료되었습니다."),
+  REVIEW_NOT_AUTHORIZED (HttpStatus.FORBIDDEN, "해당 리뷰를 삭제할 권한이 없습니다."),
 
   // 404  NOT FOUND
   NOT_EXISTS_HOST(HttpStatus.NOT_FOUND, "존재하지 않는 호스트입니다."),
@@ -51,6 +52,7 @@ public enum ErrorCode {
   ACCOMMODATION_NOT_FOUND(HttpStatus.NOT_FOUND, "숙소가 존재하지 않습니다."),
   ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "객실이 존재하지 않습니다."),
   RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예약이 존재하지 않습니다."),
+  REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰가 존재하지 않습니다."),
 
   // 409 Conflict
   ROOM_ALREADY_RESERVED(HttpStatus.CONFLICT, "객실이 이미 예약되었습니다."),
