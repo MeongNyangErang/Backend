@@ -90,7 +90,7 @@ public class UserService {
 
     // 예약 상태 확인
     if (reservationRepository.existsByUserIdAndStatus(userId, ReservationStatus.RESERVED)) {
-      throw new MeongnyangerangException(ErrorCode.RESERVATION_EXISTS);
+      throw new MeongnyangerangException(RESERVED_RESERVATION_EXISTS);
     }
 
     user.setStatus(DELETED);
