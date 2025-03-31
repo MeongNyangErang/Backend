@@ -32,12 +32,11 @@ public class ReviewController {
 
   @PostMapping("/users/reviews")
   public ResponseEntity<Void> createReview(
-      //      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
       @Valid @RequestPart ReviewRequest reviewRequest,
       @RequestPart(required = false) List<MultipartFile> images) {
 
-    // 로그인 기능 추가 되면 userDetails.getId()로 변경
-    reviewService.createReview(1L, reviewRequest, images);
+    reviewService.createReview(userDetails.getId(), reviewRequest, images);
 
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
@@ -48,12 +47,10 @@ public class ReviewController {
       @RequestParam(defaultValue = "0") Long cursor,
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size) {
 
-    CustomReviewResponse<MyReviewResponse> response = reviewService.getUsersReviews(
+    return ResponseEntity.ok(reviewService.getUsersReviews(
         userDetails.getId(),
         cursor,
-        size);
-
-    return ResponseEntity.ok(response);
+        size));
   }
 
   @GetMapping("/accommodations/{accommodationId}/reviews")
@@ -62,10 +59,8 @@ public class ReviewController {
       @RequestParam(defaultValue = "0") Long cursor,
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size) {
 
-    CustomReviewResponse<AccommodationReviewResponse> response = reviewService.getAccommodationReviews(
-        accommodationId, cursor, size);
-
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(reviewService.getAccommodationReviews(
+        accommodationId, cursor, size));
   }
 
   @DeleteMapping("/users/reviews/{reviewId}")

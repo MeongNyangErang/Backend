@@ -36,17 +36,13 @@ public class AdminController {
       @RequestParam(defaultValue = "0") Long cursor,
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size) {
 
-    CustomApplicationResponse response = adminService.getPendingHostList(cursor, size);
-
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(adminService.getPendingHostList(cursor, size));
   }
 
   // 호스트 가입 신청 상세 조회
   @GetMapping("/hosts/pending/{hostId}")
   public ResponseEntity<PendingHostDetailResponse> getPendingHostDetail(@PathVariable Long hostId) {
 
-    PendingHostDetailResponse response = adminService.getPendingHostDetail(hostId);
-
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(adminService.getPendingHostDetail(hostId));
   }
 }
