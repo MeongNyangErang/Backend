@@ -14,9 +14,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 public record RoomCreateRequest(
 
-    @NotNull(message = "숙소 ID를 요청해 주세요.")
-    Long accommodationId,
-
     @NotBlank(message = "객실 이름을 입력해 주세요.")
     String name,
 
