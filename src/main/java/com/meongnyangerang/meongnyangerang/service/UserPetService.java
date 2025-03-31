@@ -1,10 +1,13 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +28,7 @@ public class UserPetService {
     // 최대 10마리 제한
     long count = userPetRepository.countByUserId(userId);
     if (count >= 10) {
-      throw new MeongnyangerangException(ErrorCode.MAX_PET_COUNT_EXCEEDED);
+      throw new MeongnyangerangException(MAX_PET_COUNT_EXCEEDED);
     }
 
     UserPet userPet = UserPet.builder()
