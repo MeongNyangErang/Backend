@@ -7,11 +7,14 @@ import com.meongnyangerang.meongnyangerang.service.HostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,9 +24,14 @@ public class HostController {
   private final HostService hostService;
 
   // 호스트 회원가입 API
-  @PostMapping("/signup")
-  public ResponseEntity<Void> registerHost(@Valid @RequestBody HostSignupRequest request) {
-    hostService.registerHost(request);
+  @PostMapping(value = "/signup", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<Void> registerHost(
+      @RequestPart("hostInfo") @Valid HostSignupRequest request,
+      @RequestPart(value = "profileImage", required = false) MultipartFile profileImage,
+      @RequestPart("businessLicense") MultipartFile businessLicenseImage,
+      @RequestPart("submitDocument") MultipartFile submitDocumentImage
+  ) {
+    hostService.registerHost(request, profileImage, businessLicenseImage, submitDocumentImage);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 

@@ -39,7 +39,7 @@ public class ImageService {
   public void deleteImage(String fileUrl) {
     if (fileUrl == null || fileUrl.isEmpty()) {
       log.error("삭제할 파일이 비어있습니다.");
-      throw new MeongnyangerangException(ErrorCode.FILE_NOT_EMPTY);
+      throw new MeongnyangerangException(ErrorCode.FILE_IS_EMPTY);
     }
     imageStorage.deleteFile(fileUrl);
   }
@@ -50,7 +50,7 @@ public class ImageService {
   public void deleteImages(List<String> fileUrls) {
     if (fileUrls == null || fileUrls.isEmpty()) {
       log.error("삭제할 파일 목록이 비어있습니다.");
-      throw new MeongnyangerangException(ErrorCode.FILE_NOT_EMPTY);
+      throw new MeongnyangerangException(ErrorCode.FILE_IS_EMPTY);
     }
     imageStorage.deleteFiles(fileUrls);
   }
