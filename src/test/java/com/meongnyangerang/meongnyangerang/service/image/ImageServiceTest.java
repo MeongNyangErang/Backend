@@ -168,7 +168,7 @@ class ImageServiceTest {
         .findAllByOrderByRegisteredAtAsc(PageRequest.of(0, 100)))
         .thenReturn(mockImages);
 
-    doThrow(new MeongnyangerangException(ErrorCode.FILE_NOT_EMPTY))
+    doThrow(new MeongnyangerangException(ErrorCode.FILE_IS_EMPTY))
         .when(imageService).deleteImages(imageUrls);
 
     // when
