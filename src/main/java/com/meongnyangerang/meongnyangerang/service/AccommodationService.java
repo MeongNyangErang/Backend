@@ -106,7 +106,7 @@ public class AccommodationService {
       List<MultipartFile> newAdditionalImages
   ) {
     Accommodation accommodation =
-        validateAccommodationAuthorized(hostId, request.accommodationId());
+        getAuthorizedAccommodation(hostId, request.accommodationId());
     newAdditionalImages = initAdditionalImages(newAdditionalImages);
 
     List<String> trackingList = new ArrayList<>(); // 업로드 성공한 이미지 추적 (롤백 위함)
@@ -320,7 +320,7 @@ public class AccommodationService {
     return host;
   }
 
-  private Accommodation validateAccommodationAuthorized(Long hostId, Long accommodationId) {
+  private Accommodation getAuthorizedAccommodation(Long hostId, Long accommodationId) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
 
     if (!accommodation.getId().equals(accommodationId)) {

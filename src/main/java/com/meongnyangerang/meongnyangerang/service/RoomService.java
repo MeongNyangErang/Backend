@@ -3,13 +3,18 @@ package com.meongnyangerang.meongnyangerang.service;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomListResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.RoomRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,16 +27,51 @@ public class RoomService {
   private final AccommodationRepository accommodationRepository;
   private final ImageService imageService;
 
-  public void createRoom(RoomCreateRequest request, MultipartFile images) {
-    Accommodation accommodation = getAccommodation(request);
+  /**
+   * 객실 등록
+   */
+  public void createRoom(Long hostId, RoomCreateRequest request, MultipartFile images) {
+    Accommodation accommodation = getAuthorizedAccommodation(hostId, request.accommodationId());
     String imageUrl = imageService.storeImage(images);
 
     Room room = request.toEntity(accommodation, imageUrl);
     roomRepository.save(room);
   }
 
-  private Accommodation getAccommodation(RoomCreateRequest request) {
-    return accommodationRepository.findById(request.accommodationId())
+  /**
+   * 객실 목록 조회
+   */
+  public RoomListResponse getRoomList(
+      Long hostId,
+      Long accommodationId,
+      Long cursorId,
+      int pageSize
+  ) {
+    Accommodation accommodation = getAuthorizedAccommodation(hostId, accommodationId);
+    Pageable pageable = PageRequest.of(
+        0, pageSize + 1, Sort.by(Sort.Direction.DESC, "id"));
+    // 다음 페이지 여부를 알기 위해 pageSize + 1
+
+    List<Room> rooms = roomRepository.findRoomsWithCursor(
+        accommodation.getId(), cursorId, pageable);
+
+    boolean hasNext = rooms.size() > pageSize;
+
+    if (hasNext) {
+      rooms = rooms.subList(0, pageSize);
+    }
+    Long nextCursorId = hasNext ? rooms.get(rooms.size() - 1).getId() : null;
+
+    return RoomListResponse.of(rooms, nextCursorId, hasNext);
+  }
+
+  private Accommodation getAuthorizedAccommodation(Long hostId, Long accommodationId) {
+    Accommodation accommodation = accommodationRepository.findById(accommodationId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
+
+    if (!hostId.equals(accommodation.getHost().getId())) {
+      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
+    return accommodation;
   }
 }

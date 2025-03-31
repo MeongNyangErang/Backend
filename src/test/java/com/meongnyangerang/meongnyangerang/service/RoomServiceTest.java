@@ -9,17 +9,21 @@ import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.HashtagType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomListResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.RoomRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +35,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -50,9 +57,16 @@ class RoomServiceTest {
   private RoomService roomService;
 
   private RoomCreateRequest roomCreateRequest;
+  private Host host;
   private Accommodation accommodation;
   private MultipartFile image;
   private String imageUrl;
+  private List<Room> rooms;
+
+  private final int PAGE_SIZE = 5;
+
+  Pageable pageable = PageRequest.of(
+      0, PAGE_SIZE + 1, Sort.by(Sort.Direction.DESC, "id"));
 
   @BeforeEach
   void setUp() {
@@ -66,9 +80,14 @@ class RoomServiceTest {
 
     imageUrl = "https://example.com/images/test-image.jpg";
 
+    host = Host.builder()
+        .id(1L)
+        .build();
+
     // 테스트용 숙소 설정
     accommodation = Accommodation.builder()
         .id(1L)
+        .host(host)
         .name("테스트 숙소")
         .type(AccommodationType.PENSION)
         .build();
@@ -97,11 +116,25 @@ class RoomServiceTest {
         facilityTypes,
         petFacilityTypes
     );
+
+    LocalDateTime now = LocalDateTime.now();
+    rooms = new ArrayList<>();
+
+    for (int i = 1; i <= 10; i++) {
+      Room room = Room.builder()
+          .id((long) i)
+          .name("객실 " + i)
+          .accommodation(accommodation)
+          .createdAt(now.minusDays(i))
+          .build();
+
+      rooms.add(room);
+    }
   }
 
   @Test
   @DisplayName("객실 생성 성공")
-    void createRoom_Success() {
+  void createRoom_Success() {
     // given
     Long accommodationId = accommodation.getId();
 
@@ -109,7 +142,7 @@ class RoomServiceTest {
     when(imageService.storeImage(image)).thenReturn(imageUrl);
 
     // when
-    roomService.createRoom(roomCreateRequest, image);
+    roomService.createRoom(host.getId(), roomCreateRequest, image);
 
     // then
     verify(accommodationRepository, times(1)).findById(1L);
@@ -146,10 +179,110 @@ class RoomServiceTest {
 
     // when
     // then
-    assertThatThrownBy(() -> roomService.createRoom(roomCreateRequest, image))
+    assertThatThrownBy(() -> roomService.createRoom(host.getId(), roomCreateRequest, image))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
 
     verify(accommodationRepository).findById(1L);
+  }
+
+  @Test
+  @DisplayName("객실 목록 조회 성공 - 첫 페이지 조회")
+  void getRoomList_FirstPage_Success() {
+    // given
+    int pageSize = 5;
+
+    when(accommodationRepository.findById(accommodation.getId())).thenReturn(
+        Optional.of(accommodation));
+    when(roomRepository.findRoomsWithCursor(accommodation.getId(), null, pageable))
+        .thenReturn(rooms.subList(0, 6)); // 5개 요청 + 1개 추가
+
+    // when
+    RoomListResponse response = roomService.getRoomList(
+        host.getId(), accommodation.getId(), null, pageSize);
+
+    // then
+    assertThat(response.content()).hasSize(5);
+    assertThat(response.hasNext()).isTrue();
+    assertThat(response.nextCursor()).isEqualTo(5L); // 마지막으로 조회된 객실의 ID
+  }
+
+  @Test
+  @DisplayName("객실 목록 조회 성공 - 다음 페이지")
+  void getRoomList_NextPage_Success() {
+    // given
+    Long cursorId = 6L; // 이전 페이지의 마지막 ID
+    int pageSize = 5;
+
+    when(accommodationRepository.findById(accommodation.getId()))
+        .thenReturn(Optional.of(accommodation));
+    when(roomRepository.findRoomsWithCursor(accommodation.getId(), cursorId, pageable))
+        .thenReturn(rooms.subList(5, 10)); // ID가 6 ~ 10인 객실
+
+    // when
+    RoomListResponse response = roomService.getRoomList(
+        host.getId(), accommodation.getId(), cursorId, pageSize);
+
+    // then
+    assertThat(response.content()).hasSize(5);
+    assertThat(response.hasNext()).isFalse(); // 다음 페이지 없음
+    assertThat(response.nextCursor()).isNull();
+  }
+
+  @Test
+  @DisplayName("객실 목록 조회 성공 - 결과가 없는 경우")
+  void getRoomList_EmptyResult_Success() {
+    // given
+    Long cursorId = 1L;
+    int pageSize = 5;
+
+    when(accommodationRepository.findById(accommodation.getId()))
+        .thenReturn(Optional.of(accommodation));
+    when(roomRepository.findRoomsWithCursor(accommodation.getId(), cursorId, pageable))
+        .thenReturn(new ArrayList<>()); // 빈 결과
+
+    // when
+    RoomListResponse response = roomService.getRoomList(
+        host.getId(), accommodation.getId(), cursorId, pageSize);
+
+    // then
+    assertThat(response.content()).isEmpty();
+    assertThat(response.hasNext()).isFalse();
+    assertThat(response.nextCursor()).isNull();
+  }
+
+  @Test
+  @DisplayName("객실 목록 조회 실패 - 숙소를 찾을 수 없음")
+  void getRoomList_AccommodationNotFound_ThrowsException() {
+    // given
+    Long accommodationId = 2L; // 존재하지 않는 숙소 ID
+    int pageSize = 5;
+
+    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> roomService.getRoomList(
+        host.getId(), accommodationId, null, pageSize))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
+  }
+
+  @Test
+  @DisplayName("객실 목록 조회 실패 - 권한 없음")
+  void getRoomList_Unauthorized_ThrowsException() {
+    // given
+    Long unauthorizedHostId = 2L;
+
+    when(accommodationRepository.findById(accommodation.getId()))
+        .thenReturn(Optional.of(accommodation));
+
+    // when
+    // then
+    assertThatThrownBy(
+        () -> roomService.getRoomList(
+            unauthorizedHostId, accommodation.getId(), null, PAGE_SIZE))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.INVALID_AUTHORIZED);
   }
 }

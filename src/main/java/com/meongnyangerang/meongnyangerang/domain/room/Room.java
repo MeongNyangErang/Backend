@@ -78,5 +78,5 @@ public class Room {
 
   @LastModifiedDate
   @Column(nullable = false)
-  private LocalDateTime updateAt;
+  private LocalDateTime updatedAt;
 }
