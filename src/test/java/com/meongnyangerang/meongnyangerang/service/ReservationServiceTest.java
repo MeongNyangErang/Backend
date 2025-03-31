@@ -424,7 +424,7 @@ class ReservationServiceTest {
 
     // then
     verify(reservationRepository, times(1)).findById(reservation.getId());
-    assertEquals(ReservationStatus.CANCELLED, reservation.getStatus());
+    assertEquals(ReservationStatus.CANCELED, reservation.getStatus());
   }
 
   @Test
@@ -496,7 +496,7 @@ class ReservationServiceTest {
 
     Reservation reservation = Reservation.builder()
         .id(1L)
-        .status(ReservationStatus.CANCELLED)
+        .status(ReservationStatus.CANCELED)
         .user(user)
         .room(room)
         .checkInDate(LocalDate.of(2025, 1, 1))
