@@ -46,11 +46,9 @@ public class ReservationController {
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size,
       @RequestParam ReservationStatus status) {
 
-    CustomReservationResponse<UserReservationResponse> response = reservationService.getUserReservations(
+    return ResponseEntity.ok(reservationService.getUserReservations(
         userDetails.getId(), cursor, size,
-        status);
-
-    return ResponseEntity.ok(response);
+        status));
   }
 
   @PatchMapping("/users/reservations/{reservationId}/cancel")
@@ -60,7 +58,7 @@ public class ReservationController {
 
     reservationService.cancelReservation(userDetails.getId(), reservationId);
 
-    return ResponseEntity.ok().build();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
   @GetMapping("/hosts/reservations")
@@ -70,10 +68,8 @@ public class ReservationController {
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size,
       @RequestParam ReservationStatus status) {
 
-    CustomReservationResponse<HostReservationResponse> response = reservationService.getHostReservation(
+    return ResponseEntity.ok(reservationService.getHostReservation(
         userDetails.getId(), cursor, size,
-        status);
-
-    return ResponseEntity.ok(response);
+        status));
   }
 }
