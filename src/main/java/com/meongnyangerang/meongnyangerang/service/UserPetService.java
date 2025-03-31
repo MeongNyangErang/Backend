@@ -5,6 +5,7 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_
 
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
+import com.meongnyangerang.meongnyangerang.dto.UserPetRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
