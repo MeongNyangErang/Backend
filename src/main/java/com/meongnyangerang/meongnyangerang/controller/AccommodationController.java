@@ -55,13 +55,16 @@ public class AccommodationController {
   /**
    * 숙소 수정 API
    */
+  // TODO: UserDetails 구현이 완료되면 주석 해제
+  // TODO: host만 호출할 수 있도록 수정
   @PutMapping
   public ResponseEntity<AccommodationResponse> updateAccommodation(
+      //@AuthenticationPrincipal UserDetail userDetail,
       @Valid @RequestPart AccommodationUpdateRequest request,
-      @RequestPart MultipartFile newThumbnail,
+      @RequestPart(required = false) MultipartFile newThumbnail,
       @RequestPart(required = false) List<MultipartFile> newAdditionalImages
   ){
     return ResponseEntity.ok(
-        accommodationService.updateAccommodation(request, newThumbnail, newAdditionalImages));
+        accommodationService.updateAccommodation(1L, request, newThumbnail, newAdditionalImages));
   }
 }
