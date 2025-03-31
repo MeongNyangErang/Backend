@@ -1,10 +1,15 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.domain.host.HostStatus.PENDING;
+import static com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus.RESERVED;
 import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_HOST;
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_PENDING;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.FILE_IS_EMPTY;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_RESERVATION_EXISTS;
 
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
@@ -14,8 +19,10 @@ import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,6 +38,7 @@ public class HostService {
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
   private final ImageService imageService;
+  private final ReservationRepository reservationRepository;
 
   // 호스트 회원가입
   public void registerHost(HostSignupRequest request,
@@ -90,5 +98,21 @@ public class HostService {
 
     return jwtTokenProvider.createToken(host.getId(), host.getEmail(), host.getRole().name(),
         host.getStatus());
+  }
+
+  // 호스트 회원 탈퇴
+  @Transactional
+  public void deleteHost(Long hostId) {
+
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_ACCOUNT));
+
+    // 호스트가 등록한 숙소 중 예약 상태가 RESERVED인 것이 있으면 탈퇴 불가
+    if (reservationRepository.existsByHostIdAndStatus(hostId, RESERVED)) {
+      throw new MeongnyangerangException(RESERVED_RESERVATION_EXISTS);
+    }
+
+    host.setStatus(HostStatus.DELETED);
+    host.setDeletedAt(LocalDateTime.now());
   }
 }

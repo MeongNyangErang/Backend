@@ -2,7 +2,6 @@ package com.meongnyangerang.meongnyangerang.dto.room;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
-import com.meongnyangerang.meongnyangerang.domain.room.facility.Hashtag;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.HashtagType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
