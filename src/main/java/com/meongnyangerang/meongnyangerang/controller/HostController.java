@@ -48,6 +48,6 @@ public class HostController {
   @DeleteMapping("/me")
   public ResponseEntity<Void> deleteHost(@AuthenticationPrincipal UserDetailsImpl userDetails) {
     hostService.deleteHost(userDetails.getId());
-    return ResponseEntity.status(HttpStatus.OK).build();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 }

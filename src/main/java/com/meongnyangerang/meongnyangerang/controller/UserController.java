@@ -46,6 +46,6 @@ public class UserController {
   @DeleteMapping("/me")
   public ResponseEntity<Void> deleteUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
     userService.deleteUser(userDetails.getId());
-    return ResponseEntity.status(HttpStatus.OK).build();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 }
