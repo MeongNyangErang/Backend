@@ -349,11 +349,11 @@ class AccommodationServiceTest {
     }
 
     // 추가 이미지 목록 검증
-//    assertThat(response.additionalImageUrls()).hasSize(accommodationImages.size());
-//    for (int i = 0; i < accommodationImages.size(); i++) {
-//      assertThat(response.additionalImageUrls().get(i))
-//          .isEqualTo(accommodationImages.get(i).getImageUrl());
-//    }
+    assertThat(response.additionalImageUrls()).hasSize(accommodationImages.size());
+    for (int i = 0; i < accommodationImages.size(); i++) {
+      assertThat(response.additionalImageUrls().get(i))
+          .isEqualTo(accommodationImages.get(i).getImageUrl());
+    }
 
     verify(accommodationRepository, times(1))
         .findByHostId(host.getId());
