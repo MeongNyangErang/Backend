@@ -81,9 +81,9 @@ public class AccommodationService {
       List<String> newAdditionalImageUrls
   ) {
     accommodationRepository.save(accommodation);
-    saveAccommodationFacilities(request.getFacilityTypes(), accommodation);
-    saveAccommodationPetFacilities(request.getPetFacilityTypes(), accommodation);
-    saveAllowPets(request.getAllowPetTypes(), accommodation);
+    saveAccommodationFacilities(request.facilityTypes(), accommodation);
+    saveAccommodationPetFacilities(request.petFacilityTypes(), accommodation);
+    saveAllowPets(request.allowPetTypes(), accommodation);
     saveAdditionalImages(newAdditionalImageUrls, accommodation);
   }
 
@@ -105,8 +105,7 @@ public class AccommodationService {
       MultipartFile thumbnail,
       List<MultipartFile> newAdditionalImages
   ) {
-    Accommodation accommodation =
-        getAuthorizedAccommodation(hostId, request.accommodationId());
+    Accommodation accommodation = findAccommodationByHostId(hostId);
     newAdditionalImages = initAdditionalImages(newAdditionalImages);
 
     List<String> trackingList = new ArrayList<>(); // 업로드 성공한 이미지 추적 (롤백 위함)
@@ -114,7 +113,7 @@ public class AccommodationService {
 
     try {
       String newThumbnailUrl = processThumbnailUpdate(
-          accommodation, thumbnail, trackingList, oldImageUrlsToDelete);
+          accommodation.getThumbnailUrl(), thumbnail, trackingList, oldImageUrlsToDelete);
 
       List<String> newAdditionalImageUrls = processAdditionalImagesUpdate(
           accommodation, newAdditionalImages, trackingList, oldImageUrlsToDelete);
@@ -122,7 +121,7 @@ public class AccommodationService {
       updateEntities(accommodation, request, newThumbnailUrl, newAdditionalImageUrls);
       imageService.registerImagesForDeletion(oldImageUrlsToDelete);
 
-      log.info("숙소 수정 성공, 숙소 ID : {}", request.accommodationId());
+      log.info("숙소 수정 성공, 숙소 ID : {}", accommodation.getId());
       return createAccommodationResponse(accommodation);
     } catch (Exception e) {
       log.error("숙소 수정 에러 발생, S3에 업로드된 이미지 삭제 처리, 원인: {}", e.getMessage());
@@ -138,16 +137,16 @@ public class AccommodationService {
   }
 
   private String processThumbnailUpdate(
-      Accommodation accommodation,
+      String oldThumbnailUrl,
       MultipartFile newThumbnail,
       List<String> trackingList,
       List<String> oldImageUrlsToDelete
   ) {
-    String newThumbnailUrl = accommodation.getThumbnailUrl();
+    String newThumbnailUrl = oldThumbnailUrl;
 
     if (newThumbnail != null && !newThumbnail.isEmpty()) {
       newThumbnailUrl = uploadImage(newThumbnail, trackingList);
-      oldImageUrlsToDelete.add(accommodation.getThumbnailUrl());
+      oldImageUrlsToDelete.add(oldThumbnailUrl);
     }
 
     return newThumbnailUrl;
@@ -208,14 +207,12 @@ public class AccommodationService {
       String newThumbnailUrl,
       List<String> newAdditionalImageUrls
   ) {
-    Long accommodationId = request.accommodationId();
+    Long accommodationId = accommodation.getId();
 
     accommodation.updateAccommodation(request, newThumbnailUrl);
-
     updateFacilities(accommodationId, request.facilityTypes(), accommodation);
 
     updatePetFacilities(accommodationId, request.petFacilityTypes(), accommodation);
-
     updateAllowPets(accommodationId, request.allowPetTypes(), accommodation);
 
     if (!newAdditionalImageUrls.isEmpty()) {
@@ -318,16 +315,6 @@ public class AccommodationService {
     validateNotExistsAccommodation(hostId);
 
     return host;
-  }
-
-  private Accommodation getAuthorizedAccommodation(Long hostId, Long accommodationId) {
-    Accommodation accommodation = findAccommodationByHostId(hostId);
-
-    if (!accommodation.getId().equals(accommodationId)) {
-      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
-    }
-
-    return accommodation;
   }
 
   private List<MultipartFile> initAdditionalImages(List<MultipartFile> additionalImages) {

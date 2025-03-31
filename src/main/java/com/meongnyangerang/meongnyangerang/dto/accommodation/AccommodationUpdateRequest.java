@@ -11,9 +11,6 @@ import java.util.List;
 
 public record AccommodationUpdateRequest(
 
-    @NotNull(message = "숙소 ID를 요청해 주세요.")
-    Long accommodationId,
-
     @NotBlank(message = "숙소 이름을 입력해 주세요.")
     String name,
 
@@ -44,7 +41,6 @@ public record AccommodationUpdateRequest(
 ) {
 
   public static AccommodationUpdateRequest of(
-      Long accommodationId,
       String name,
       AccommodationType type,
       String address,
@@ -57,7 +53,6 @@ public record AccommodationUpdateRequest(
       List<PetType> allowPetTypes
   ) {
     return new AccommodationUpdateRequest(
-        accommodationId,
         name,
         type,
         address,
