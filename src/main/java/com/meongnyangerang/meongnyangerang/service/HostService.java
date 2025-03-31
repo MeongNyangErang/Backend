@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.domain.host.HostStatus.PENDING;
+import static com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus.RESERVED;
 import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_HOST;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
@@ -8,14 +9,17 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PA
 
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
+import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,6 +35,7 @@ public class HostService {
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
   private final ImageService imageService;
+  private final ReservationRepository reservationRepository;
 
   // 호스트 회원가입
   public void registerHost(HostSignupRequest request,
@@ -90,5 +95,21 @@ public class HostService {
 
     return jwtTokenProvider.createToken(host.getId(), host.getEmail(), host.getRole().name(),
         host.getStatus());
+  }
+
+  // 호스트 회원 탈퇴
+  public void deleteHost(Long hostId) {
+
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_ACCOUNT));
+
+    // 호스트가 등록한 숙소 중 예약 상태가 RESERVED인 것이 있으면 탈퇴 불가
+    boolean hasReserved = reservationRepository.existsByHostIdAndReservationStatus(hostId, RESERVED);
+    if (hasReserved) {
+      throw new MeongnyangerangException(RESERVED_RESERVATION_EXISTS);
+    }
+
+    host.setStatus(HostStatus.DELETED);
+    host.setDeletedAt(LocalDateTime.now());
   }
 }
