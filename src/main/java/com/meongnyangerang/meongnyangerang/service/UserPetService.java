@@ -26,8 +26,7 @@ public class UserPetService {
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 
     // 최대 10마리 제한
-    long count = userPetRepository.countByUserId(userId);
-    if (count >= 10) {
+    if (userPetRepository.countByUserId(userId) >= 10) {
       throw new MeongnyangerangException(MAX_PET_COUNT_EXCEEDED);
     }
 
