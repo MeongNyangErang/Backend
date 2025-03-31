@@ -17,8 +17,8 @@ import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
-import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -426,7 +426,8 @@ class ReviewServiceTest {
     when(reviewImageRepository.findByReviewId(review.getId())).thenReturn(reviewImage);
 
     // when
-    CustomReviewResponse<MyReviewResponse> customResponse = reviewService.getUsersReviews(user.getId(), 0L, 5);
+    CustomReviewResponse<MyReviewResponse> customResponse = reviewService.getUsersReviews(
+        user.getId(), 0L, 5);
 
     // then
     assertEquals(expectedResponse.getAccommodationName(),
@@ -473,11 +474,13 @@ class ReviewServiceTest {
         .createdAt(review.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
         .build();
 
-    when(reviewRepository.findByAccommodationId(accommodation.getId(), 0L, 5 + 1)).thenReturn(List.of(review));
+    when(reviewRepository.findByAccommodationId(accommodation.getId(), 0L, 5 + 1)).thenReturn(
+        List.of(review));
     when(reviewImageRepository.findByReviewId(review.getId())).thenReturn(reviewImage);
 
     // when
-    CustomReviewResponse<AccommodationReviewResponse> customResponse = reviewService.getAccommodationReviews(accommodation.getId(), 0L, 5);
+    CustomReviewResponse<AccommodationReviewResponse> customResponse = reviewService.getAccommodationReviews(
+        accommodation.getId(), 0L, 5);
 
     // then
     assertEquals(expectedResponse.getNickname(),
@@ -486,5 +489,71 @@ class ReviewServiceTest {
         customResponse.getContent().get(0).getTotalRating());
     assertNull(customResponse.getCursor());
     assertFalse(customResponse.isHasNext());
+  }
+
+  @Test
+  @DisplayName("유저는 자신의 리뷰를 삭제할 수 있다.")
+  void deleteReview_success() {
+    // when
+    User user = User.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).build();
+
+    Review review = Review.builder().id(1L).user(user).accommodation(accommodation).build();
+    ReviewImage image = ReviewImage.builder().id(1L).review(review).build();
+
+    when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
+    when(reviewImageRepository.findAllByReviewId(review.getId())).thenReturn(List.of(image));
+
+    // when
+    reviewService.deleteReview(review.getId(), user.getId());
+
+    // then
+    ArgumentCaptor<Review> reviewCaptor = ArgumentCaptor.forClass(Review.class);
+    verify(reviewRepository, times(1)).delete(reviewCaptor.capture());
+    assertEquals(review.getId(), reviewCaptor.getValue().getId());
+
+    ArgumentCaptor<List<ReviewImage>> reviewImagesCaptor = ArgumentCaptor.forClass(List.class);
+    verify(reviewImageRepository, times(1)).deleteAll(reviewImagesCaptor.capture());
+    assertEquals(1, reviewImagesCaptor.getValue().size());
+    assertEquals(image.getId(), reviewImagesCaptor.getValue().get(0).getId());
+  }
+
+  @Test
+  @DisplayName("리뷰가 존재하지 않는 경우, REVIEW_NOT_FOUND 예외가 발생해야 한다.")
+  void deleteReview_review_not_found() {
+    // when
+    User user = User.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).build();
+
+    Review review = Review.builder().id(1L).user(user).accommodation(accommodation).build();
+
+    when(reviewRepository.findById(review.getId())).thenReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> reviewService.deleteReview(review.getId(), user.getId()));
+
+    // then
+    assertEquals(ErrorCode.REVIEW_NOT_FOUND, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("삭제 요청한 사용자와 리뷰 작성자가 다를 경우, REVIEW_NOT_AUTHORIZED 예외가 발생해야 한다.")
+  void deleteReview_review_not_authorized() {
+    // when
+    User user = User.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).build();
+
+    Review review = Review.builder().id(1L).user(User.builder().id(2L).build())
+        .accommodation(accommodation).build();
+
+    when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
+
+    // when
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> reviewService.deleteReview(review.getId(), user.getId()));
+
+    // then
+    assertEquals(ErrorCode.REVIEW_NOT_AUTHORIZED, e.getErrorCode());
   }
 }
