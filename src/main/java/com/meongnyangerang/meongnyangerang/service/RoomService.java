@@ -31,7 +31,7 @@ public class RoomService {
    * 객실 등록
    */
   public void createRoom(Long hostId, RoomCreateRequest request, MultipartFile images) {
-    Accommodation accommodation = getAuthorizedAccommodation(hostId, request.accommodationId());
+    Accommodation accommodation = findAccommodationByHostId(hostId);
     String imageUrl = imageService.storeImage(images);
 
     Room room = request.toEntity(accommodation, imageUrl);
@@ -41,13 +41,8 @@ public class RoomService {
   /**
    * 객실 목록 조회
    */
-  public RoomListResponse getRoomList(
-      Long hostId,
-      Long accommodationId,
-      Long cursorId,
-      int pageSize
-  ) {
-    Accommodation accommodation = getAuthorizedAccommodation(hostId, accommodationId);
+  public RoomListResponse getRoomList(Long hostId, Long cursorId, int pageSize) {
+    Accommodation accommodation = findAccommodationByHostId(hostId);
     Pageable pageable = PageRequest.of(
         0, pageSize + 1, Sort.by(Sort.Direction.DESC, "id"));
     // 다음 페이지 여부를 알기 위해 pageSize + 1
@@ -65,13 +60,8 @@ public class RoomService {
     return RoomListResponse.of(rooms, nextCursorId, hasNext);
   }
 
-  private Accommodation getAuthorizedAccommodation(Long hostId, Long accommodationId) {
-    Accommodation accommodation = accommodationRepository.findById(accommodationId)
+  private Accommodation findAccommodationByHostId(Long hostId) {
+    return accommodationRepository.findByHostId(hostId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
-
-    if (!hostId.equals(accommodation.getHost().getId())) {
-      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
-    }
-    return accommodation;
   }
 }

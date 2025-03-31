@@ -99,7 +99,6 @@ class RoomServiceTest {
         Arrays.asList(CAT_WHEEL, CAT_TOWER, DRY_ROOM, BED, TOY);
 
     roomCreateRequest = new RoomCreateRequest(
-        accommodation.getId(),
         "test-room-name",
         "객실 설명",
         6,
@@ -136,16 +135,14 @@ class RoomServiceTest {
   @DisplayName("객실 생성 성공")
   void createRoom_Success() {
     // given
-    Long accommodationId = accommodation.getId();
-
-    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
     when(imageService.storeImage(image)).thenReturn(imageUrl);
 
     // when
     roomService.createRoom(host.getId(), roomCreateRequest, image);
 
     // then
-    verify(accommodationRepository, times(1)).findById(1L);
+    verify(accommodationRepository, times(1)).findByHostId(1L);
     verify(imageService, times(1)).storeImage(image);
 
     ArgumentCaptor<Room> roomCaptor = ArgumentCaptor.forClass(Room.class);
@@ -175,7 +172,7 @@ class RoomServiceTest {
   @DisplayName("숙소를 찾을 수 없을 때 예외 발생")
   void createRoom_AccommodationNotFound() {
     // given
-    when(accommodationRepository.findById(accommodation.getId())).thenReturn(Optional.empty());
+    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.empty());
 
     // when
     // then
@@ -183,7 +180,7 @@ class RoomServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
 
-    verify(accommodationRepository).findById(1L);
+    verify(accommodationRepository).findByHostId(1L);
   }
 
   @Test
@@ -192,14 +189,13 @@ class RoomServiceTest {
     // given
     int pageSize = 5;
 
-    when(accommodationRepository.findById(accommodation.getId())).thenReturn(
+    when(accommodationRepository.findByHostId(host.getId())).thenReturn(
         Optional.of(accommodation));
     when(roomRepository.findRoomsWithCursor(accommodation.getId(), null, pageable))
         .thenReturn(rooms.subList(0, 6)); // 5개 요청 + 1개 추가
 
     // when
-    RoomListResponse response = roomService.getRoomList(
-        host.getId(), accommodation.getId(), null, pageSize);
+    RoomListResponse response = roomService.getRoomList(host.getId(), null, pageSize);
 
     // then
     assertThat(response.content()).hasSize(5);
@@ -214,14 +210,13 @@ class RoomServiceTest {
     Long cursorId = 6L; // 이전 페이지의 마지막 ID
     int pageSize = 5;
 
-    when(accommodationRepository.findById(accommodation.getId()))
+    when(accommodationRepository.findByHostId(host.getId()))
         .thenReturn(Optional.of(accommodation));
     when(roomRepository.findRoomsWithCursor(accommodation.getId(), cursorId, pageable))
         .thenReturn(rooms.subList(5, 10)); // ID가 6 ~ 10인 객실
 
     // when
-    RoomListResponse response = roomService.getRoomList(
-        host.getId(), accommodation.getId(), cursorId, pageSize);
+    RoomListResponse response = roomService.getRoomList(host.getId(), cursorId, pageSize);
 
     // then
     assertThat(response.content()).hasSize(5);
@@ -236,14 +231,13 @@ class RoomServiceTest {
     Long cursorId = 1L;
     int pageSize = 5;
 
-    when(accommodationRepository.findById(accommodation.getId()))
+    when(accommodationRepository.findByHostId(host.getId()))
         .thenReturn(Optional.of(accommodation));
     when(roomRepository.findRoomsWithCursor(accommodation.getId(), cursorId, pageable))
         .thenReturn(new ArrayList<>()); // 빈 결과
 
     // when
-    RoomListResponse response = roomService.getRoomList(
-        host.getId(), accommodation.getId(), cursorId, pageSize);
+    RoomListResponse response = roomService.getRoomList(host.getId(), cursorId, pageSize);
 
     // then
     assertThat(response.content()).isEmpty();
@@ -255,34 +249,15 @@ class RoomServiceTest {
   @DisplayName("객실 목록 조회 실패 - 숙소를 찾을 수 없음")
   void getRoomList_AccommodationNotFound_ThrowsException() {
     // given
-    Long accommodationId = 2L; // 존재하지 않는 숙소 ID
     int pageSize = 5;
 
-    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.empty());
+    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.empty());
 
     // when
     // then
     assertThatThrownBy(() -> roomService.getRoomList(
-        host.getId(), accommodationId, null, pageSize))
+        host.getId(), null, pageSize))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
-  }
-
-  @Test
-  @DisplayName("객실 목록 조회 실패 - 권한 없음")
-  void getRoomList_Unauthorized_ThrowsException() {
-    // given
-    Long unauthorizedHostId = 2L;
-
-    when(accommodationRepository.findById(accommodation.getId()))
-        .thenReturn(Optional.of(accommodation));
-
-    // when
-    // then
-    assertThatThrownBy(
-        () -> roomService.getRoomList(
-            unauthorizedHostId, accommodation.getId(), null, PAGE_SIZE))
-        .isInstanceOf(MeongnyangerangException.class)
-        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.INVALID_AUTHORIZED);
   }
 }

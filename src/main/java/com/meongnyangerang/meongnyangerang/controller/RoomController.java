@@ -45,11 +45,9 @@ public class RoomController {
   @GetMapping("/{accommodationId}")
   public ResponseEntity<RoomListResponse> getRoomList(
       @AuthenticationPrincipal UserDetailsImpl userDetail,
-      @PathVariable Long accommodationId,
       @RequestParam(required = false) Long cursorId,
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int pageSize
   ) {
-    return ResponseEntity.ok(
-        roomService.getRoomList(userDetail.getId(), accommodationId, cursorId, pageSize));
+    return ResponseEntity.ok(roomService.getRoomList(userDetail.getId(), cursorId, pageSize));
   }
 }
