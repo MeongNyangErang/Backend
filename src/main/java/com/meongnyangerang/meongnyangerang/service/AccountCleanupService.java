@@ -27,11 +27,13 @@ public class AccountCleanupService {
   public void deleteExpiredSoftDeletedUsers() {
     LocalDateTime cutoff = LocalDateTime.now().minusDays(30);
 
-    List<User> usersToDelete = userRepository.findAllByStatusAndDeletedAtBefore(UserStatus.DELETED, cutoff);
+    List<User> usersToDelete = userRepository.findAllByStatusAndDeletedAtBefore(UserStatus.DELETED,
+        cutoff);
     userRepository.deleteAll(usersToDelete);
     log.info("하드 삭제된 사용자 수: {}", usersToDelete.size());
 
-    List<Host> hostsToDelete = hostRepository.findAllByStatusAndDeletedAtBefore(HostStatus.DELETED, cutoff);
+    List<Host> hostsToDelete = hostRepository.findAllByStatusAndDeletedAtBefore(HostStatus.DELETED,
+        cutoff);
     hostRepository.deleteAll(hostsToDelete);
     log.info("하드 삭제된 호스트 수: {}", hostsToDelete.size());
   }

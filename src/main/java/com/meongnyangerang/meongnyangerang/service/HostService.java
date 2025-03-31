@@ -3,13 +3,16 @@ package com.meongnyangerang.meongnyangerang.service;
 import static com.meongnyangerang.meongnyangerang.domain.host.HostStatus.PENDING;
 import static com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus.RESERVED;
 import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_HOST;
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_PENDING;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.FILE_IS_EMPTY;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_RESERVATION_EXISTS;
 
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
-import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
