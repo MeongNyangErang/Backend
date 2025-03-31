@@ -110,4 +110,13 @@ class HostServiceTest {
     assertEquals(HostStatus.DELETED, host.getStatus());
     assertNotNull(host.getDeletedAt());
   }
+
+  @Test
+  @DisplayName("호스트 탈퇴 실패 - 예약 존재")
+  void deleteHostFailDueToReservation() {
+    when(hostRepository.findById(anyLong())).thenReturn(Optional.of(new Host()));
+    when(reservationRepository.existsByHostIdAndStatus(anyLong(), eq(ReservationStatus.RESERVED))).thenReturn(true);
+
+    assertThrows(MeongnyangerangException.class, () -> hostService.deleteHost(1L));
+  }
 }
