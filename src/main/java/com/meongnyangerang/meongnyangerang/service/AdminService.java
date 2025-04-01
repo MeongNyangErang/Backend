@@ -133,7 +133,7 @@ public class AdminService {
       throw new MeongnyangerangException(ErrorCode.HOST_ALREADY_PROCESSED);
     }
 
-    // 가입 승인 이메일 발송
+    // 가입 거절 이메일 발송
     mailComponent.sendMail(
         host.getEmail(),
         "[멍냥이랑] 요청하신 호스트 가입이 거절되었습니다",
