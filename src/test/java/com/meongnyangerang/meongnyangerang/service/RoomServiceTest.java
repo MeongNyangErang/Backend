@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -584,5 +585,100 @@ class RoomServiceTest {
     assertThatThrownBy(() -> roomService.updateRoom(host.getId(), roomUpdateRequest, image))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ROOM_NOT_FOUND);
+  }
+
+  @Test
+  @DisplayName("객실 삭제 성공")
+  void deleteRoom_Success() {
+    // given
+    Long hostId = host.getId();
+    Long roomId = room.getId();
+
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(accommodation));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+
+    // when
+    roomService.deleteRoom(host.getId(), roomId);
+
+    // then
+    verify(accommodationRepository, times(1)).findByHostId(hostId);
+    verify(roomRepository, times(1)).findById(roomId);
+    verify(hashtagRepository, times(1)).deleteAllByRoomId(roomId);
+    verify(petFacilityRepository, times(1)).deleteAllByRoomId(roomId);
+    verify(facilityRepository, times(1)).deleteAllByRoomId(roomId);
+    verify(roomRepository, times(1)).delete(room);
+  }
+
+  @Test
+  @DisplayName("객실 삭제 실패 - 숙소 없음")
+  void deleteRoom_AccommodationNotFound_ThrowsException() {
+    // given
+    Long hostId = host.getId();
+    Long roomId = room.getId();
+
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> roomService.deleteRoom(hostId, roomId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
+
+    verify(accommodationRepository, times(1)).findByHostId(hostId);
+    verify(roomRepository, never()).findById(roomId);
+    verify(hashtagRepository, never()).deleteAllByRoomId(roomId);
+    verify(petFacilityRepository, never()).deleteAllByRoomId(roomId);
+    verify(facilityRepository, never()).deleteAllByRoomId(roomId);
+    verify(roomRepository, never()).delete(room);
+  }
+
+  @Test
+  @DisplayName("객실 삭제 실패 - 객실 없음")
+  void deleteRoom_RoomNotFound_ThrowsException() {
+    // given
+    Long hostId = host.getId();
+    Long roomId = room.getId();
+
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(accommodation));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> roomService.deleteRoom(hostId, roomId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ROOM_NOT_FOUND);
+
+    verify(accommodationRepository, times(1)).findByHostId(hostId);
+    verify(roomRepository, times(1)).findById(roomId);
+    verify(hashtagRepository, never()).deleteAllByRoomId(roomId);
+    verify(petFacilityRepository, never()).deleteAllByRoomId(roomId);
+    verify(facilityRepository, never()).deleteAllByRoomId(roomId);
+    verify(roomRepository, never()).delete(room);
+  }
+
+  @Test
+  @DisplayName("객실 삭제 실패 - 권한 없음")
+  void deleteRoom_InvalidAuthorized_ThrowsException() {
+    // given
+    Long hostId = host.getId();
+    Long roomId = room.getId();
+
+    Accommodation otherAccommodation = Accommodation.builder().id(20L).build();
+
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(otherAccommodation));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+
+    // when
+    // then
+    assertThatThrownBy(() -> roomService.deleteRoom(hostId, roomId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.INVALID_AUTHORIZED);
+
+    verify(accommodationRepository, times(1)).findByHostId(hostId);
+    verify(roomRepository, times(1)).findById(roomId);
+    verify(hashtagRepository, never()).deleteAllByRoomId(roomId);
+    verify(petFacilityRepository, never()).deleteAllByRoomId(roomId);
+    verify(facilityRepository, never()).deleteAllByRoomId(roomId);
+    verify(roomRepository, never()).delete(room);
   }
 }

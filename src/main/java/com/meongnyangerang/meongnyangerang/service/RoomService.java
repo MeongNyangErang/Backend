@@ -118,6 +118,18 @@ public class RoomService {
     }
   }
 
+  /**
+   * 객실 삭제
+   */
+  @Transactional
+  public void deleteRoom(Long hostId, Long roomId) {
+    Room room = getAuthorizedRoom(hostId, roomId);
+    hashtagRepository.deleteAllByRoomId(roomId);
+    roomPetFacilityRepository.deleteAllByRoomId(roomId);
+    roomFacilityRepository.deleteAllByRoomId(roomId);
+    roomRepository.delete(room);
+  }
+
   private List<RoomFacility> updateFacilities(List<RoomFacilityType> newFacilityTypes, Room room) {
     roomFacilityRepository.deleteAllByRoomId(room.getId());
     return saveRoomFacilities(newFacilityTypes, room);
