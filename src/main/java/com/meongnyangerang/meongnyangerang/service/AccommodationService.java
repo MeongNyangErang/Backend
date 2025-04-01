@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -70,7 +69,7 @@ public class AccommodationService {
     } catch (Exception e) {
       log.error("숙소 등록 에러 발생, S3에 업로드된 이미지 삭제, 원인: {}", e.getMessage());
       imageService.deleteImages(trackingList);
-      throw new MeongnyangerangException(ErrorCode.REGISTRATION_ACCOMMODATION);
+      throw new MeongnyangerangException(ErrorCode.ACCOMMODATION_REGISTRATION_FAILED);
     }
   }
 
@@ -126,7 +125,7 @@ public class AccommodationService {
     } catch (Exception e) {
       log.error("숙소 수정 에러 발생, S3에 업로드된 이미지 삭제 처리, 원인: {}", e.getMessage());
       imageService.deleteImages(trackingList);
-      throw new MeongnyangerangException(ErrorCode.REGISTRATION_ACCOMMODATION);
+      throw new MeongnyangerangException(ErrorCode.ACCOMMODATION_REGISTRATION_FAILED);
     }
   }
 
@@ -207,44 +206,34 @@ public class AccommodationService {
       String newThumbnailUrl,
       List<String> newAdditionalImageUrls
   ) {
-    Long accommodationId = accommodation.getId();
-
     accommodation.updateAccommodation(request, newThumbnailUrl);
-    updateFacilities(accommodationId, request.facilityTypes(), accommodation);
+    updateFacilities(request.facilityTypes(), accommodation);
 
-    updatePetFacilities(accommodationId, request.petFacilityTypes(), accommodation);
-    updateAllowPets(accommodationId, request.allowPetTypes(), accommodation);
+    updatePetFacilities(request.petFacilityTypes(), accommodation);
+    updateAllowPets(request.allowPetTypes(), accommodation);
 
     if (!newAdditionalImageUrls.isEmpty()) {
-      accommodationImageRepository.deleteAllByAccommodationId(accommodationId);
+      accommodationImageRepository.deleteAllByAccommodationId(accommodation.getId());
       saveAdditionalImages(newAdditionalImageUrls, accommodation);
     }
   }
 
   private void updateFacilities(
-      Long accommodationId,
-      List<AccommodationFacilityType> newFacilityTypes,
-      Accommodation accommodation
+      List<AccommodationFacilityType> newFacilityTypes, Accommodation accommodation
   ) {
-    accommodationFacilityRepository.deleteAllByAccommodationId(accommodationId);
+    accommodationFacilityRepository.deleteAllByAccommodationId(accommodation.getId());
     saveAccommodationFacilities(newFacilityTypes, accommodation);
   }
 
   private void updatePetFacilities(
-      Long accommodationId,
-      List<AccommodationPetFacilityType> newPetFacilityTypes,
-      Accommodation accommodation
+      List<AccommodationPetFacilityType> newPetFacilityTypes, Accommodation accommodation
   ) {
-    accommodationPetFacilityRepository.deleteAllByAccommodationId(accommodationId);
+    accommodationPetFacilityRepository.deleteAllByAccommodationId(accommodation.getId());
     saveAccommodationPetFacilities(newPetFacilityTypes, accommodation);
   }
 
-  private void updateAllowPets(
-      Long accommodationId,
-      List<PetType> newPetTypes,
-      Accommodation accommodation
-  ) {
-    allowPetRepository.deleteAllByAccommodationId(accommodationId);
+  private void updateAllowPets(List<PetType> newPetTypes, Accommodation accommodation) {
+    allowPetRepository.deleteAllByAccommodationId(accommodation.getId());
     saveAllowPets(newPetTypes, accommodation);
   }
 
@@ -270,7 +259,7 @@ public class AccommodationService {
             .accommodation(accommodation)
             .type(facilityType)
             .build())
-        .collect(Collectors.toList());
+        .toList();
 
     accommodationFacilityRepository.saveAll(facilities);
   }
@@ -283,7 +272,7 @@ public class AccommodationService {
             .accommodation(accommodation)
             .type(petFacilityType)
             .build())
-        .collect(Collectors.toList());
+        .toList();
 
     accommodationPetFacilityRepository.saveAll(petFacilities);
   }
@@ -294,7 +283,7 @@ public class AccommodationService {
             .accommodation(accommodation)
             .petType(petType)
             .build())
-        .collect(Collectors.toList());
+        .toList();
 
     allowPetRepository.saveAll(allowPets);
   }
