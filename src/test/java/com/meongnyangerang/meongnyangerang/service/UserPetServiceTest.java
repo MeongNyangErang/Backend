@@ -152,4 +152,23 @@ public class UserPetServiceTest {
     assertThrows(MeongnyangerangException.class, () ->
         userPetService.updatePet(userId, petId, request));
   }
+
+  @Test
+  @DisplayName("반려동물 삭제 성공")
+  void deletePetSuccess() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    User user = User.builder().id(userId).build();
+    UserPet pet = UserPet.builder().id(petId).user(user).build();
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.of(pet));
+
+    // when
+    userPetService.deletePet(userId, petId);
+
+    // then
+    verify(userPetRepository).delete(pet);
+  }
 }
