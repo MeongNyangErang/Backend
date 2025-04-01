@@ -28,7 +28,7 @@ public enum ErrorCode {
   MAX_IMAGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "최대 이미지 개수는 3개입니다."),
   MISSING_IMAGE_FILE(HttpStatus.BAD_REQUEST, "파일이 비어있습니다."),
   MISSING_IMAGE_URL(HttpStatus.BAD_REQUEST, "이미지 URL이 비어있습니다."),
-  MAX_PET_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST,"반려동물은 최대 10마리까지 등록할 수 있습니다."),
+  MAX_PET_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "반려동물은 최대 10마리까지 등록할 수 있습니다."),
 
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
@@ -72,8 +72,9 @@ public enum ErrorCode {
   EMAIL_NOT_SEND(HttpStatus.INTERNAL_SERVER_ERROR, "이메일이 정상적으로 전송되지 않았습니다."),
   AMAZON_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "아마존 서비스 오류"),
   INVALID_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 IO 오류"),
-  REGISTRATION_ACCOMMODATION(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 등록 오류"),
-  UPDATE_ACCOMMODATION(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 수정 오류"),
+  ACCOMMODATION_REGISTRATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 등록 오류"),
+  ACCOMMODATION_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 수정 오류"),
+  ROOM_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "객실 수정 오류"),
   ;
 
   private final HttpStatus status;
