@@ -52,7 +52,7 @@ public class UserPetService {
 
     // 본인의 반려동물인지 확인
     if (!userPet.getUser().getId().equals(userId)) {
-      throw new MeongnyangerangException(NO_PERMISSION);
+      throw new MeongnyangerangException(INVALID_AUTHORIZED);
     }
 
     userPet.update(request);
