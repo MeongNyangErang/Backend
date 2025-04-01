@@ -49,32 +49,32 @@ public record RoomCreateRequest(
     @DateTimeFormat(pattern = "HH:mm")
     LocalTime checkOutTime,
 
-    @NotEmpty(message = "해시태그를 하나 이상 선택해 주세요.")
-    List<HashtagType> hashtagTypes,
-
     @NotEmpty(message = "숙소 편의시설을 하나 이상 선택해 주세요.")
     List<RoomFacilityType> facilityTypes,
 
     @NotEmpty(message = "반려동물 편의시설을 하나 이상 선택해 주세요.")
-    List<RoomPetFacilityType> petFacilityTypes
+    List<RoomPetFacilityType> petFacilityTypes,
+
+    @NotEmpty(message = "해시태그를 하나 이상 선택해 주세요.")
+    List<HashtagType> hashtagTypes
 ) {
 
-    public Room toEntity(Accommodation accommodation, String imageUrl) {
-        return Room.builder()
-            .accommodation(accommodation)
-            .name(name)
-            .description(description)
-            .standardPeopleCount(standardPeopleCount)
-            .maxPeopleCount(maxPeopleCount)
-            .standardPetCount(standardPetCount)
-            .maxPetCount(maxPetCount)
-            .imageUrl(imageUrl)
-            .price(price)
-            .extraPeopleFee(extraPeopleFee)
-            .extraPetFee(extraPetFee)
-            .extraFee(extraFee)
-            .checkInTime(checkInTime)
-            .checkOutTime(checkOutTime)
-            .build();
-    }
+  public Room toEntity(Accommodation accommodation, String imageUrl) {
+    return Room.builder()
+        .accommodation(accommodation)
+        .name(name)
+        .description(description)
+        .standardPeopleCount(standardPeopleCount)
+        .maxPeopleCount(maxPeopleCount)
+        .standardPetCount(standardPetCount)
+        .maxPetCount(maxPetCount)
+        .imageUrl(imageUrl)
+        .price(price)
+        .extraPeopleFee(extraPeopleFee)
+        .extraPetFee(extraPetFee)
+        .extraFee(extraFee)
+        .checkInTime(checkInTime)
+        .checkOutTime(checkOutTime)
+        .build();
+  }
 }
