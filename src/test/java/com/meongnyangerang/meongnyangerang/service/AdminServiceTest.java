@@ -143,10 +143,10 @@ class AdminServiceTest {
     // then
     assertEquals(HostStatus.ACTIVE, host.getStatus());
     verify(mailComponent, times(1)).sendMail("test@gmail.com",
-        "[멍랑이랑] 요청하신 호스트 가입이 승인되었습니다!",
+        "[멍냥이랑] 요청하신 호스트 가입이 승인되었습니다!",
         """
             <div>
-              <h2>안녕하세요, 멍랑이랑입니다.</h2>
+              <h2>안녕하세요, 멍냥이랑입니다.</h2>
               <p>요청하신 <strong>호스트 가입</strong>이 승인되었습니다!</p>
               <p>앞으로 좋은 서비스로 보답하겠습니다.</p>
               <p>감사합니다.</p>
@@ -188,6 +188,74 @@ class AdminServiceTest {
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
         () -> adminService.approveHost(host.getId()));
+
+    assertEquals(ErrorCode.HOST_ALREADY_PROCESSED, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("관리자는 호스트 가입 요청에 대해 거절을 할 수 있고, 거절 사유와 함께 메일을 발송해야 한다.")
+  void rejectHost_success() {
+    // given
+    Host host = Host.builder()
+        .id(1L)
+        .email("test@gmail.com")
+        .status(HostStatus.PENDING)
+        .build();
+
+    when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
+
+    // when
+    adminService.rejectHost(host.getId());
+
+    // then
+    verify(mailComponent, times(1)).sendMail("test@gmail.com",
+        "[멍냥이랑] 요청하신 호스트 가입이 거절되었습니다",
+        """
+            <div>
+              <h2>안녕하세요, 멍냥이랑입니다.</h2>
+              <p>요청하신 <strong>호스트 가입</strong>이 거절되었습니다.</p>
+              <p>제출하신 서류를 다시 검토해주시고, 가입 신청 부탁드립니다.</p>
+              <p>감사합니다.</p>
+            </div>
+            """);
+
+    verify(hostRepository, times(1)).delete(host);
+  }
+
+  @Test
+  @DisplayName("호스트가 없는 경우, NOT_EXISTS_HOST 예외가 발생해야 한다.")
+  void rejectHost_not_exists_host() {
+    // given
+    Host host = Host.builder()
+        .id(1L)
+        .email("test@gmail.com")
+        .status(HostStatus.PENDING)
+        .build();
+
+    when(hostRepository.findById(host.getId())).thenReturn(Optional.empty());
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> adminService.rejectHost(host.getId()));
+
+    assertEquals(ErrorCode.NOT_EXISTS_HOST, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("이미 처리(승인/거절)된 경우, HOST_ALREADY_PROCESSED 예외가 발생해야 한다.")
+  void rejectHost_host_already_processed() {
+    // given
+    Host host = Host.builder()
+        .id(1L)
+        .email("test@gmail.com")
+        .status(HostStatus.ACTIVE)
+        .build();
+
+    when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> adminService.rejectHost(host.getId()));
 
     assertEquals(ErrorCode.HOST_ALREADY_PROCESSED, e.getErrorCode());
   }
