@@ -19,6 +19,7 @@ import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
+import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -67,7 +68,7 @@ class ReviewServiceTest {
 
     Reservation reservation = Reservation.builder()
         .id(1L)
-        .status(ReservationStatus.RESERVED)
+        .status(ReservationStatus.COMPLETED)
         .user(user)
         .room(room)
         .checkInDate(LocalDate.of(2025, 3, 30))
@@ -353,7 +354,7 @@ class ReviewServiceTest {
 
     Reservation reservation = Reservation.builder()
         .id(1L)
-        .status(ReservationStatus.RESERVED)
+        .status(ReservationStatus.COMPLETED)
         .user(user)
         .room(room)
         .checkInDate(LocalDate.of(2025, 3, 30))
@@ -555,5 +556,239 @@ class ReviewServiceTest {
 
     // then
     assertEquals(ErrorCode.REVIEW_NOT_AUTHORIZED, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("유저는 자신의 리뷰를 수정할 수 있다.")
+  void updateReview_success() {
+    // given
+    User user = User.builder().id(1L).build();
+    Room room = Room.builder().id(1L).build();
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.COMPLETED)
+        .user(user)
+        .room(room)
+        .checkInDate(LocalDate.of(2025, 3, 30))
+        .checkOutDate(LocalDate.of(2025, 4, 1))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Review review = Review.builder()
+        .id(1L)
+        .user(user)
+        .accommodation(Accommodation.builder().id(1L).build())
+        .reservation(reservation)
+        .userRating(3.0)
+        .petFriendlyRating(4.0)
+        .content("before")
+        .reportCount(0)
+        .build();
+
+    String url = "https://test.com/images/image.jpg";
+    String newImageUrl = "https://test.com/images/new-image.jpg";
+
+    List<ReviewImage> images = List.of(
+        ReviewImage.builder().id(1L).review(review).imageUrl(url).build(),
+        ReviewImage.builder().id(2L).review(review).imageUrl(url).build()
+    );
+
+    MockMultipartFile mockImageFile = new MockMultipartFile(
+        "image", "new-image.jpg", "image/jpeg", new byte[]{1, 2, 3, 4}
+    );
+
+    when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
+    when(reviewImageRepository.findAllByReviewId(review.getId())).thenReturn(images);
+    when(reviewImageRepository.findById(2L)).thenReturn(Optional.of(images.get(1)));
+    when(imageService.storeImage(mockImageFile)).thenReturn(newImageUrl);
+
+    UpdateReviewRequest request = UpdateReviewRequest.builder()
+        .content("after")
+        .petRating(3.0)
+        .userRating(4.0)
+        .deletedImageId(List.of(2L))
+        .build();
+
+    // when
+    reviewService.updateReview(user.getId(), review.getId(), List.of(mockImageFile), request);
+
+    // then
+    ArgumentCaptor<ReviewImage> reviewImageCaptor = ArgumentCaptor.forClass(ReviewImage.class);
+    verify(reviewImageRepository, times(1)).save(reviewImageCaptor.capture());
+
+    assertEquals(review, reviewImageCaptor.getValue().getReview());
+    assertEquals(newImageUrl, reviewImageCaptor.getValue().getImageUrl());
+    assertEquals("after", review.getContent());
+    assertEquals(3.0, review.getPetFriendlyRating());
+    assertEquals(4.0, review.getUserRating());
+    verify(reviewImageRepository, times(1)).delete(images.get(1));
+    verify(imageService, times(1)).storeImage(mockImageFile);
+  }
+
+  @Test
+  @DisplayName("리뷰가 존재하지 않는 경우, REVIEW_NOT_FOUND 예외가 발생해야 한다.")
+  void updateReview_review_not_found() {
+    // given
+    User user = User.builder().id(1L).build();
+    Room room = Room.builder().id(1L).build();
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.COMPLETED)
+        .user(user)
+        .room(room)
+        .checkInDate(LocalDate.of(2025, 3, 30))
+        .checkOutDate(LocalDate.of(2025, 4, 1))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Review review = Review.builder()
+        .id(1L)
+        .user(user)
+        .accommodation(Accommodation.builder().id(1L).build())
+        .reservation(reservation)
+        .userRating(3.0)
+        .petFriendlyRating(4.0)
+        .content("before")
+        .reportCount(0)
+        .build();
+
+    MockMultipartFile mockImageFile = new MockMultipartFile(
+        "image", "new-image.jpg", "image/jpeg", new byte[]{1, 2, 3, 4}
+    );
+
+    UpdateReviewRequest request = UpdateReviewRequest.builder()
+        .content("after")
+        .petRating(3.0)
+        .userRating(4.0)
+        .deletedImageId(List.of(2L))
+        .build();
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> reviewService.updateReview(
+            user.getId(), review.getId(), List.of(mockImageFile), request));
+
+    assertEquals(ErrorCode.REVIEW_NOT_FOUND, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("리뷰의 작성자가 아닌 경우, REVIEW_NOT_AUTHORIZED 예외가 발생해야 한다.")
+  void updateReview_review_not_authorized() {
+    // given
+    User user = User.builder().id(2L).build();
+    Room room = Room.builder().id(1L).build();
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.COMPLETED)
+        .user(user)
+        .room(room)
+        .checkInDate(LocalDate.of(2025, 3, 30))
+        .checkOutDate(LocalDate.of(2025, 4, 1))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Review review = Review.builder()
+        .id(1L)
+        .user(User.builder().id(1L).build())
+        .accommodation(Accommodation.builder().id(1L).build())
+        .reservation(reservation)
+        .userRating(3.0)
+        .petFriendlyRating(4.0)
+        .content("before")
+        .reportCount(0)
+        .build();
+
+    MockMultipartFile mockImageFile = new MockMultipartFile(
+        "image", "new-image.jpg", "image/jpeg", new byte[]{1, 2, 3, 4}
+    );
+
+    UpdateReviewRequest request = UpdateReviewRequest.builder()
+        .content("after")
+        .petRating(3.0)
+        .userRating(4.0)
+        .deletedImageId(List.of(2L))
+        .build();
+
+    when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> reviewService.updateReview(
+            user.getId(), review.getId(), List.of(mockImageFile), request));
+
+    assertEquals(ErrorCode.REVIEW_NOT_AUTHORIZED, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("최대 이미지 개수(3장)을 초과한 경우, MAX_IMAGE_LIMIT_EXCEEDED 예외가 발생해야 한다.")
+  void updateReview_max_image_limit_exceeded() {
+    // given
+    User user = User.builder().id(1L).build();
+    Room room = Room.builder().id(1L).build();
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .status(ReservationStatus.COMPLETED)
+        .user(user)
+        .room(room)
+        .checkInDate(LocalDate.of(2025, 3, 30))
+        .checkOutDate(LocalDate.of(2025, 4, 1))
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(30000L)
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Review review = Review.builder()
+        .id(1L)
+        .user(user)
+        .accommodation(Accommodation.builder().id(1L).build())
+        .reservation(reservation)
+        .userRating(3.0)
+        .petFriendlyRating(4.0)
+        .content("before")
+        .reportCount(0)
+        .build();
+
+    String url = "https://test.com/images/image.jpg";
+
+    List<ReviewImage> images = List.of(
+        ReviewImage.builder().id(1L).review(review).imageUrl(url).build(),
+        ReviewImage.builder().id(2L).review(review).imageUrl(url).build()
+    );
+
+    List<MultipartFile> mockImages = List.of(
+        new MockMultipartFile("image1", "new-image1.jpg", "image/jpeg", new byte[]{1, 2, 3, 4}),
+        new MockMultipartFile("image2", "new-image2.jpg", "image/jpeg", new byte[]{1, 2, 3, 4})
+    );
+
+    UpdateReviewRequest request = UpdateReviewRequest.builder()
+        .content("after")
+        .petRating(3.0)
+        .userRating(4.0)
+        .deletedImageId(List.of())
+        .build();
+
+    when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
+    when(reviewImageRepository.findAllByReviewId(review.getId())).thenReturn(images);
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> reviewService.updateReview(
+            user.getId(), review.getId(), mockImages, request));
+
+    assertEquals(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED, e.getErrorCode());
   }
 }
