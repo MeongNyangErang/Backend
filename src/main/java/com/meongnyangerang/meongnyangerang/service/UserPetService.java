@@ -21,6 +21,7 @@ public class UserPetService {
   private final UserRepository userRepository;
   private final UserPetRepository userPetRepository;
 
+  // 반려동물 등록
   @Transactional
   public void registerPet(Long userId, UserPetRequest request) {
     User user = userRepository.findById(userId)
@@ -41,5 +42,33 @@ public class UserPetService {
         .build();
 
     userPetRepository.save(userPet);
+  }
+
+  // 반려동물 수정
+  @Transactional
+  public void updatePet(Long userId, Long petId, UserPetRequest request) {
+    UserPet userPet = userPetRepository.findById(petId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_PET));
+
+    // 본인의 반려동물인지 확인
+    if (!userPet.getUser().getId().equals(userId)) {
+      throw new MeongnyangerangException(INVALID_AUTHORIZED);
+    }
+
+    userPet.update(request);
+  }
+
+  // 반려동물 삭제
+  @Transactional
+  public void deletePet(Long userId, Long petId) {
+    UserPet userPet = userPetRepository.findById(petId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_PET));
+
+    // 본인의 반려동물인지 확인
+    if (!userPet.getUser().getId().equals(userId)) {
+      throw new MeongnyangerangException(INVALID_AUTHORIZED);
+    }
+
+    userPetRepository.delete(userPet);
   }
 }

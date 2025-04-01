@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.domain.user;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
+import com.meongnyangerang.meongnyangerang.dto.UserPetRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -66,4 +67,12 @@ public class UserPet {
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 
+
+  public void update(UserPetRequest request) {
+    this.name = request.getName();
+    this.birthDate = request.getBirthDate();
+    this.type = request.getType();
+    this.personality = request.getPersonality();
+    this.activityLevel = request.getActivityLevel();
+  }
 }

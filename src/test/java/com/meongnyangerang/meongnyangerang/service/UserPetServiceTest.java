@@ -92,4 +92,114 @@ public class UserPetServiceTest {
     assertThrows(MeongnyangerangException.class,
         () -> userPetService.registerPet(userId, request));
   }
+
+  @Test
+  @DisplayName("반려동물 수정 성공")
+  void updatePetSuccess() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    User user = User.builder().id(userId).build();
+    UserPet pet = UserPet.builder().id(petId).user(user).build();
+
+    UserPetRequest request = new UserPetRequest("콩이", LocalDate.of(2020, 1, 1),
+        PetType.SMALL_DOG, Personality.EXTROVERT, ActivityLevel.MEDIUM);
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.of(pet));
+
+    // when
+    userPetService.updatePet(userId, petId, request);
+
+    // then
+    assertEquals("콩이", pet.getName());
+    assertEquals(PetType.SMALL_DOG, pet.getType());
+  }
+
+  @Test
+  @DisplayName("반려동물 수정 실패 - 소유자 불일치")
+  void updatePetFailNotOwner() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    User anotherUser = User.builder().id(2L).build();
+    UserPet pet = UserPet.builder().id(petId).user(anotherUser).build();
+
+    UserPetRequest request = new UserPetRequest("콩이", LocalDate.of(2020, 1, 1),
+        PetType.SMALL_DOG, Personality.EXTROVERT, ActivityLevel.MEDIUM);
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.of(pet));
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        userPetService.updatePet(userId, petId, request));
+  }
+
+  @Test
+  @DisplayName("반려동물 수정 실패 - 반려동물 존재 X")
+  void updatePetFailNotFound() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    UserPetRequest request = new UserPetRequest("콩이", LocalDate.of(2020, 1, 1),
+        PetType.SMALL_DOG, Personality.EXTROVERT, ActivityLevel.MEDIUM);
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.empty());
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        userPetService.updatePet(userId, petId, request));
+  }
+
+  @Test
+  @DisplayName("반려동물 삭제 성공")
+  void deletePetSuccess() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    User user = User.builder().id(userId).build();
+    UserPet pet = UserPet.builder().id(petId).user(user).build();
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.of(pet));
+
+    // when
+    userPetService.deletePet(userId, petId);
+
+    // then
+    verify(userPetRepository).delete(pet);
+  }
+
+  @Test
+  @DisplayName("반려동물 삭제 실패 - 소유자 불일치")
+  void deletePetFailNotOwner() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    User anotherUser = User.builder().id(2L).build();
+    UserPet pet = UserPet.builder().id(petId).user(anotherUser).build();
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.of(pet));
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        userPetService.deletePet(userId, petId));
+  }
+
+  @Test
+  @DisplayName("반려동물 삭제 실패 - 반려동물 존재 X")
+  void deletePetFailNotFound() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.empty());
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        userPetService.deletePet(userId, petId));
+  }
 }
