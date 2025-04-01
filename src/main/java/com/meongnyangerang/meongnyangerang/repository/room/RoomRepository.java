@@ -1,4 +1,4 @@
-package com.meongnyangerang.meongnyangerang.repository;
+package com.meongnyangerang.meongnyangerang.repository.room;
 
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import java.util.List;
