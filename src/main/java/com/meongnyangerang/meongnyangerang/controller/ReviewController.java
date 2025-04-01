@@ -8,6 +8,7 @@ import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReviewService;
 import jakarta.validation.Valid;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Range;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -87,7 +87,8 @@ public class ReviewController {
       @RequestPart(required = false) List<MultipartFile> newImages,
       @Valid @RequestPart UpdateReviewRequest request) {
 
-    reviewService.updateReview(userDetails.getId(), reviewId, newImages, request);
+    reviewService.updateReview(userDetails.getId(), reviewId,
+        (newImages != null) ? newImages : Collections.emptyList(), request);
 
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
