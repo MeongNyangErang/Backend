@@ -5,7 +5,6 @@ import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ImageDeletionQueueRepository;
 import com.meongnyangerang.meongnyangerang.service.adptor.ImageStorage;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,52 +25,6 @@ public class ImageService {
   private final ImageDeletionQueueRepository imageDeletionQueueRepository;
 
   private static final int BATCH_SIZE = 100;
-
-  /**
-   * 이미지 업로드
-   */
-  public String storeImage(MultipartFile image) {
-    validateImage(image);
-    return imageStorage.uploadFile(image);
-  }
-
-  /**
-   * 이미지 삭제
-   */
-  public void deleteImage(String imageUrl) {
-    validateImageUrl(imageUrl);
-    imageStorage.deleteFile(imageUrl);
-  }
-
-  /**
-   * 다중 이미지 삭제
-   */
-  public void deleteImages(List<String> imageUrls) {
-    List<String> validUrls = validateImageUrls(imageUrls);
-    imageStorage.deleteFiles(validUrls);
-  }
-
-  /**
-   * 이미지 삭제를 배치 처리하기 위해 삭제할 데이터 저장
-   */
-  public void registerImagesForDeletion(List<String> imageUrls) {
-    List<String> validUrls = validateImageUrls(imageUrls);
-
-    if (validUrls.isEmpty()) {
-      log.info("등록할 유효한 이미지 URL이 없습니다.");
-      return;
-    }
-
-    List<ImageDeletionQueue> deletionEntries = validUrls.stream()
-        .map(url -> ImageDeletionQueue.builder()
-            .imageUrl(url)
-            .registeredAt(LocalDateTime.now())
-            .build())
-        .toList();
-
-    imageDeletionQueueRepository.saveAll(deletionEntries);
-    log.info("이미지 삭제 큐에 {}개 항목 등록 완료", deletionEntries.size());
-  }
 
   // TODO: 젠킨스 사용 고려
   //@Scheduled(cron = "0 0/10 * * * ?") // 10분마다 실행
@@ -101,6 +54,69 @@ public class ImageService {
     }
   }
 
+  /**
+   * 이미지 업로드
+   */
+  public String storeImage(MultipartFile image) {
+    validateImage(image);
+    return imageStorage.uploadFile(image);
+  }
+
+  /**
+   * 이미지 삭제
+   */
+  public void deleteImage(String imageUrl) {
+    validateImageUrl(imageUrl);
+    imageStorage.deleteFile(imageUrl);
+  }
+
+  /**
+   * 다중 이미지 삭제
+   */
+  public void deleteImages(List<String> imageUrls) {
+    List<String> validUrls = validateImageUrls(imageUrls);
+    imageStorage.deleteFiles(validUrls);
+  }
+
+  /**
+   * 이미지 삭제를 배치 처리하기 위해 삭제할 데이터 저장 (단일)
+   */
+  public ImageDeletionQueue registerImagesForDeletion(String imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty()) {
+      log.info("등록할 이미지 URL이 없습니다.");
+      return null;
+    }
+    ImageDeletionQueue imageDeletionQueue = ImageDeletionQueue.from(imageUrl);
+    ImageDeletionQueue saved = imageDeletionQueueRepository.save(imageDeletionQueue);
+    log.info("이미지 삭제 큐에 단일 항목 등록 완료");
+
+    return saved;
+  }
+
+  /**
+   * 이미지 삭제를 배치 처리하기 위해 삭제할 데이터 저장 (다중)
+   */
+  public void registerImagesForDeletion(List<String> imageUrls) {
+    List<String> validUrls = validateImageUrls(imageUrls);
+
+    if (validUrls.isEmpty()) {
+      log.info("등록할 유효한 이미지 URL이 없습니다.");
+      return;
+    }
+
+    List<ImageDeletionQueue> deletionEntries = validUrls.stream()
+        .map(ImageDeletionQueue::from)
+        .toList();
+
+    imageDeletionQueueRepository.saveAll(deletionEntries);
+    log.info("이미지 삭제 큐에 {}개 항목 등록 완료", deletionEntries.size());
+  }
+
+  public void deregisterImageForDeletion(ImageDeletionQueue imageDeletionQueueId) {
+    imageDeletionQueueRepository.delete(imageDeletionQueueId);
+    log.info("등록한 삭제 큐에서 항목 제거 완료: {}", imageDeletionQueueId.getImageUrl());
+  }
+
   private List<ImageDeletionQueue> fetchPendingImages() {
     return imageDeletionQueueRepository
         .findAllByOrderByRegisteredAtAsc(PageRequest.of(0, BATCH_SIZE));
@@ -113,9 +129,6 @@ public class ImageService {
     validateImageFormat(image.getContentType(), image.getOriginalFilename());
   }
 
-  /**
-   * 지원하는 포맷인지 검증
-   */
   private void validateImageFormat(String contentType, String imageName) {
     if (!ImageType.isSupported(contentType, imageName)) {
       throw new MeongnyangerangException(ErrorCode.NOT_SUPPORTED_TYPE);
