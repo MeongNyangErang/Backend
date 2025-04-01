@@ -8,8 +8,10 @@ import com.meongnyangerang.meongnyangerang.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Range;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,5 +46,14 @@ public class AdminController {
   public ResponseEntity<PendingHostDetailResponse> getPendingHostDetail(@PathVariable Long hostId) {
 
     return ResponseEntity.ok(adminService.getPendingHostDetail(hostId));
+  }
+
+  // 호스트 가입 승인
+  @PatchMapping("/hosts/{hostId}/approve")
+  public ResponseEntity<Void> approveHost(@PathVariable Long hostId) {
+
+    adminService.approveHost(hostId);
+
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 }
