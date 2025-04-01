@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.service;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_NOT_FOUND;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_WISHLISTED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_WISHLIST;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.user.User;

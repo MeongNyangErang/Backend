@@ -57,6 +57,7 @@ public enum ErrorCode {
   RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예약이 존재하지 않습니다."),
   REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰가 존재하지 않습니다."),
   NOT_EXIST_PET(HttpStatus.NOT_FOUND, "존재하지 않는 반려동물입니다."),
+  NOT_EXIST_WISHLIST(HttpStatus.NOT_FOUND, "존재하지 않는 찜 목록입니다."),
 
 
   // 409 Conflict
