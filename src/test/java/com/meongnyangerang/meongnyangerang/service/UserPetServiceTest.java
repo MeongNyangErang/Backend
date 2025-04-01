@@ -135,4 +135,21 @@ public class UserPetServiceTest {
     assertThrows(MeongnyangerangException.class, () ->
         userPetService.updatePet(userId, petId, request));
   }
+
+  @Test
+  @DisplayName("반려동물 수정 실패 - 존재하지 않음")
+  void updatePetFailNotFound() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    UserPetRequest request = new UserPetRequest("콩이", LocalDate.of(2020, 1, 1),
+        PetType.SMALL_DOG, Personality.EXTROVERT, ActivityLevel.MEDIUM);
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.empty());
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        userPetService.updatePet(userId, petId, request));
+  }
 }
