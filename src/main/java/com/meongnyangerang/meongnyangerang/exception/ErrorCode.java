@@ -66,6 +66,7 @@ public enum ErrorCode {
   // 409 CONFLICT
   ACCOMMODATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 개설한 숙소가 존재합니다."),
   HOST_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 승인 또는 거절된 호스트입니다."),
+  ALREADY_WISHLISTED(HttpStatus.CONFLICT, "이미 찜한 숙소입니다."),
 
   // 500 INTERNAL SERVER ERROR (서버 내부 오류)
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "내부 서버 오류가 발생했습니다."),
