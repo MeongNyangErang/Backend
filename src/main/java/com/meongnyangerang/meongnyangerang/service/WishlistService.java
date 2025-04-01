@@ -35,11 +35,9 @@ public class WishlistService {
       throw new MeongnyangerangException(ALREADY_WISHLISTED);
     }
 
-    Wishlist wishlist = Wishlist.builder()
+    wishlistRepository.save(Wishlist.builder()
         .user(user)
         .accommodation(accommodation)
-        .build();
-
-    wishlistRepository.save(wishlist);
+        .build());
   }
 }
