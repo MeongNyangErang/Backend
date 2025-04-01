@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Range;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +54,15 @@ public class AdminController {
   public ResponseEntity<Void> approveHost(@PathVariable Long hostId) {
 
     adminService.approveHost(hostId);
+
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+  }
+
+  // 호스트 가입 거절
+  @DeleteMapping("/hosts/{hostId}/reject")
+  public ResponseEntity<Void> rejectHost(@PathVariable Long hostId) {
+
+    adminService.rejectHost(hostId);
 
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
