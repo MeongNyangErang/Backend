@@ -115,4 +115,24 @@ public class UserPetServiceTest {
     assertEquals("콩이", pet.getName());
     assertEquals(PetType.SMALL_DOG, pet.getType());
   }
+
+  @Test
+  @DisplayName("반려동물 수정 실패 - 소유자 불일치")
+  void updatePetFailNotOwner() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    User anotherUser = User.builder().id(2L).build();
+    UserPet pet = UserPet.builder().id(petId).user(anotherUser).build();
+
+    UserPetRequest request = new UserPetRequest("콩이", LocalDate.of(2020, 1, 1),
+        PetType.SMALL_DOG, Personality.EXTROVERT, ActivityLevel.MEDIUM);
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.of(pet));
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        userPetService.updatePet(userId, petId, request));
+  }
 }
