@@ -40,7 +40,8 @@ public class ReviewController {
       @Valid @RequestPart ReviewRequest reviewRequest,
       @RequestPart(required = false) List<MultipartFile> images) {
 
-    reviewService.createReview(userDetails.getId(), reviewRequest, images);
+    reviewService.createReview(userDetails.getId(), reviewRequest,
+        (images != null) ? images : Collections.emptyList());
 
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }

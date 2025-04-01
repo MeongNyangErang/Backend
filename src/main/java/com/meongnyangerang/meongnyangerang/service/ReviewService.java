@@ -44,14 +44,11 @@ public class ReviewService {
 
     Review review = reviewRequest.toEntity(reservation.getUser(),
         reservation.getRoom().getAccommodation(), reservation);
-
-    // 이미지 등록 (있는 경우에만)
-    if (images != null) {
-      validateImageSize(images);
-      addImages(review, images);
-    }
-
     reviewRepository.save(review);
+
+    // 이미지 등록
+    validateImageSize(images);
+    addImages(review, images);
   }
 
   // 최대 이미지 개수(3장)를 초과하는지 검증
@@ -82,9 +79,9 @@ public class ReviewService {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }
 
-    // 예약 생성 후 7일이 지나거나, 예약 상태가 RESERVED 가 아닌 경우 예외 발생
+    // 예약 생성 후 7일이 지나거나, 예약 상태가 COMPLETED 가 아닌 경우 예외 발생
     if (reservation.getCreatedAt().plusDays(7).isBefore(LocalDateTime.now()) ||
-        reservation.getStatus() != ReservationStatus.RESERVED) {
+        reservation.getStatus() != ReservationStatus.COMPLETED) {
       throw new MeongnyangerangException(ErrorCode.REVIEW_CREATION_NOT_ALLOWED);
     }
   }

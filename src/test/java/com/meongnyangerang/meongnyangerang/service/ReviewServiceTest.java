@@ -68,7 +68,7 @@ class ReviewServiceTest {
 
     Reservation reservation = Reservation.builder()
         .id(1L)
-        .status(ReservationStatus.RESERVED)
+        .status(ReservationStatus.COMPLETED)
         .user(user)
         .room(room)
         .checkInDate(LocalDate.of(2025, 3, 30))
@@ -354,7 +354,7 @@ class ReviewServiceTest {
 
     Reservation reservation = Reservation.builder()
         .id(1L)
-        .status(ReservationStatus.RESERVED)
+        .status(ReservationStatus.COMPLETED)
         .user(user)
         .room(room)
         .checkInDate(LocalDate.of(2025, 3, 30))
