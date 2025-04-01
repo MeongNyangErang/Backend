@@ -3,9 +3,11 @@ package com.meongnyangerang.meongnyangerang.service;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 
+import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.CustomApplicationResponse;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostDetailResponse;
@@ -21,6 +23,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class AdminService {
   private final HostRepository hostRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
+  private final MailComponent mailComponent;
 
   // 관리자 로그인
   public String login(@Valid LoginRequest request) {
@@ -85,5 +89,35 @@ public class AdminService {
         .businessLicenseImageUrl(host.getBusinessLicenseImageUrl())
         .submitDocumentImageUrl(host.getSubmitDocumentImageUrl())
         .build();
+  }
+
+  // 호스트 가입 승인
+  @Transactional
+  public void approveHost(Long hostId) {
+    // 호스트 조회
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
+
+    // 호스트의 상태가 PENDING이 아닌 경우 예외 처리
+    if (host.getStatus() != HostStatus.PENDING) {
+      throw new MeongnyangerangException(ErrorCode.HOST_ALREADY_PROCESSED);
+    }
+
+    // 호스트 상태 변경
+    host.setStatus(HostStatus.ACTIVE);
+
+    // 가입 승인 이메일 발송
+    mailComponent.sendMail(
+        host.getEmail(),
+        "[멍냥이랑] 요청하신 호스트 가입이 승인되었습니다!",
+        """
+            <div>
+              <h2>안녕하세요, 멍냥이랑입니다.</h2>
+              <p>요청하신 <strong>호스트 가입</strong>이 승인되었습니다!</p>
+              <p>앞으로 좋은 서비스로 보답하겠습니다.</p>
+              <p>감사합니다.</p>
+            </div>
+            """
+    );
   }
 }

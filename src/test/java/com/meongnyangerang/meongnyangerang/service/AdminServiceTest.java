@@ -2,8 +2,11 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.CustomApplicationResponse;
@@ -27,6 +30,9 @@ class AdminServiceTest {
 
   @Mock
   private HostRepository hostRepository;
+
+  @Mock
+  private MailComponent mailComponent;
 
   @InjectMocks
   private AdminService adminService;
@@ -116,6 +122,73 @@ class AdminServiceTest {
         () -> adminService.getPendingHostDetail(hostId));
 
     // then
+    assertEquals(ErrorCode.HOST_ALREADY_PROCESSED, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("관리자는 호스트 가입 요청에 대해 승인을 할 수 있고, 승인 성공 메일을 발송해야 한다.")
+  void approveHost_success() {
+    // given
+    Host host = Host.builder()
+        .id(1L)
+        .email("test@gmail.com")
+        .status(HostStatus.PENDING)
+        .build();
+
+    when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
+
+    // when
+    adminService.approveHost(host.getId());
+
+    // then
+    assertEquals(HostStatus.ACTIVE, host.getStatus());
+    verify(mailComponent, times(1)).sendMail("test@gmail.com",
+        "[멍랑이랑] 요청하신 호스트 가입이 승인되었습니다!",
+        """
+            <div>
+              <h2>안녕하세요, 멍랑이랑입니다.</h2>
+              <p>요청하신 <strong>호스트 가입</strong>이 승인되었습니다!</p>
+              <p>앞으로 좋은 서비스로 보답하겠습니다.</p>
+              <p>감사합니다.</p>
+            </div>
+            """);
+  }
+
+  @Test
+  @DisplayName("호스트가 없는 경우, NOT_EXISTS_HOST 예외가 발생해야 한다.")
+  void approveHost_not_exists_host() {
+    // given
+    Host host = Host.builder()
+        .id(1L)
+        .email("test@gmail.com")
+        .status(HostStatus.PENDING)
+        .build();
+
+    when(hostRepository.findById(host.getId())).thenReturn(Optional.empty());
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> adminService.approveHost(host.getId()));
+
+    assertEquals(ErrorCode.NOT_EXISTS_HOST, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("이미 처리(승인/거절)된 경우, HOST_ALREADY_PROCESSED 예외가 발생해야 한다.")
+  void approveHost_host_already_processed() {
+    // given
+    Host host = Host.builder()
+        .id(1L)
+        .email("test@gmail.com")
+        .status(HostStatus.ACTIVE)
+        .build();
+
+    when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> adminService.approveHost(host.getId()));
+
     assertEquals(ErrorCode.HOST_ALREADY_PROCESSED, e.getErrorCode());
   }
 }
