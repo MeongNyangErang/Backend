@@ -10,7 +10,7 @@ public class UserPetResponse {
 
   private Long petId;
   private String name;
-  private String birthDate; // YYYY-MM-DD 형식
+  private String birthDate; // yyyy-MM-dd 형식
   private String type;
   private String personality;
   private String activityLevel;
