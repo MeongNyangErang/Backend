@@ -11,10 +11,12 @@ import com.meongnyangerang.meongnyangerang.domain.user.Personality;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
 import com.meongnyangerang.meongnyangerang.dto.UserPetRequest;
+import com.meongnyangerang.meongnyangerang.dto.UserPetResponse;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -201,5 +203,43 @@ public class UserPetServiceTest {
     // when & then
     assertThrows(MeongnyangerangException.class, () ->
         userPetService.deletePet(userId, petId));
+  }
+  @Test
+  @DisplayName("사용자 반려동물 전체 조회 성공")
+  void getUserPetsSuccess() {
+    // given
+    Long userId = 1L;
+    User user = User.builder().id(userId).email("user@example.com").build();
+
+    List<UserPet> pets = List.of(
+        UserPet.builder()
+            .id(101L)
+            .user(user)
+            .name("콩이")
+            .birthDate(LocalDate.of(2020, 1, 1))
+            .type(PetType.SMALL_DOG)
+            .personality(Personality.EXTROVERT)
+            .activityLevel(ActivityLevel.HIGH)
+            .build(),
+        UserPet.builder()
+            .id(102L)
+            .user(user)
+            .name("두부")
+            .birthDate(LocalDate.of(2019, 5, 10))
+            .type(PetType.CAT)
+            .personality(Personality.INTROVERT)
+            .activityLevel(ActivityLevel.MEDIUM)
+            .build()
+    );
+
+    when(userPetRepository.findAllByUserId(userId)).thenReturn(pets);
+
+    // when
+    List<UserPetResponse> result = userPetService.getUserPets(userId);
+
+    // then
+    assertEquals(2, result.size());
+    assertEquals("콩이", result.get(0).getName());
+    assertEquals("두부", result.get(1).getName());
   }
 }
