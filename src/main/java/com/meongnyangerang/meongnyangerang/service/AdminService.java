@@ -120,4 +120,34 @@ public class AdminService {
             """
     );
   }
+
+  // 호스트 가입 거절
+  @Transactional
+  public void rejectHost(Long hostId) {
+    // 호스트 조회
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
+
+    // 호스트의 상태가 PENDING이 아닌 경우 예외 처리
+    if (host.getStatus() != HostStatus.PENDING) {
+      throw new MeongnyangerangException(ErrorCode.HOST_ALREADY_PROCESSED);
+    }
+
+    // 가입 승인 이메일 발송
+    mailComponent.sendMail(
+        host.getEmail(),
+        "[멍냥이랑] 요청하신 호스트 가입이 거절되었습니다",
+        """
+            <div>
+              <h2>안녕하세요, 멍냥이랑입니다.</h2>
+              <p>요청하신 <strong>호스트 가입</strong>이 거절되었습니다.</p>
+              <p>제출하신 서류를 다시 검토해주시고, 가입 신청 부탁드립니다.</p>
+              <p>감사합니다.</p>
+            </div>
+            """
+    );
+
+    // DB에서 호스트 정보 삭제
+    hostRepository.delete(host);
+  }
 }
