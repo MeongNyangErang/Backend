@@ -1,7 +1,5 @@
 package com.meongnyangerang.meongnyangerang.dto.room;
 
-import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
-import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.HashtagType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
@@ -12,7 +10,10 @@ import java.time.LocalTime;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 
-public record RoomCreateRequest(
+public record RoomUpdateRequest(
+
+    @NotNull(message = "객실을 선택해 주세요.")
+    Long roomId,
 
     @NotBlank(message = "객실 이름을 입력해 주세요.")
     String name,
@@ -59,22 +60,4 @@ public record RoomCreateRequest(
     List<HashtagType> hashtagTypes
 ) {
 
-  public Room toEntity(Accommodation accommodation, String imageUrl) {
-    return Room.builder()
-        .accommodation(accommodation)
-        .name(name)
-        .description(description)
-        .standardPeopleCount(standardPeopleCount)
-        .maxPeopleCount(maxPeopleCount)
-        .standardPetCount(standardPetCount)
-        .maxPetCount(maxPetCount)
-        .imageUrl(imageUrl)
-        .price(price)
-        .extraPeopleFee(extraPeopleFee)
-        .extraPetFee(extraPetFee)
-        .extraFee(extraFee)
-        .checkInTime(checkInTime)
-        .checkOutTime(checkOutTime)
-        .build();
-  }
 }

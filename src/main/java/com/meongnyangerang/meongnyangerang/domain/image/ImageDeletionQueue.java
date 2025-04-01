@@ -27,4 +27,11 @@ public class ImageDeletionQueue {
 
   @Column(nullable = false)
   private LocalDateTime registeredAt;
+
+  public static ImageDeletionQueue from(String imageUrl) {
+    return ImageDeletionQueue.builder()
+        .imageUrl(imageUrl)
+        .registeredAt(LocalDateTime.now())
+        .build();
+  }
 }

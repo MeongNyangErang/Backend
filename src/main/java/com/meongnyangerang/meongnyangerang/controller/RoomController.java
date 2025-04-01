@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.controller;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomListResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomUpdateRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.RoomService;
 import jakarta.validation.Valid;
@@ -14,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -61,5 +63,17 @@ public class RoomController {
       @PathVariable Long roomId
   ) {
     return ResponseEntity.ok(roomService.getRoom(userDetail.getId(), roomId));
+  }
+
+  /**
+   * 객실 수정
+   */
+  @PutMapping
+  public ResponseEntity<RoomResponse> updateRoom(
+      @AuthenticationPrincipal UserDetailsImpl userDetail,
+      @Valid @RequestPart RoomUpdateRequest request,
+      @RequestPart(required = false) MultipartFile newImage
+  ) {
+    return ResponseEntity.ok(roomService.updateRoom(userDetail.getId(), request, newImage));
   }
 }
