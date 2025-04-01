@@ -41,4 +41,13 @@ public class WishlistService {
         .accommodation(accommodation)
         .build());
   }
+
+  // 찜 삭제
+  @Transactional
+  public void removeWishlist(Long userId, Long accommodationId) {
+    Wishlist wishlist = wishlistRepository.findByUserIdAndAccommodationId(userId, accommodationId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_WISHLIST));
+
+    wishlistRepository.delete(wishlist);
+  }
 }
