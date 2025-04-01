@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,4 +27,11 @@ public class WishlistController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
+  // 찜 삭제 API
+  @DeleteMapping("/{accommodationId}")
+  public ResponseEntity<Void> removeWishlist(@AuthenticationPrincipal UserDetailsImpl userDetails,
+      @PathVariable Long accommodationId) {
+    wishlistService.removeWishlist(userDetails.getId(), accommodationId);
+    return ResponseEntity.noContent().build();
+  }
 }
