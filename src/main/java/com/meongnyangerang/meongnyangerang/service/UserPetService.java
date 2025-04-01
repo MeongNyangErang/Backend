@@ -71,4 +71,12 @@ public class UserPetService {
 
     userPetRepository.delete(userPet);
   }
+
+  // 반려동물 조회
+  @Transactional(readOnly = true)
+  public List<UserPetResponse> getUserPets(Long userId) {
+    return userPetRepository.findAllByUserId(userId).stream()
+        .map(UserPetResponse::from)
+        .collect(Collectors.toList());
+  }
 }
