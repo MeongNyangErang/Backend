@@ -92,4 +92,27 @@ public class UserPetServiceTest {
     assertThrows(MeongnyangerangException.class,
         () -> userPetService.registerPet(userId, request));
   }
+
+  @Test
+  @DisplayName("반려동물 수정 성공")
+  void updatePetSuccess() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    User user = User.builder().id(userId).build();
+    UserPet pet = UserPet.builder().id(petId).user(user).build();
+
+    UserPetRequest request = new UserPetRequest("콩이", LocalDate.of(2020, 1, 1),
+        PetType.SMALL_DOG, Personality.EXTROVERT, ActivityLevel.MEDIUM);
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.of(pet));
+
+    // when
+    userPetService.updatePet(userId, petId, request);
+
+    // then
+    assertEquals("콩이", pet.getName());
+    assertEquals(PetType.SMALL_DOG, pet.getType());
+  }
 }
