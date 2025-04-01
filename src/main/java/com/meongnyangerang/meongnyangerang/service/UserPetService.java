@@ -6,10 +6,13 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
 import com.meongnyangerang.meongnyangerang.dto.UserPetRequest;
+import com.meongnyangerang.meongnyangerang.dto.UserPetResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,5 +73,13 @@ public class UserPetService {
     }
 
     userPetRepository.delete(userPet);
+  }
+
+  // 반려동물 조회
+  @Transactional(readOnly = true)
+  public List<UserPetResponse> getUserPets(Long userId) {
+    return userPetRepository.findAllByUserId(userId).stream()
+        .map(UserPetResponse::from)
+        .collect(Collectors.toList());
   }
 }
