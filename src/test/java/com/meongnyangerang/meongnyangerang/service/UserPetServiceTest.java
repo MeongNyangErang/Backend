@@ -137,7 +137,7 @@ public class UserPetServiceTest {
   }
 
   @Test
-  @DisplayName("반려동물 수정 실패 - 존재하지 않음")
+  @DisplayName("반려동물 수정 실패 - 반려동물 존재 X")
   void updatePetFailNotFound() {
     // given
     Long userId = 1L;
@@ -183,6 +183,20 @@ public class UserPetServiceTest {
     UserPet pet = UserPet.builder().id(petId).user(anotherUser).build();
 
     when(userPetRepository.findById(petId)).thenReturn(Optional.of(pet));
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        userPetService.deletePet(userId, petId));
+  }
+
+  @Test
+  @DisplayName("반려동물 삭제 실패 - 반려동물 존재 X")
+  void deletePetFailNotFound() {
+    // given
+    Long userId = 1L;
+    Long petId = 100L;
+
+    when(userPetRepository.findById(petId)).thenReturn(Optional.empty());
 
     // when & then
     assertThrows(MeongnyangerangException.class, () ->
