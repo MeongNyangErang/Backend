@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.domain.room;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomUpdateRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -79,4 +80,22 @@ public class Room {
   @LastModifiedDate
   @Column(nullable = false)
   private LocalDateTime updatedAt;
+
+  public Room updateRoom(RoomUpdateRequest request, String imageUrl){
+    this.name = request.name();
+    this.description = request.description();
+    this.standardPeopleCount = request.standardPeopleCount();
+    this.maxPeopleCount = request.maxPeopleCount();
+    this.standardPetCount = request.standardPetCount();
+    this.maxPetCount = request.maxPetCount();
+    this.imageUrl = imageUrl;
+    this.price = request.price();
+    this.extraPeopleFee = request.extraPeopleFee();
+    this.extraPetFee = request.extraPetFee();
+    this.extraFee = request.extraFee();
+    this.checkInTime = request.checkInTime();
+    this.checkOutTime = request.checkOutTime();
+
+    return this;
+  }
 }
