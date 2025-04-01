@@ -8,6 +8,7 @@ import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
+import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -47,19 +48,21 @@ public class ReviewService {
     // 이미지 등록 (있는 경우에만)
     if (images != null) {
       validateImageSize(images);
-      addImages(images, review);
+      addImages(review, images);
     }
 
     reviewRepository.save(review);
   }
 
+  // 최대 이미지 개수(3장)를 초과하는지 검증
   private void validateImageSize(List<MultipartFile> images) {
     if (images.size() > 3) {
       throw new MeongnyangerangException(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED);
     }
   }
 
-  private void addImages(List<MultipartFile> images, Review review) {
+  // 이미지 등록
+  private void addImages(Review review, List<MultipartFile> images) {
     images.stream()
         .filter(image -> !image.isEmpty())
         .map(imageService::storeImage)
@@ -67,6 +70,7 @@ public class ReviewService {
         .forEach(reviewImageRepository::save);
   }
 
+  // 리뷰를 작성할 수 있는지 검증
   private void validateReviewCreation(Long userId, Reservation reservation) {
     // 이미 작성된 리뷰인지 확인
     if (reviewRepository.existsByUserIdAndReservationId(userId, reservation.getId())) {
@@ -101,6 +105,7 @@ public class ReviewService {
     return new CustomReviewResponse<>(content, cursor, hasNext);
   }
 
+  // entity -> dto 변환
   private MyReviewResponse mapToMyReviewResponse(Review review) {
     ReviewImage reviewImage = reviewImageRepository.findByReviewId(review.getId());
 
@@ -137,6 +142,7 @@ public class ReviewService {
     return new CustomReviewResponse<>(content, cursor, hasNext);
   }
 
+  // entity -> dto 변환
   private AccommodationReviewResponse mapToAccommodationReviewResponse(Review review) {
     ReviewImage reviewImage = reviewImageRepository.findByReviewId(review.getId());
 
@@ -156,18 +162,83 @@ public class ReviewService {
         .build();
   }
 
+  @Transactional
   public void deleteReview(Long reviewId, Long userId) {
-    // 리뷰 조회
+    // 리뷰 조회 및 권한 검증
+    Review review = getReviewIfAuthorized(reviewId, userId);
+
+    // 리뷰에 포함된 모든 이미지 삭제
+    deleteAllReviewImages(reviewId);
+
+    // 리뷰 삭제
+    reviewRepository.delete(review);
+  }
+
+  // 주어진 리뷰 ID로 리뷰를 조회하고, 해당 리뷰의 작성자인지 검증
+  private Review getReviewIfAuthorized(Long reviewId, Long userId) {
     Review review = reviewRepository.findById(reviewId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.REVIEW_NOT_FOUND));
 
-    // 요청한 사용자가 작성자인지 확인
     if (!review.getUser().getId().equals(userId)) {
       throw new MeongnyangerangException(ErrorCode.REVIEW_NOT_AUTHORIZED);
     }
-
-    // 리뷰 & 리뷰 이미지 삭제
-    reviewImageRepository.deleteAll(reviewImageRepository.findAllByReviewId(reviewId));
-    reviewRepository.delete(review);
+    return review;
   }
+
+  // 특정 리뷰에 포함된 모든 이미지 삭제
+  private void deleteAllReviewImages(Long reviewId) {
+    List<ReviewImage> images = reviewImageRepository.findAllByReviewId(reviewId);
+
+    images.forEach(image -> imageService.deleteImage(image.getImageUrl()));
+
+    reviewImageRepository.deleteAll(images);
+  }
+
+  @Transactional
+  public void updateReview(Long userId, Long reviewId, List<MultipartFile> newImages,
+      UpdateReviewRequest request) {
+    // 리뷰 조회 및 권한 검증
+    Review review = getReviewIfAuthorized(reviewId, userId);
+
+    // 새로운 이미지 추가 후 최대 업로드 가능 개수(3장) 초과 여부 검증
+    validateImageLimit(reviewId, request.getDeletedImageId(), newImages);
+
+    // 요청된 이미지 삭제 수행
+    deleteReviewImagesByIds(request.getDeletedImageId());
+
+    // 새 이미지 업로드 및 저장
+    addImages(review, newImages);
+
+    // 리뷰 내용 업데이트
+    updateReviewDetails(review, request);
+  }
+
+  // 이미지 삭제 요청 및 새로운 이미지 업로드 시, 최대 이미지 개수(3장)를 초과하는지 검증
+  private void validateImageLimit(Long reviewId, List<Long> deletedImageIds,
+      List<MultipartFile> newImages) {
+    int existingCount = reviewImageRepository.findAllByReviewId(reviewId).size();
+    int newCount = existingCount - deletedImageIds.size() + newImages.size();
+
+    if (newCount > 3) {
+      throw new MeongnyangerangException(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED);
+    }
+  }
+
+  // 요청된 이미지 ID 목록을 찾아 삭제 (존재하지 않는 이미지 ID는 무시)
+  private void deleteReviewImagesByIds(List<Long> deletedImageIds) {
+    deletedImageIds.forEach(id ->
+        reviewImageRepository.findById(id).ifPresent(image -> {
+          imageService.deleteImage(image.getImageUrl());
+          reviewImageRepository.delete(image);
+        })
+    );
+  }
+
+  // 리뷰 내용과 평점을 업데이트
+  private void updateReviewDetails(Review review, UpdateReviewRequest request) {
+    review.setContent(request.getContent());
+    review.setUserRating(request.getUserRating());
+    review.setPetFriendlyRating(request.getPetRating());
+  }
+
 }
