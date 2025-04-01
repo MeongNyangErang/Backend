@@ -89,4 +89,29 @@ class WishlistServiceTest {
     assertEquals(ErrorCode.ALREADY_WISHLISTED.getDescription(), exception.getErrorCode().getDescription());
     verify(wishlistRepository, never()).save(Mockito.any(Wishlist.class));
   }
+
+  @Test
+  @DisplayName("찜 삭제 성공")
+  void removeWishlistSuccess() {
+    // given
+    Long userId = 1L;
+    Long accommodationId = 100L;
+
+    User user = User.builder().id(userId).email("user@example.com").build();
+    Accommodation accommodation = Accommodation.builder().id(accommodationId).name("숙소").build();
+
+    Wishlist wishlist = Wishlist.builder()
+        .id(10L)
+        .user(user)
+        .accommodation(accommodation)
+        .build();
+
+    when(wishlistRepository.findByUserIdAndAccommodationId(userId, accommodationId)).thenReturn(Optional.of(wishlist));
+
+    // when
+    wishlistService.removeWishlist(userId, accommodationId);
+
+    // then
+    verify(wishlistRepository).delete(wishlist);
+  }
 }
