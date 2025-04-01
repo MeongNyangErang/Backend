@@ -1,6 +1,5 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.times;
@@ -11,14 +10,21 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
+import com.meongnyangerang.meongnyangerang.domain.room.facility.Hashtag;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.HashtagType;
+import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
+import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomListResponse;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
-import com.meongnyangerang.meongnyangerang.repository.RoomRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.HashtagRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
@@ -48,6 +54,15 @@ class RoomServiceTest {
   private RoomRepository roomRepository;
 
   @Mock
+  private RoomFacilityRepository facilityRepository;
+
+  @Mock
+  private RoomPetFacilityRepository petFacilityRepository;
+
+  @Mock
+  private HashtagRepository hashtagRepository;
+
+  @Mock
   private AccommodationRepository accommodationRepository;
 
   @Mock
@@ -59,9 +74,13 @@ class RoomServiceTest {
   private RoomCreateRequest roomCreateRequest;
   private Host host;
   private Accommodation accommodation;
+  private Room room;
   private MultipartFile image;
   private String imageUrl;
   private List<Room> rooms;
+  private List<RoomFacility> facilities;
+  private List<RoomPetFacility> petFacilities;
+  private List<Hashtag> hashtags;
 
   private final int PAGE_SIZE = 5;
 
@@ -92,11 +111,30 @@ class RoomServiceTest {
         .type(AccommodationType.PENSION)
         .build();
 
+    room = Room.builder()
+        .id(200L)
+        .accommodation(accommodation)
+        .name("디럭스 룸")
+        .description("아늑한 객실입니다")
+        .standardPeopleCount(2)
+        .maxPeopleCount(4)
+        .standardPetCount(1)
+        .maxPetCount(2)
+        .price(100000L)
+        .extraPeopleFee(20000L)
+        .extraPetFee(15000L)
+        .extraFee(5000L)
+        .checkInTime(LocalTime.of(15, 0))
+        .checkOutTime(LocalTime.of(11, 0))
+        .imageUrl(imageUrl)
+        .build();
+
     // 테스트용 요청 객체 설정
     List<HashtagType> hashtagTypes = Arrays.asList(HashtagType.FAMILY_TRIP, HashtagType.SPA);
     List<RoomFacilityType> facilityTypes = List.of(RoomFacilityType.STYLER);
     List<RoomPetFacilityType> petFacilityTypes =
-        Arrays.asList(CAT_WHEEL, CAT_TOWER, DRY_ROOM, BED, TOY);
+        Arrays.asList(RoomPetFacilityType.CAT_WHEEL, RoomPetFacilityType.CAT_TOWER,
+            RoomPetFacilityType.DRY_ROOM, RoomPetFacilityType.BED, RoomPetFacilityType.TOY);
 
     roomCreateRequest = new RoomCreateRequest(
         "test-room-name",
@@ -129,6 +167,48 @@ class RoomServiceTest {
 
       rooms.add(room);
     }
+
+    // 시설 목록 생성
+    facilities = Arrays.asList(
+        RoomFacility.builder()
+            .id(1L)
+            .room(room)
+            .type(RoomFacilityType.TV)
+            .build(),
+        RoomFacility.builder()
+            .id(2L)
+            .room(room)
+            .type(RoomFacilityType.WIFI)
+            .build()
+    );
+
+    // 반려동물 시설 목록 생성
+    petFacilities = Arrays.asList(
+        RoomPetFacility.builder()
+            .id(1L)
+            .room(room)
+            .type(RoomPetFacilityType.BED)
+            .build(),
+        RoomPetFacility.builder()
+            .id(2L)
+            .room(room)
+            .type(RoomPetFacilityType.FOOD_BOWL)
+            .build()
+    );
+
+    // 해시태그 목록 생성
+    hashtags = Arrays.asList(
+        Hashtag.builder()
+            .id(1L)
+            .room(room)
+            .type(HashtagType.COZY)
+            .build(),
+        Hashtag.builder()
+            .id(2L)
+            .room(room)
+            .type(HashtagType.MODERN)
+            .build()
+    );
   }
 
   @Test
@@ -259,5 +339,85 @@ class RoomServiceTest {
         host.getId(), null, pageSize))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
+  }
+
+  @Test
+  @DisplayName("객실 상세 조회 성공")
+  void getRoom_Success() {
+    // given
+    Long hostId = host.getId();
+    Long roomId = room.getId();
+
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(accommodation));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(facilityRepository.findAllByRoomId(roomId)).thenReturn(facilities);
+    when(petFacilityRepository.findAllByRoomId(roomId)).thenReturn(petFacilities);
+    when(hashtagRepository.findAllByRoomId(roomId)).thenReturn(hashtags);
+
+    // when
+    RoomResponse response = roomService.getRoom(hostId, roomId);
+
+    // then
+    assertThat(response.name()).isEqualTo("디럭스 룸");
+    assertThat(response.description()).isEqualTo("아늑한 객실입니다");
+    assertThat(response.standardPeopleCount()).isEqualTo(2);
+    assertThat(response.maxPeopleCount()).isEqualTo(4);
+    assertThat(response.price()).isEqualTo(100000L);
+    assertThat(response.imageUrl()).isEqualTo(imageUrl);
+
+    // 시설 목록 검증
+    assertThat(response.facilityTypes()).hasSize(2);
+    assertThat(response.facilityTypes()).contains(
+        RoomFacilityType.TV.getValue(), RoomFacilityType.WIFI.getValue());
+
+    // 반려동물 시설 목록 검증
+    assertThat(response.petFacilityTypes()).hasSize(2);
+    assertThat(response.petFacilityTypes()).contains(
+        RoomPetFacilityType.BED.getValue(), RoomPetFacilityType.FOOD_BOWL.getValue());
+
+    // 해시태그 목록 검증
+    assertThat(response.hashtagTypes()).hasSize(2);
+    assertThat(response.hashtagTypes()).contains(
+        HashtagType.COZY.getValue(), HashtagType.MODERN.getValue());
+  }
+
+
+  @Test
+  @DisplayName("객실이 존재하지 않을 때 예외 발생")
+  void getRoom_RoomNotFound() {
+    // given
+    Long hostId = host.getId();
+    Long roomId = 999L;
+
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(accommodation));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> roomService.getRoom(hostId, roomId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ROOM_NOT_FOUND);
+  }
+
+  @Test
+  @DisplayName("권한이 없을 때 예외 발생")
+  void getRoom_InvalidAuthorized() {
+    // given
+    Long hostId = host.getId();
+    Long roomId = room.getId();
+
+    // 다른 숙소에 속한 객실로 설정
+    Accommodation otherAccommodation = Accommodation.builder()
+        .id(200L) // 다른 숙소 ID
+        .build();
+
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(otherAccommodation));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+
+    // when
+    // then
+    assertThatThrownBy(() -> roomService.getRoom(hostId, roomId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.INVALID_AUTHORIZED);
   }
 }
