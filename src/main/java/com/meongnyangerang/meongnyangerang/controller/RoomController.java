@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomListResponse;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.RoomService;
 import jakarta.validation.Valid;
@@ -42,12 +43,23 @@ public class RoomController {
   /**
    * 객실 목록 조회
    */
-  @GetMapping("/{accommodationId}")
+  @GetMapping
   public ResponseEntity<RoomListResponse> getRoomList(
       @AuthenticationPrincipal UserDetailsImpl userDetail,
       @RequestParam(required = false) Long cursorId,
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int pageSize
   ) {
     return ResponseEntity.ok(roomService.getRoomList(userDetail.getId(), cursorId, pageSize));
+  }
+
+  /**
+   * 객실 상세 조회
+   */
+  @GetMapping("/{roomId}")
+  public ResponseEntity<RoomResponse> getRoom(
+      @AuthenticationPrincipal UserDetailsImpl userDetail,
+      @PathVariable Long roomId
+  ) {
+    return ResponseEntity.ok(roomService.getRoom(userDetail.getId(), roomId));
   }
 }

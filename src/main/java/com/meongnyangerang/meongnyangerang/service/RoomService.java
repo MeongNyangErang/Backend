@@ -2,11 +2,21 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
+import com.meongnyangerang.meongnyangerang.domain.room.facility.Hashtag;
+import com.meongnyangerang.meongnyangerang.domain.room.facility.HashtagType;
+import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacility;
+import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
+import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacility;
+import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomListResponse;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
-import com.meongnyangerang.meongnyangerang.repository.RoomRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.HashtagRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.util.List;
@@ -25,6 +35,9 @@ public class RoomService {
 
   private final RoomRepository roomRepository;
   private final AccommodationRepository accommodationRepository;
+  private final RoomFacilityRepository facilityRepository;
+  private final RoomPetFacilityRepository petFacilityRepository;
+  private final HashtagRepository hashtagRepository;
   private final ImageService imageService;
 
   /**
@@ -58,6 +71,30 @@ public class RoomService {
     Long nextCursorId = hasNext ? rooms.get(rooms.size() - 1).getId() : null;
 
     return RoomListResponse.of(rooms, nextCursorId, hasNext);
+  }
+
+  /**
+   * 객실 상세 조회
+   */
+  public RoomResponse getRoom(Long hostId, Long roomId) {
+    Accommodation accommodation = findAccommodationByHostId(hostId);
+    Room room = roomRepository.findById(roomId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ROOM_NOT_FOUND));
+
+    if (!accommodation.getId().equals(room.getAccommodation().getId())) {
+      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
+
+    return createRoomResponse(room);
+  }
+
+  private RoomResponse createRoomResponse(Room room) {
+    Long roomId = room.getId();
+    List<RoomFacility> facilities = facilityRepository.findAllByRoomId(roomId);
+    List<RoomPetFacility> petFacilities = petFacilityRepository.findAllByRoomId(roomId);
+    List<Hashtag> hashtags = hashtagRepository.findAllByRoomId(roomId);
+
+    return RoomResponse.of(room, facilities, petFacilities, hashtags);
   }
 
   private Accommodation findAccommodationByHostId(Long hostId) {
