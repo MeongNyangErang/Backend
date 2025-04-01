@@ -114,4 +114,23 @@ class WishlistServiceTest {
     // then
     verify(wishlistRepository).delete(wishlist);
   }
+
+  @Test
+  @DisplayName("찜 삭제 실패 - 존재하지 않는 찜")
+  void removeWishlistNotFound() {
+    // given
+    Long userId = 1L;
+    Long accommodationId = 100L;
+
+    when(wishlistRepository.findByUserIdAndAccommodationId(userId, accommodationId)).thenReturn(Optional.empty());
+
+    // when & then
+    MeongnyangerangException exception = assertThrows(
+        MeongnyangerangException.class,
+        () -> wishlistService.removeWishlist(userId, accommodationId)
+    );
+
+    assertEquals(ErrorCode.NOT_EXIST_WISHLIST.getDescription(), exception.getErrorCode().getDescription());
+    verify(wishlistRepository, never()).delete(Mockito.any(Wishlist.class));
+  }
 }
