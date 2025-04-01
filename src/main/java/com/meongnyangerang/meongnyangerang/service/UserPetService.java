@@ -57,4 +57,18 @@ public class UserPetService {
 
     userPet.update(request);
   }
+
+  // 반려동물 삭제
+  @Transactional
+  public void deletePet(Long userId, Long petId) {
+    UserPet userPet = userPetRepository.findById(petId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_PET));
+
+    // 본인의 반려동물인지 확인
+    if (!userPet.getUser().getId().equals(userId)) {
+      throw new MeongnyangerangException(INVALID_AUTHORIZED);
+    }
+
+    userPetRepository.delete(userPet);
+  }
 }
