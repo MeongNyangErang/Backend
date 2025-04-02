@@ -58,6 +58,8 @@ public class Review {
 
   private Integer reportCount;
 
+  private Boolean isHidden;
+
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
