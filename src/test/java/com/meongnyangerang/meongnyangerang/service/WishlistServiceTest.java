@@ -186,4 +186,42 @@ class WishlistServiceTest {
     assertThat(first.getAccommodationName()).isEqualTo("숙소1");
     assertThat(first.getAddress()).isEqualTo("서울시 강남구");
   }
+
+  @Test
+  @DisplayName("찜 목록 조회 - hasNext 없음")
+  void getUserWishlists_HasNextFalse() {
+    // given
+    Long userId = 1L;
+    Long cursorId = 0L;
+    int size = 2;
+
+    Accommodation acc1 = Accommodation.builder()
+        .id(100L)
+        .name("숙소1")
+        .thumbnailUrl("thumb1.jpg")
+        .address("서울시 강남구")
+        .build();
+
+    Accommodation acc2 = Accommodation.builder()
+        .id(101L)
+        .name("숙소2")
+        .thumbnailUrl("thumb2.jpg")
+        .address("서울시 종로구")
+        .build();
+
+    Wishlist w1 = Wishlist.builder().id(1L).accommodation(acc1).build();
+    Wishlist w2 = Wishlist.builder().id(2L).accommodation(acc2).build();
+
+    List<Wishlist> wishlistMock = List.of(w1, w2); // size == list.size → hasNext false
+
+    when(wishlistRepository.findByUserId(userId, cursorId, size + 1)).thenReturn(wishlistMock);
+
+    // when
+    CustomWishlistResponse<WishlistResponse> result = wishlistService.getUserWishlists(userId, cursorId, size);
+
+    // then
+    assertThat(result.getContent()).hasSize(2);
+    assertThat(result.isHasNext()).isFalse();
+    assertThat(result.getNextCursor()).isNull();
+  }
 }
