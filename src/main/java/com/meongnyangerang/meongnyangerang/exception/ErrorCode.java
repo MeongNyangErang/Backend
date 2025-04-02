@@ -57,6 +57,7 @@ public enum ErrorCode {
   RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예약이 존재하지 않습니다."),
   REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰가 존재하지 않습니다."),
   NOT_EXIST_PET(HttpStatus.NOT_FOUND, "존재하지 않는 반려동물입니다."),
+  NOT_EXIST_WISHLIST(HttpStatus.NOT_FOUND, "존재하지 않는 찜 목록입니다."),
 
 
   // 409 Conflict
@@ -66,6 +67,7 @@ public enum ErrorCode {
   // 409 CONFLICT
   ACCOMMODATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 개설한 숙소가 존재합니다."),
   HOST_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 승인 또는 거절된 호스트입니다."),
+  ALREADY_WISHLISTED(HttpStatus.CONFLICT, "이미 찜한 숙소입니다."),
 
   // 500 INTERNAL SERVER ERROR (서버 내부 오류)
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "내부 서버 오류가 발생했습니다."),
