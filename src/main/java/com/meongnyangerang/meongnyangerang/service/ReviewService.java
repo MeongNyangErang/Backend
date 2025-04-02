@@ -1,25 +1,35 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReviewImageProjection;
 import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +42,7 @@ public class ReviewService {
   private final ReviewRepository reviewRepository;
   private final ReservationRepository reservationRepository;
   private final ReviewImageRepository reviewImageRepository;
+  private final AccommodationRepository accommodationRepository;
 
   @Transactional
   public void createReview(Long userId, ReviewRequest reviewRequest, List<MultipartFile> images) {
@@ -49,6 +60,101 @@ public class ReviewService {
     // 이미지 등록
     validateImageSize(images);
     addImages(review, images);
+  }
+
+  public CustomReviewResponse<MyReviewResponse> getUsersReviews(Long userId, Long cursorId,
+      Integer size) {
+    // 해당 유저의 리뷰 내역만 조회
+    List<Review> reviews = reviewRepository.findByUserId(userId, cursorId, size + 1);
+
+    List<MyReviewResponse> content = reviews.stream()
+        .limit(size)
+        .map(this::mapToMyReviewResponse)
+        .toList();
+
+    boolean hasNext = reviews.size() > size;
+    Long cursor = hasNext ? reviews.get(size).getId() : null;
+
+    return new CustomReviewResponse<>(content, cursor, hasNext);
+  }
+
+  public CustomReviewResponse<AccommodationReviewResponse> getAccommodationReviews(
+      Long accommodationId,
+      Long cursorId, Integer size) {
+    // 해당 숙소의 리뷰 내역만 조회
+    List<Review> reviews = reviewRepository.findByAccommodationId(accommodationId, cursorId,
+        size + 1);
+
+    List<AccommodationReviewResponse> content = reviews.stream()
+        .limit(size)
+        .map(this::mapToAccommodationReviewResponse)
+        .toList();
+
+    boolean hasNext = reviews.size() > size;
+    Long cursor = hasNext ? reviews.get(size).getId() : null;
+
+    return new CustomReviewResponse<>(content, cursor, hasNext);
+  }
+
+  @Transactional
+  public void deleteReview(Long reviewId, Long userId) {
+    // 리뷰 조회 및 권한 검증
+    Review review = getReviewIfAuthorized(reviewId, userId);
+
+    // 리뷰에 포함된 모든 이미지 삭제
+    deleteAllReviewImages(reviewId);
+
+    // 리뷰 삭제
+    reviewRepository.delete(review);
+  }
+
+  @Transactional
+  public void updateReview(Long userId, Long reviewId, List<MultipartFile> newImages,
+      UpdateReviewRequest request) {
+    // 리뷰 조회 및 권한 검증
+    Review review = getReviewIfAuthorized(reviewId, userId);
+
+    // 새로운 이미지 추가 후 최대 업로드 가능 개수(3장) 초과 여부 검증
+    validateImageLimit(reviewId, request.getDeletedImageId(), newImages);
+
+    // 요청된 이미지 삭제 수행
+    deleteReviewImagesByIds(request.getDeletedImageId());
+
+    // 새 이미지 업로드 및 저장
+    addImages(review, newImages);
+
+    // 리뷰 내용 업데이트
+    updateReviewDetails(review, request);
+  }
+
+  /**
+   * 호스트의 숙소 리뷰 목록 조회
+   */
+  public HostReviewResponse getHostReviews(Long hostId, Long cursorId, int pageSize) {
+    Accommodation accommodation = findAccommodationByHostId(hostId);
+    List<Review> reviews = getReviews(cursorId, pageSize, accommodation);
+    
+    boolean hasNext = reviews.size() > pageSize;
+
+    if (hasNext) {
+      reviews = reviews.subList(0, pageSize);
+    }
+    Long nextCursorId = hasNext ? reviews.get(reviews.size() - 1).getId() : null;
+
+    List<Long> reviewIds = reviews.stream().map(Review::getId).toList(); // 리뷰 ID 추출
+
+    // reviewIds에 속한 리뷰 이미지를 전부 조회
+    List<ReviewImageProjection> reviewImageProjections = reviewImageRepository.findByReviewIds(
+        reviewIds);
+
+    // Map<ReviewId, List<ReviewImageUrl>> 형태의 Map 생성
+    Map<Long, List<String>> reviewImagesMap = createReviewImagesMap(
+        reviewIds, reviewImageProjections);
+
+    // 각 정보를 ReviewContent로 변환
+    List<ReviewContent> reviewContents = getReviewContents(reviews, reviewImagesMap);
+
+    return new HostReviewResponse(reviewContents, nextCursorId, hasNext);
   }
 
   // 최대 이미지 개수(3장)를 초과하는지 검증
@@ -86,22 +192,6 @@ public class ReviewService {
     }
   }
 
-  public CustomReviewResponse<MyReviewResponse> getUsersReviews(Long userId, Long cursorId,
-      Integer size) {
-    // 해당 유저의 리뷰 내역만 조회
-    List<Review> reviews = reviewRepository.findByUserId(userId, cursorId, size + 1);
-
-    List<MyReviewResponse> content = reviews.stream()
-        .limit(size)
-        .map(this::mapToMyReviewResponse)
-        .toList();
-
-    boolean hasNext = reviews.size() > size;
-    Long cursor = hasNext ? reviews.get(size).getId() : null;
-
-    return new CustomReviewResponse<>(content, cursor, hasNext);
-  }
-
   // entity -> dto 변환
   private MyReviewResponse mapToMyReviewResponse(Review review) {
     ReviewImage reviewImage = reviewImageRepository.findByReviewId(review.getId());
@@ -119,24 +209,6 @@ public class ReviewService {
         .content(review.getContent())
         .createdAt(review.getCreatedAt().format(dateFormatter))
         .build();
-  }
-
-  public CustomReviewResponse<AccommodationReviewResponse> getAccommodationReviews(
-      Long accommodationId,
-      Long cursorId, Integer size) {
-    // 해당 숙소의 리뷰 내역만 조회
-    List<Review> reviews = reviewRepository.findByAccommodationId(accommodationId, cursorId,
-        size + 1);
-
-    List<AccommodationReviewResponse> content = reviews.stream()
-        .limit(size)
-        .map(this::mapToAccommodationReviewResponse)
-        .toList();
-
-    boolean hasNext = reviews.size() > size;
-    Long cursor = hasNext ? reviews.get(size).getId() : null;
-
-    return new CustomReviewResponse<>(content, cursor, hasNext);
   }
 
   // entity -> dto 변환
@@ -159,18 +231,6 @@ public class ReviewService {
         .build();
   }
 
-  @Transactional
-  public void deleteReview(Long reviewId, Long userId) {
-    // 리뷰 조회 및 권한 검증
-    Review review = getReviewIfAuthorized(reviewId, userId);
-
-    // 리뷰에 포함된 모든 이미지 삭제
-    deleteAllReviewImages(reviewId);
-
-    // 리뷰 삭제
-    reviewRepository.delete(review);
-  }
-
   // 주어진 리뷰 ID로 리뷰를 조회하고, 해당 리뷰의 작성자인지 검증
   private Review getReviewIfAuthorized(Long reviewId, Long userId) {
     Review review = reviewRepository.findById(reviewId)
@@ -189,25 +249,6 @@ public class ReviewService {
     images.forEach(image -> imageService.deleteImage(image.getImageUrl()));
 
     reviewImageRepository.deleteAll(images);
-  }
-
-  @Transactional
-  public void updateReview(Long userId, Long reviewId, List<MultipartFile> newImages,
-      UpdateReviewRequest request) {
-    // 리뷰 조회 및 권한 검증
-    Review review = getReviewIfAuthorized(reviewId, userId);
-
-    // 새로운 이미지 추가 후 최대 업로드 가능 개수(3장) 초과 여부 검증
-    validateImageLimit(reviewId, request.getDeletedImageId(), newImages);
-
-    // 요청된 이미지 삭제 수행
-    deleteReviewImagesByIds(request.getDeletedImageId());
-
-    // 새 이미지 업로드 및 저장
-    addImages(review, newImages);
-
-    // 리뷰 내용 업데이트
-    updateReviewDetails(review, request);
   }
 
   // 이미지 삭제 요청 및 새로운 이미지 업로드 시, 최대 이미지 개수(3장)를 초과하는지 검증
@@ -238,4 +279,36 @@ public class ReviewService {
     review.setPetFriendlyRating(request.getPetRating());
   }
 
+  private Accommodation findAccommodationByHostId(Long hostId) {
+    return accommodationRepository.findByHostId(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
+  }
+
+  private List<Review> getReviews(Long cursorId, int pageSize, Accommodation accommodation) {
+    Pageable pageable = PageRequest.of(0, pageSize + 1);
+    // 다음 페이지 여부를 알기 위해 pageSize + 1
+
+    return reviewRepository.findByAccommodationIdWithCursor(
+        accommodation.getId(), cursorId, pageable);
+  }
+
+  private static Map<Long, List<String>> createReviewImagesMap(
+      List<Long> reviewIds, List<ReviewImageProjection> reviewImageProjections
+  ) {
+    Map<Long, List<String>> reviewImagesMap = new HashMap<>();
+    reviewIds.forEach(id -> reviewImagesMap.put(id, new ArrayList<>()));
+
+    reviewImageProjections.forEach(projection ->
+        reviewImagesMap.get(projection.getReviewId()).add(projection.getImageUrl()));
+
+    return reviewImagesMap;
+  }
+
+  private List<ReviewContent> getReviewContents(
+      List<Review> pagedReviews, Map<Long, List<String>> reviewImagesMap
+  ) {
+    return pagedReviews.stream()
+        .map(review -> ReviewContent.of(review, reviewImagesMap.get(review.getId())))
+        .toList();
+  }
 }
