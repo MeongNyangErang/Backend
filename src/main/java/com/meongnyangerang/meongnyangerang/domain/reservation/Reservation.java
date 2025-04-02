@@ -82,6 +82,10 @@ public class Reservation {
   private LocalDateTime updatedAt;
 
   private LocalDateTime canceledAt;
+
+  public String getRoomName(){
+    return this.getRoom().getName();
+  }
 }
 
 
