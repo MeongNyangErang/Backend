@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -9,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
@@ -17,18 +20,23 @@ import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReviewImageProjection;
 import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +46,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,10 +64,18 @@ class ReviewServiceTest {
   private ReviewImageRepository reviewImageRepository;
 
   @Mock
+  private AccommodationRepository accommodationRepository;
+
+  @Mock
   private ImageService imageService;
 
   @InjectMocks
   private ReviewService reviewService;
+
+  private Host host;
+  private Accommodation accommodation;
+  private List<Review> reviews;
+  private List<ReviewImageProjection> reviewImageProjections;
 
   @Test
   @DisplayName("유저는 예약한 숙소에 대해 리뷰를 작성할 수 있습니다.")
@@ -790,5 +808,206 @@ class ReviewServiceTest {
             user.getId(), review.getId(), mockImages, request));
 
     assertEquals(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("숙소 목록 조회 성공 - 다음 커서 존재")
+  void getHostReviews_Success_WithNextCursor() {
+    // given
+    settingTestReview();
+    Long cursorId = null;
+    int pageSize = 3;
+
+    List<Review> pagedReviews = reviews.subList(0, pageSize + 1);
+    Pageable pageable = PageRequest.of(0, pageSize + 1);
+
+    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
+    when(reviewRepository.findByAccommodationIdWithCursor(
+        accommodation.getId(), cursorId, pageable)).thenReturn(pagedReviews);
+
+    List<Review> actualReviews = pagedReviews.subList(0, pageSize); // 실제 반환될 리뷰
+    List<Long> actualReviewIds = actualReviews.stream().map(Review::getId).toList();
+    when(reviewImageRepository.findByReviewIds(actualReviewIds))
+        .thenReturn(reviewImageProjections.subList(0, 3));
+
+    // when
+    HostReviewResponse response = reviewService.getHostReviews(host.getId(), cursorId, pageSize);
+
+    // then
+    assertThat(response.content()).hasSize(3);
+    assertThat(response.hasNext()).isTrue();
+    assertThat(response.cursorId()).isEqualTo(3L);
+
+    // 반환된 리뷰의 ID 검증
+    List<Long> returnedIds = response.content().stream()
+        .map(ReviewContent::reviewId)
+        .toList();
+    assertThat(returnedIds).containsExactly(1L, 2L, 3L);
+
+    // 첫 번째 리뷰의 이미지 검증
+    ReviewContent firstReview = response.content().get(0);
+    assertThat(firstReview.reviewId()).isEqualTo(1L);
+    assertThat(firstReview.imageUrls()).contains("image1_1.jpg");
+
+    // 두 번째 리뷰의 이미지 검증
+    ReviewContent secondReview = response.content().get(1);
+    assertThat(secondReview.reviewId()).isEqualTo(2L);
+    assertThat(secondReview.imageUrls()).contains("image2_1.jpg");
+
+    // 세 번째 리뷰의 이미지 검증
+    ReviewContent thirdReview = response.content().get(2);
+    assertThat(thirdReview.reviewId()).isEqualTo(3L);
+    assertThat(thirdReview.imageUrls()).contains("image3_1.jpg");
+  }
+
+  @Test
+  @DisplayName("숙소 목록 조회 성공 - 다음 커서 없음")
+  void getHostReviews_Success_WithoutNextCursor() {
+    // given
+    settingTestReview();
+    Long cursorId = null;
+    int pageSize = 5;
+    Pageable pageable = PageRequest.of(0, pageSize + 1);
+
+    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
+    when(reviewRepository.findByAccommodationIdWithCursor(
+        accommodation.getId(), cursorId, pageable)).thenReturn(reviews); // ㅁ
+
+    List<Long> actualReviewIds = reviews.stream().map(Review::getId).toList();
+
+    when(reviewImageRepository.findByReviewIds(actualReviewIds)).thenReturn(reviewImageProjections);
+
+    // when
+    HostReviewResponse response = reviewService.getHostReviews(host.getId(), cursorId, pageSize);
+
+    // then
+    assertThat(response.content()).hasSize(5);
+    assertThat(response.hasNext()).isFalse();
+    assertThat(response.cursorId()).isEqualTo(null);
+
+    // 모든 리뷰가 포함되었는지 검증
+    List<Long> returnedIds = response.content().stream()
+        .map(ReviewContent::reviewId)
+        .toList();
+    assertThat(returnedIds).containsExactly(1L, 2L, 3L, 4L, 5L);
+
+    // 첫 번째 리뷰의 이미지 검증
+    ReviewContent firstReview = response.content().get(0);
+    assertThat(firstReview.reviewId()).isEqualTo(1L);
+    assertThat(firstReview.imageUrls()).contains("image1_1.jpg");
+
+    // 두 번째 리뷰의 이미지 검증
+    ReviewContent secondReview = response.content().get(1);
+    assertThat(secondReview.reviewId()).isEqualTo(2L);
+    assertThat(secondReview.imageUrls()).contains("image2_1.jpg");
+
+    // 세 번째 리뷰의 이미지 검증
+    ReviewContent thirdReview = response.content().get(2);
+    assertThat(thirdReview.reviewId()).isEqualTo(3L);
+    assertThat(thirdReview.imageUrls()).contains("image3_1.jpg");
+
+    // 네 번째 리뷰의 이미지 검증
+    ReviewContent fourthReview = response.content().get(3);
+    assertThat(fourthReview.reviewId()).isEqualTo(4L);
+    assertThat(fourthReview.imageUrls()).contains("image4_1.jpg");
+
+    // 다섯 번째 리뷰의 이미지 검증
+    ReviewContent fifthReview_1 = response.content().get(4);
+    assertThat(fifthReview_1.reviewId()).isEqualTo(5L);
+    assertThat(fifthReview_1.imageUrls()).contains("image5_1.jpg");
+
+    // 다섯2 번째 리뷰의 이미지 검증
+    ReviewContent fifthReview_2 = response.content().get(4);
+    assertThat(fifthReview_2.reviewId()).isEqualTo(5L);
+    assertThat(fifthReview_2.imageUrls()).contains("image5_2.jpg");
+  }
+
+  @Test
+  @DisplayName("숙소 목록 조회 실패 - 숙소 존재하지 않음")
+  void getHostReviews_AccommodationNotFound_ThrowsException() {
+    // given
+    Long cursorId = null;
+    int pageSize = 5;
+    Long nonExistentHostId = 999L;
+
+    when(accommodationRepository.findByHostId(nonExistentHostId)).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> reviewService.getHostReviews(nonExistentHostId, cursorId, pageSize))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
+  }
+
+  private void settingTestReview() {
+    Long hostId = 1L;
+    Long accommodationId = 10L;
+
+    host = Host.builder()
+        .id(hostId)
+        .build();
+
+    // 숙소 설정
+    accommodation = Accommodation.builder()
+        .id(accommodationId)
+        .host(host)
+        .name("테스트 숙소")
+        .build();
+
+    reviews = new ArrayList<>();
+    for (long i = 1; i <= 5; i++) {
+      Review review = createTestReview(i, "리뷰 내용 " + i);
+      reviews.add(review);
+    }
+
+    // 테스트 리뷰 이미지 프로젝션 생성
+    reviewImageProjections = new ArrayList<>();
+    reviewImageProjections.add(createReviewImageProjection(1L, "image1_1.jpg"));
+    reviewImageProjections.add(createReviewImageProjection(2L, "image2_1.jpg"));
+    reviewImageProjections.add(createReviewImageProjection(3L, "image3_1.jpg"));
+    reviewImageProjections.add(createReviewImageProjection(4L, "image4_1.jpg"));
+    reviewImageProjections.add(createReviewImageProjection(5L, "image5_1.jpg"));
+    reviewImageProjections.add(createReviewImageProjection(5L, "image5_2.jpg"));
+  }
+
+  private Review createTestReview(Long id, String content) {
+    User user = User.builder()
+        .id(100L + id)
+        .build();
+
+    Room room = Room.builder()
+        .id(200L + id)
+        .name("객실 " + id)
+        .accommodation(accommodation)
+        .build();
+
+    Reservation reservation = Reservation.builder()
+        .id(300L + id)
+        .room(room)
+        .build();
+
+    return Review.builder()
+        .id(id)
+        .user(user)
+        .reservation(reservation)
+        .userRating(4.0)
+        .petFriendlyRating(4.5)
+        .content(content)
+        .createdAt(LocalDateTime.now().minusDays(id))
+        .build();
+  }
+
+  private ReviewImageProjection createReviewImageProjection(Long reviewId, String imageUrl) {
+    return new ReviewImageProjection() {
+      @Override
+      public Long getReviewId() {
+        return reviewId;
+      }
+
+      @Override
+      public String getImageUrl() {
+        return imageUrl;
+      }
+    };
   }
 }
