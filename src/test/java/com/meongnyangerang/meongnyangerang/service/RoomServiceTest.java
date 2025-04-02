@@ -340,7 +340,7 @@ class RoomServiceTest {
 
     when(accommodationRepository.findByHostId(host.getId())).thenReturn(
         Optional.of(accommodation));
-    when(roomRepository.findRoomsWithCursor(accommodation.getId(), null, pageable))
+    when(roomRepository.findByAccommodationIdWithCursor(accommodation.getId(), null, pageable))
         .thenReturn(rooms.subList(0, 6)); // 5개 요청 + 1개 추가
 
     // when
@@ -361,7 +361,7 @@ class RoomServiceTest {
 
     when(accommodationRepository.findByHostId(host.getId()))
         .thenReturn(Optional.of(accommodation));
-    when(roomRepository.findRoomsWithCursor(accommodation.getId(), cursorId, pageable))
+    when(roomRepository.findByAccommodationIdWithCursor(accommodation.getId(), cursorId, pageable))
         .thenReturn(rooms.subList(5, 10)); // ID가 6 ~ 10인 객실
 
     // when
@@ -382,7 +382,7 @@ class RoomServiceTest {
 
     when(accommodationRepository.findByHostId(host.getId()))
         .thenReturn(Optional.of(accommodation));
-    when(roomRepository.findRoomsWithCursor(accommodation.getId(), cursorId, pageable))
+    when(roomRepository.findByAccommodationIdWithCursor(accommodation.getId(), cursorId, pageable))
         .thenReturn(new ArrayList<>()); // 빈 결과
 
     // when
