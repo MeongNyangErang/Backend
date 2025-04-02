@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
@@ -92,5 +93,17 @@ public class ReviewController {
         (newImages != null) ? newImages : Collections.emptyList(), request);
 
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+  }
+
+  /**
+   * 호스트의 숙소 리뷰 목록 조회
+   */
+  @GetMapping("/hosts/reviews")
+  public ResponseEntity<HostReviewResponse> getHostReviews(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @RequestParam(required = false) Long cursorId,
+      @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size
+  ) {
+    return ResponseEntity.ok(reviewService.getHostReviews(userDetails.getId(), cursorId, size));
   }
 }
