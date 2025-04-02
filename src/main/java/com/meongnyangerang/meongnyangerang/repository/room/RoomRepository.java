@@ -13,8 +13,9 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
   @Query("SELECT r FROM Room r " +
       "WHERE r.accommodation.id = :accommodationId " +
-      "AND (:cursorId IS NULL OR r.id < :cursorId) ")
-  List<Room> findRoomsWithCursor(
+      "AND (:cursorId IS NULL OR r.id < :cursorId) " +
+      "ORDER BY r.id DESC")
+  List<Room> findByAccommodationIdWithCursor(
       @Param("accommodationId") Long accommodationId,
       @Param("cursorId") Long cursorId,
       Pageable pageable
