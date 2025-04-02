@@ -14,6 +14,5 @@ public class WishlistResponse {
   private String accommodationName;
   private String thumbnailImageUrl;
   private String address;
-  private Double petScore;
-  private Double userScore;
+  private Double totalRating;
 }
