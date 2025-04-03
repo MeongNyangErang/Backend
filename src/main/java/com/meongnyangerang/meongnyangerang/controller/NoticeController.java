@@ -36,7 +36,7 @@ public class NoticeController {
   }
 
   // 공지사항 수정 API
-  @PutMapping("/notices/{noticeId}")
+  @PutMapping("/{noticeId}")
   public ResponseEntity<Void> updateNotice(
       @AuthenticationPrincipal UserDetailsImpl adminDetails,
       @PathVariable Long noticeId,
