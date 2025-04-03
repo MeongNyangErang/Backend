@@ -1,13 +1,17 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.admin.Notice;
 import com.meongnyangerang.meongnyangerang.dto.NoticeRequest;
+import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.NoticeRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
@@ -18,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
@@ -94,5 +99,23 @@ public class NoticeServiceTest {
     assertEquals("공지 내용", savedNotice.getContent());
     assertEquals("https://s3.bucket/notice.jpg", savedNotice.getImageUrl());
     assertEquals(admin, savedNotice.getAdmin());
+  }
+
+  @Test
+  @DisplayName("공지사항 등록 실패 - 존재하지 않는 관리자")
+  void createNoticeFailAdminNotFound() {
+    // given
+    Long adminId = 999L;
+    NoticeRequest request = new NoticeRequest("제목", "내용");
+    MultipartFile imageFile = null;
+
+    when(adminRepository.findById(adminId)).thenReturn(Optional.empty());
+
+    // when & then
+    MeongnyangerangException exception = assertThrows(MeongnyangerangException.class,
+        () -> noticeService.createNotice(adminId, request, imageFile));
+
+    assertEquals(NOT_EXIST_ACCOUNT, exception.getErrorCode());
+    verify(noticeRepository, never()).save(Mockito.any()); // 이건 호출 방지 검증용이라 예외적으로 사용해도 OK
   }
 }
