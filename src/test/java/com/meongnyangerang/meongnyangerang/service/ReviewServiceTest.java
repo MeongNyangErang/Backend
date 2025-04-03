@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -76,6 +77,7 @@ class ReviewServiceTest {
 
   private Host host;
   private Accommodation accommodation;
+  private Review review;
   private List<Review> reviews;
   private List<ReviewImageProjection> reviewImageProjections;
 
@@ -994,6 +996,53 @@ class ReviewServiceTest {
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
   }
 
+  @Test
+  @DisplayName("호스트 리뷰 삭제 성공")
+  void deleteReviewByHost_Success() {
+    // given
+    settingTestReview();
+    when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
+
+    // when
+    reviewService.deleteReviewByHost(host.getId(), review.getId());
+
+    // then
+    verify(reviewRepository, times(1)).findById(review.getId());
+    verify(reviewRepository, times(1)).delete(review);
+  }
+
+  @Test
+  @DisplayName("호스트 리뷰 삭제 실패 - 존재하지 않는 리뷰")
+  void deleteReviewByHost_ReviewNotFound_ThrowsException() {
+    // given
+    settingTestReview();
+    when(reviewRepository.findById(review.getId())).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> reviewService.deleteReviewByHost(host.getId(), review.getId()))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.REVIEW_NOT_FOUND);
+
+    verify(reviewRepository, never()).delete(review);
+  }
+
+  @Test
+  @DisplayName("호스트 리뷰 삭제 실패 - 호스트 ID 불일치")
+  void deleteReviewByHost_InvalidAuthorized_ThrowsException() {
+    // given
+    settingTestReview();
+    when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
+
+    // when
+    // then
+    assertThatThrownBy(() -> reviewService.deleteReviewByHost(2L, review.getId()))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.INVALID_AUTHORIZED);
+
+    verify(reviewRepository, never()).delete(review);
+  }
+
   private void settingTestReview() {
     Long hostId = 1L;
     Long accommodationId = 10L;
@@ -1007,6 +1056,11 @@ class ReviewServiceTest {
         .id(accommodationId)
         .host(host)
         .name("테스트 숙소")
+        .build();
+
+    review = Review.builder()
+        .id(1L)
+        .accommodation(accommodation)
         .build();
 
     reviews = new ArrayList<>();
