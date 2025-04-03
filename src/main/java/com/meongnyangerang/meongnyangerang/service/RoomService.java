@@ -47,11 +47,11 @@ public class RoomService {
   /**
    * 객실 등록
    */
-  public void createRoom(Long hostId, RoomCreateRequest request, MultipartFile images) {
+  public void createRoom(Long hostId, RoomCreateRequest request, MultipartFile thumbnail) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
-    String imageUrl = imageService.storeImage(images);
+    String thumbnailUrl = imageService.storeImage(thumbnail);
 
-    Room room = request.toEntity(accommodation, imageUrl);
+    Room room = request.toEntity(accommodation, thumbnailUrl);
     roomRepository.save(room);
   }
 
@@ -88,20 +88,20 @@ public class RoomService {
    * 객실 수정
    */
   @Transactional
-  public RoomResponse updateRoom(Long hostId, RoomUpdateRequest request, MultipartFile newImage) {
+  public RoomResponse updateRoom(Long hostId, RoomUpdateRequest request, MultipartFile newThumbanil) {
     Room room = getAuthorizedRoom(hostId, request.roomId());
-    String newImageUrl = null;
+    String newThumbnailUrl = null;
     ImageDeletionQueue imageDeletionQueue = null;
 
     try {
-      if (newImage != null && !newImage.isEmpty()) {
-        newImageUrl = imageService.storeImage(newImage);
+      if (newThumbanil != null && !newThumbanil.isEmpty()) {
+        newThumbnailUrl = imageService.storeImage(newThumbanil);
         imageDeletionQueue = imageService.registerImagesForDeletion(room.getImageUrl());
       }
 
       Room updatedRoom = room.updateRoom(
           request,
-          newImageUrl != null ? newImageUrl : room.getImageUrl()
+          newThumbnailUrl != null ? newThumbnailUrl : room.getImageUrl()
       );
       List<RoomFacility> updatedFacilities = updateFacilities(request.facilityTypes(), room);
       List<RoomPetFacility> updatedPetFacilities = updatePetFacilities(
@@ -111,7 +111,7 @@ public class RoomService {
       return RoomResponse.of(updatedRoom, updatedFacilities, updatedPetFacilities, updatedHashtags);
     } catch (Exception e) {
       log.error("객실 업데이트 실행: {}", e.getMessage(), e);
-      rollbackProcess(newImageUrl, imageDeletionQueue);
+      rollbackProcess(newThumbnailUrl, imageDeletionQueue);
 
       throw new MeongnyangerangException(ErrorCode.ROOM_UPDATE_FAILED);
     }

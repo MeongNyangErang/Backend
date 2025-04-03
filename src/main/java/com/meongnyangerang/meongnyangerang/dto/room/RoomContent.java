@@ -6,7 +6,7 @@ public record RoomContent(
     Long roomId,
     String name,
     String description,
-    String imageUrl,
+    String thumbnailUrl,
     Long price,
     Integer standardPeopleCount,
     Integer maxPeopleCount,

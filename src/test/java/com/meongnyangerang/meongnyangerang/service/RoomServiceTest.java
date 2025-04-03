@@ -91,8 +91,7 @@ class RoomServiceTest {
 
   private final int PAGE_SIZE = 5;
 
-  Pageable pageable = PageRequest.of(
-      0, PAGE_SIZE + 1, Sort.by(Sort.Direction.DESC, "id"));
+  Pageable pageable = PageRequest.of(0, PAGE_SIZE + 1);
 
   @BeforeEach
   void setUp() {
@@ -432,7 +431,7 @@ class RoomServiceTest {
     assertThat(response.standardPeopleCount()).isEqualTo(2);
     assertThat(response.maxPeopleCount()).isEqualTo(4);
     assertThat(response.price()).isEqualTo(100000L);
-    assertThat(response.imageUrl()).isEqualTo(imageUrl);
+    assertThat(response.thumbnailUrl()).isEqualTo(imageUrl);
 
     // 시설 목록 검증
     assertThat(response.facilityTypes()).hasSize(2);
@@ -521,7 +520,7 @@ class RoomServiceTest {
     assertThat(response.extraFee()).isEqualTo(roomUpdateRequest.extraFee());
     assertThat(response.checkInTime()).isEqualTo(roomUpdateRequest.checkInTime());
     assertThat(response.checkOutTime()).isEqualTo(roomUpdateRequest.checkOutTime());
-    assertThat(response.imageUrl()).isEqualTo(imageUrl);
+    assertThat(response.thumbnailUrl()).isEqualTo(imageUrl);
   }
 
   @Test

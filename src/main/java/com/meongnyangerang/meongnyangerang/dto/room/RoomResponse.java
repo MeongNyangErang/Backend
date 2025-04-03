@@ -20,7 +20,7 @@ public record RoomResponse(
     Long extraFee,
     LocalTime checkInTime,
     LocalTime checkOutTime,
-    String imageUrl,
+    String thumbnailUrl,
     List<String> facilityTypes,
     List<String> petFacilityTypes,
     List<String> hashtagTypes
