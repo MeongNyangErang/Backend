@@ -96,14 +96,14 @@ public class ReviewController {
   }
 
   /**
-   * 호스트의 숙소 리뷰 목록 조회
+   * 호스트 - 숙소 리뷰 목록 조회
    */
   @GetMapping("/hosts/reviews")
-  public ResponseEntity<HostReviewResponse> getHostReviews(
+  public ResponseEntity<HostReviewResponse> getReviewsByHost(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
       @RequestParam(required = false) Long cursorId,
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size
   ) {
-    return ResponseEntity.ok(reviewService.getHostReviews(userDetails.getId(), cursorId, size));
+    return ResponseEntity.ok(reviewService.getReviewsByHost(userDetails.getId(), cursorId, size));
   }
 }

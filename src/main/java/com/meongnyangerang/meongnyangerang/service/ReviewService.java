@@ -145,9 +145,9 @@ public class ReviewService {
   }
 
   /**
-   * 호스트의 숙소 리뷰 목록 조회
+   * 호스트 - 숙소 리뷰 목록 조회
    */
-  public HostReviewResponse getHostReviews(Long hostId, Long cursorId, int pageSize) {
+  public HostReviewResponse getReviewsByHost(Long hostId, Long cursorId, int pageSize) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
     List<Review> reviews = getReviews(cursorId, pageSize, accommodation);
 

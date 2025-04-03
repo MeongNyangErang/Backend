@@ -886,7 +886,7 @@ class ReviewServiceTest {
         .thenReturn(reviewImageProjections.subList(0, 3));
 
     // when
-    HostReviewResponse response = reviewService.getHostReviews(host.getId(), cursorId, pageSize);
+    HostReviewResponse response = reviewService.getReviewsByHost(host.getId(), cursorId, pageSize);
 
     // then
     assertThat(response.content()).hasSize(3);
@@ -933,7 +933,7 @@ class ReviewServiceTest {
     when(reviewImageRepository.findByReviewIds(actualReviewIds)).thenReturn(reviewImageProjections);
 
     // when
-    HostReviewResponse response = reviewService.getHostReviews(host.getId(), cursorId, pageSize);
+    HostReviewResponse response = reviewService.getReviewsByHost(host.getId(), cursorId, pageSize);
 
     // then
     assertThat(response.content()).hasSize(5);
@@ -989,7 +989,7 @@ class ReviewServiceTest {
 
     // when
     // then
-    assertThatThrownBy(() -> reviewService.getHostReviews(nonExistentHostId, cursorId, pageSize))
+    assertThatThrownBy(() -> reviewService.getReviewsByHost(nonExistentHostId, cursorId, pageSize))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
   }
