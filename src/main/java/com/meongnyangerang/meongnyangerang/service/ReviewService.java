@@ -174,6 +174,20 @@ public class ReviewService {
     return new HostReviewResponse(reviewContents, nextCursorId, hasNext);
   }
 
+  /**
+   * 호스트 - 리뷰 삭제
+   */
+  public void deleteReviewByHost(Long hostId, Long reviewId) {
+    Review review = reviewRepository.findById(reviewId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.REVIEW_NOT_FOUND));
+
+    if (!hostId.equals(review.getAccommodation().getHost().getId())) {
+      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
+
+    reviewRepository.delete(review);
+  }
+
   // 최대 이미지 개수(3장)를 초과하는지 검증
   private void validateImageSize(List<MultipartFile> images) {
     if (images.size() > 3) {
