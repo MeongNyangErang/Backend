@@ -4,6 +4,8 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -117,5 +119,110 @@ public class NoticeServiceTest {
 
     assertEquals(NOT_EXIST_ACCOUNT, exception.getErrorCode());
     verify(noticeRepository, never()).save(Mockito.any()); // 이건 호출 방지 검증용이라 예외적으로 사용해도 OK
+  }
+
+  @Test
+  @DisplayName("공지사항 수정 성공 - 기존 이미지 있음")
+  void updateNoticeSuccessWithOldImage() {
+    // given
+    Long adminId = 1L;
+    Long noticeId = 1L;
+
+    Admin admin = Admin.builder().id(adminId).build();
+    Notice notice = Notice.builder()
+        .id(noticeId)
+        .admin(admin)
+        .title("old title")
+        .content("old content")
+        .imageUrl("http://s3.com/old-image.jpg")
+        .build();
+
+    NoticeRequest request = new NoticeRequest("새로운 제목", "새로운 내용");
+
+    MockMultipartFile newImage = new MockMultipartFile(
+        "image", "new.jpg", "image/jpeg", "new image".getBytes()
+    );
+
+    given(adminRepository.findById(adminId)).willReturn(Optional.of(admin));
+    given(noticeRepository.findById(noticeId)).willReturn(Optional.of(notice));
+    given(imageService.storeImage(newImage)).willReturn("http://s3.com/new-image.jpg");
+
+    // when
+    noticeService.updateNotice(adminId, noticeId, request, newImage);
+
+    // then
+    assertEquals("새로운 제목", notice.getTitle());
+    assertEquals("새로운 내용", notice.getContent());
+    assertEquals("http://s3.com/new-image.jpg", notice.getImageUrl());
+    verify(imageService).registerImagesForDeletion("http://s3.com/old-image.jpg");
+  }
+
+  @Test
+  @DisplayName("공지사항 수정 성공 - 기존 이미지 없음")
+  void updateNotice_success_withoutOldImage() {
+    // given
+    Long adminId = 2L;
+    Long noticeId = 20L;
+
+    Admin admin = Admin.builder().id(adminId).email("admin2@example.com").build();
+    Notice notice = Notice.builder()
+        .id(noticeId)
+        .admin(admin)
+        .title("공지 제목")
+        .content("공지 내용")
+        .imageUrl(null) // 기존 이미지 없음
+        .build();
+
+    NoticeRequest request = new NoticeRequest("수정 제목", "수정 내용");
+
+    MockMultipartFile newImage = new MockMultipartFile(
+        "image", "newfile.jpg", "image/jpeg", "image-content".getBytes());
+
+    given(adminRepository.findById(2L)).willReturn(Optional.of(admin));
+    given(noticeRepository.findById(20L)).willReturn(Optional.of(notice));
+    given(imageService.storeImage(newImage)).willReturn("http://s3.com/newfile.jpg");
+
+    // when
+    noticeService.updateNotice(adminId, noticeId, request, newImage);
+
+    // then
+    assertEquals("수정 제목", notice.getTitle());
+    assertEquals("수정 내용", notice.getContent());
+    assertEquals("http://s3.com/newfile.jpg", notice.getImageUrl());
+    verify(imageService).storeImage(newImage);
+    verify(imageService, never()).registerImagesForDeletion(anyString()); // 삭제 등록 안 됨
+  }
+
+  @Test
+  @DisplayName("공지사항 수정 실패 - 존재하지 않는 관리자")
+  void updateNotice_fail_adminNotFound() {
+    // given
+    Long adminId = 999L;
+    Long noticeId = 1L;
+    NoticeRequest request = new NoticeRequest("제목", "내용");
+
+    given(adminRepository.findById(adminId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        noticeService.updateNotice(adminId, noticeId, request, null));
+  }
+
+  @Test
+  @DisplayName("공지사항 수정 실패 - 존재하지 않는 공지사항")
+  void updateNotice_fail_noticeNotFound() {
+    // given
+    Long adminId = 3L;
+    Long noticeId = 300L;
+
+    Admin admin = Admin.builder().id(adminId).email("admin3@example.com").build();
+    NoticeRequest request = new NoticeRequest("제목", "내용");
+
+    given(adminRepository.findById(adminId)).willReturn(Optional.of(admin));
+    given(noticeRepository.findById(noticeId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        noticeService.updateNotice(adminId, noticeId, request, null));
   }
 }
