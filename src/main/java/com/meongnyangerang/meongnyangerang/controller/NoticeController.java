@@ -45,7 +45,7 @@ public class NoticeController {
       @RequestPart(value = "image", required = false) MultipartFile imageFile) {
 
     noticeService.updateNotice(adminDetails.getId(), noticeId, request, imageFile);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.noContent().build();
   }
 
   // 공지사항 삭제 API
