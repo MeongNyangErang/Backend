@@ -10,6 +10,7 @@ import com.meongnyangerang.meongnyangerang.domain.admin.Notice;
 import com.meongnyangerang.meongnyangerang.dto.NoticeRequest;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.NoticeRepository;
+import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +33,9 @@ public class NoticeServiceTest {
 
   @Mock
   private AdminRepository adminRepository;
+
+  @Mock
+  private ImageService imageService;
 
   @Test
   @DisplayName("공지사항 등록 성공 - 이미지 X")
@@ -60,5 +65,34 @@ public class NoticeServiceTest {
     assertEquals("내용", savedNotice.getContent());
     assertEquals(admin, savedNotice.getAdmin());
     assertNull(savedNotice.getImageUrl());
+  }
+
+  @Test
+  @DisplayName("공지사항 등록 성공 - 이미지 포함")
+  void createNoticeWithImageSuccess() {
+    // given
+    Long adminId = 1L;
+    Admin admin = Admin.builder().id(adminId).email("admin@meongnyang.com").build();
+    NoticeRequest request = new NoticeRequest("공지 제목", "공지 내용");
+
+    MockMultipartFile imageFile = new MockMultipartFile(
+        "image", "notice.jpg", "image/jpeg", "fake-image".getBytes());
+
+    when(adminRepository.findById(adminId)).thenReturn(Optional.of(admin));
+    when(imageService.storeImage(imageFile)).thenReturn("https://s3.bucket/notice.jpg");
+
+    ArgumentCaptor<Notice> captor = ArgumentCaptor.forClass(Notice.class);
+
+    // when
+    noticeService.createNotice(adminId, request, imageFile);
+
+    // then
+    verify(noticeRepository).save(captor.capture());
+    Notice savedNotice = captor.getValue();
+
+    assertEquals("공지 제목", savedNotice.getTitle());
+    assertEquals("공지 내용", savedNotice.getContent());
+    assertEquals("https://s3.bucket/notice.jpg", savedNotice.getImageUrl());
+    assertEquals(admin, savedNotice.getAdmin());
   }
 }
