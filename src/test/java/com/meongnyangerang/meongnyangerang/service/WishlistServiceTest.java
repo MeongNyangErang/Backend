@@ -1,9 +1,9 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,11 +11,14 @@ import static org.mockito.Mockito.when;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.Wishlist;
+import com.meongnyangerang.meongnyangerang.dto.CustomWishlistResponse;
+import com.meongnyangerang.meongnyangerang.dto.WishlistResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -132,5 +135,93 @@ class WishlistServiceTest {
 
     assertEquals(ErrorCode.NOT_EXIST_WISHLIST.getDescription(), exception.getErrorCode().getDescription());
     verify(wishlistRepository, never()).delete(Mockito.any(Wishlist.class));
+  }
+
+  @Test
+  @DisplayName("찜 목록 조회 - hasNext 있음")
+  void getUserWishlists_HasNext() {
+    // given
+    Long userId = 1L;
+    Long cursorId = 0L;
+    int size = 2;
+
+    Accommodation acc1 = Accommodation.builder()
+        .id(100L)
+        .name("숙소1")
+        .thumbnailUrl("thumb1.jpg")
+        .address("서울시 강남구")
+        .build();
+
+    Accommodation acc2 = Accommodation.builder()
+        .id(101L)
+        .name("숙소2")
+        .thumbnailUrl("thumb2.jpg")
+        .address("서울시 종로구")
+        .build();
+
+    Accommodation acc3 = Accommodation.builder()
+        .id(102L)
+        .name("숙소3")
+        .thumbnailUrl("thumb3.jpg")
+        .address("서울시 마포구")
+        .build();
+
+    Wishlist w1 = Wishlist.builder().id(1L).accommodation(acc1).build();
+    Wishlist w2 = Wishlist.builder().id(2L).accommodation(acc2).build();
+    Wishlist w3 = Wishlist.builder().id(3L).accommodation(acc3).build();
+
+    List<Wishlist> wishlistMock = List.of(w1, w2, w3); // size+1 → hasNext true
+
+    when(wishlistRepository.findByUserId(userId, cursorId, size + 1)).thenReturn(wishlistMock);
+
+    // when
+    CustomWishlistResponse<WishlistResponse> result = wishlistService.getUserWishlists(userId, cursorId, size);
+
+    // then
+    assertThat(result.getContent()).hasSize(2);
+    assertThat(result.isHasNext()).isTrue();
+    assertThat(result.getNextCursor()).isEqualTo(3L);
+
+    WishlistResponse first = result.getContent().get(0);
+    assertThat(first.getAccommodationName()).isEqualTo("숙소1");
+    assertThat(first.getAddress()).isEqualTo("서울시 강남구");
+  }
+
+  @Test
+  @DisplayName("찜 목록 조회 - hasNext 없음")
+  void getUserWishlists_HasNextFalse() {
+    // given
+    Long userId = 1L;
+    Long cursorId = 0L;
+    int size = 2;
+
+    Accommodation acc1 = Accommodation.builder()
+        .id(100L)
+        .name("숙소1")
+        .thumbnailUrl("thumb1.jpg")
+        .address("서울시 강남구")
+        .build();
+
+    Accommodation acc2 = Accommodation.builder()
+        .id(101L)
+        .name("숙소2")
+        .thumbnailUrl("thumb2.jpg")
+        .address("서울시 종로구")
+        .build();
+
+    Wishlist w1 = Wishlist.builder().id(1L).accommodation(acc1).build();
+    Wishlist w2 = Wishlist.builder().id(2L).accommodation(acc2).build();
+
+    List<Wishlist> wishlistMock = List.of(w1, w2); // size == list.size → hasNext false
+
+    when(wishlistRepository.findByUserId(userId, cursorId, size + 1)).thenReturn(wishlistMock);
+
+    // when
+    CustomWishlistResponse<WishlistResponse> result = wishlistService.getUserWishlists(userId, cursorId, size);
+
+    // then
+    assertThat(result.getContent()).hasSize(2);
+    assertThat(result.isHasNext()).isFalse();
+    assertThat(result.getNextCursor()).isNull();
   }
 }
