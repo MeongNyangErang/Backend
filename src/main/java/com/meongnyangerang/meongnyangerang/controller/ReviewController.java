@@ -106,4 +106,16 @@ public class ReviewController {
   ) {
     return ResponseEntity.ok(reviewService.getReviewsByHost(userDetails.getId(), cursorId, size));
   }
+
+  /**
+   * 호스트 - 리뷰 삭제
+   */
+  @DeleteMapping("/hosts/reviews/{reviewId}")
+  public ResponseEntity<Void> deleteReviewByHost(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @PathVariable Long reviewId
+  ) {
+    reviewService.deleteReviewByHost(userDetails.getId(), reviewId);
+    return ResponseEntity.noContent().build();
+  }
 }
