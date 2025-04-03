@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.admin.Notice;
 import com.meongnyangerang.meongnyangerang.dto.NoticeRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.NoticeRepository;
@@ -248,5 +249,19 @@ public class NoticeServiceTest {
     // then
     verify(imageService).registerImagesForDeletion("https://s3.com/image/notice.jpg");
     verify(noticeRepository).delete(notice);
+  }
+  @Test
+  @DisplayName("공지사항 삭제 실패 - 존재하지 않는 관리자")
+  void deleteNoticeFailNotExistAdmin() {
+    // given
+    given(adminRepository.findById(1L)).willReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException exception = assertThrows(MeongnyangerangException.class,
+        () -> noticeService.deleteNotice(1L, 10L));
+
+    // then
+    assertEquals(ErrorCode.NOT_EXIST_ACCOUNT, exception.getErrorCode());
+    assertEquals("해당 계정은 존재하지 않습니다.", exception.getMessage());
   }
 }
