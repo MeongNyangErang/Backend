@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.repository;
 
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +32,18 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
       @Param("accommodationId") Long accommodationId,
       @Param("cursorId") Long cursorId,
       @Param("size") int size);
+
+  @Query("SELECT r FROM Review r " +
+      "JOIN FETCH r.user " +
+      "JOIN FETCH r.reservation " +
+      "JOIN r.reservation res JOIN res.room rm " +
+      "WHERE rm.accommodation.id = :accommodationId " +
+      "AND (:cursorId IS NULL OR r.id < :cursorId) " +
+      "AND r.isHidden = false " +
+      "ORDER BY r.id DESC")
+  List<Review> findByAccommodationIdWithCursor(
+      @Param("accommodationId") Long accommodationId,
+      @Param("cursorId") Long cursorId,
+      Pageable pageable
+  );
 }

@@ -50,9 +50,9 @@ public class RoomController {
   public ResponseEntity<RoomListResponse> getRoomList(
       @AuthenticationPrincipal UserDetailsImpl userDetail,
       @RequestParam(required = false) Long cursorId,
-      @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int pageSize
+      @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size
   ) {
-    return ResponseEntity.ok(roomService.getRoomList(userDetail.getId(), cursorId, pageSize));
+    return ResponseEntity.ok(roomService.getRoomList(userDetail.getId(), cursorId, size));
   }
 
   /**

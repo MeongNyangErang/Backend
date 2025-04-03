@@ -60,11 +60,10 @@ public class RoomService {
    */
   public RoomListResponse getRoomList(Long hostId, Long cursorId, int pageSize) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
-    Pageable pageable = PageRequest.of(
-        0, pageSize + 1, Sort.by(Direction.DESC, "id"));
+    Pageable pageable = PageRequest.of(0, pageSize + 1);
     // 다음 페이지 여부를 알기 위해 pageSize + 1
 
-    List<Room> rooms = roomRepository.findRoomsWithCursor(
+    List<Room> rooms = roomRepository.findByAccommodationIdWithCursor(
         accommodation.getId(), cursorId, pageable);
 
     boolean hasNext = rooms.size() > pageSize;
