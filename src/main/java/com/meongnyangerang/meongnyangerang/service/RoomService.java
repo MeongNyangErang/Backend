@@ -88,15 +88,14 @@ public class RoomService {
    * 객실 수정
    */
   @Transactional
-  public RoomResponse updateRoom(Long hostId, RoomUpdateRequest request, MultipartFile newThumbanil) {
+  public RoomResponse updateRoom(Long hostId, RoomUpdateRequest request, MultipartFile newThumbnail) {
     Room room = getAuthorizedRoom(hostId, request.roomId());
     String newThumbnailUrl = null;
-    ImageDeletionQueue imageDeletionQueue = null;
 
     try {
-      if (newThumbanil != null && !newThumbanil.isEmpty()) {
-        newThumbnailUrl = imageService.storeImage(newThumbanil);
-        imageDeletionQueue = imageService.registerImagesForDeletion(room.getImageUrl());
+      if (newThumbnail != null && !newThumbnail.isEmpty()) {
+        newThumbnailUrl = imageService.storeImage(newThumbnail);
+        imageService.registerImagesForDeletion(room.getImageUrl());
       }
 
       Room updatedRoom = room.updateRoom(
@@ -111,7 +110,7 @@ public class RoomService {
       return RoomResponse.of(updatedRoom, updatedFacilities, updatedPetFacilities, updatedHashtags);
     } catch (Exception e) {
       log.error("객실 업데이트 실행: {}", e.getMessage(), e);
-      rollbackProcess(newThumbnailUrl, imageDeletionQueue);
+      rollbackProcess(newThumbnailUrl);
 
       throw new MeongnyangerangException(ErrorCode.ROOM_UPDATE_FAILED);
     }
@@ -190,16 +189,17 @@ public class RoomService {
     return RoomResponse.of(room, facilities, petFacilities, hashtags);
   }
 
-  private void rollbackProcess(String newImageUrl, ImageDeletionQueue imageDeletionQueue) {
+  private void rollbackProcess(String newImageUrl) {
     if (newImageUrl != null) {
       imageService.deleteImage(newImageUrl); // 새로 업로드한 이미지 삭제
       log.info("새로운 이미지 저장 롤백 -> S3에서 제거: {}", newImageUrl);
     }
 
-    if (imageDeletionQueue != null) {
+    // TODO: 롤백 필요없음 DB는 자동 롤백
+    /*if (imageDeletionQueue != null) {
       imageService.deregisterImageForDeletion(imageDeletionQueue); // 삭제 예약 취소
       log.info("이미지 삭제 예약 취소: {}, ", imageDeletionQueue.getImageUrl());
-    }
+    }*/
   }
 
   private Room getAuthorizedRoom(Long hostId, Long roomId) {
