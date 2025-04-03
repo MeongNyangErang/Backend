@@ -24,6 +24,7 @@ import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
+import com.meongnyangerang.meongnyangerang.dto.ReviewImageResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
@@ -443,7 +444,7 @@ class ReviewServiceTest {
         .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
 
     Review review2 = Review.builder()
-        .id(1L)
+        .id(2L)
         .accommodation(accommodation)
         .user(user)
         .content("content")
@@ -453,12 +454,16 @@ class ReviewServiceTest {
         .reportCount(0)
         .build();
 
-    ReviewImage reviewImage2 = ReviewImage.builder().id(1L).review(review2)
+    ReviewImage reviewImage2 = ReviewImage.builder().id(2L).review(review2)
         .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
 
-    MyReviewResponse expectedResponse = MyReviewResponse.builder()
+    List<ReviewImageResponse> list1 = List.of(
+        new ReviewImageResponse(reviewImage1.getId(), reviewImage1.getImageUrl())
+    );
+
+    MyReviewResponse expectedResponse1 = MyReviewResponse.builder()
         .accommodationName(review1.getAccommodation().getName())
-        .reviewImageUrl(reviewImage1.getImageUrl())
+        .reviewImages(list1)
         .totalRating(3.5)
         .content(review1.getContent())
         .createdAt(review1.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
@@ -469,18 +474,25 @@ class ReviewServiceTest {
             .filter(review -> review.getReportCount() < 20)
             .toList()
     );
-    when(reviewImageRepository.findByReviewId(review1.getId())).thenReturn(reviewImage1);
-    when(reviewImageRepository.findByReviewId(review2.getId())).thenReturn(reviewImage2);
+    when(reviewImageRepository.findAllByReviewId(review1.getId()))
+        .thenReturn(List.of(reviewImage1));
+
+    when(reviewImageRepository.findAllByReviewId(review2.getId()))
+        .thenReturn(List.of(reviewImage2));
 
     // when
     CustomReviewResponse<MyReviewResponse> customResponse = reviewService.getUsersReviews(
         user.getId(), 0L, 5);
 
     // then
-    assertEquals(expectedResponse.getAccommodationName(),
+    assertEquals(expectedResponse1.getAccommodationName(),
         customResponse.getContent().get(0).getAccommodationName());
-    assertEquals(expectedResponse.getTotalRating(),
+    assertEquals(expectedResponse1.getTotalRating(),
         customResponse.getContent().get(0).getTotalRating());
+    assertEquals(expectedResponse1.getReviewImages().get(0).getImageUrl(),
+        customResponse.getContent().get(0).getReviewImages().get(0).getImageUrl());
+    assertEquals(reviewImage2.getId(),
+        customResponse.getContent().get(1).getReviewImages().get(0).getImageId());
     assertNull(customResponse.getCursor());
     assertFalse(customResponse.isHasNext());
   }
