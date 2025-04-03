@@ -60,11 +60,15 @@ public class ReviewService {
     // 이미지 등록
     validateImageSize(images);
     addImages(review, images);
+
+    // 숙소 총 평점 업데이트
+    updateAccommodationRating(reservation.getRoom().getAccommodation(), 0, review.getUserRating(),
+        review.getPetFriendlyRating());
   }
 
   public CustomReviewResponse<MyReviewResponse> getUsersReviews(Long userId, Long cursorId,
       Integer size) {
-    // 해당 유저의 리뷰 내역만 조회
+    // 해당 유저의 리뷰 내역만 조회 (리뷰 신고 수 20개 이상이면 조회 X)
     List<Review> reviews = reviewRepository.findByUserId(userId, cursorId, size + 1);
 
     List<MyReviewResponse> content = reviews.stream()
@@ -81,7 +85,7 @@ public class ReviewService {
   public CustomReviewResponse<AccommodationReviewResponse> getAccommodationReviews(
       Long accommodationId,
       Long cursorId, Integer size) {
-    // 해당 숙소의 리뷰 내역만 조회
+    // 해당 숙소의 리뷰 내역만 조회 (리뷰 신고 수 20개 이상이면 조회 X)
     List<Review> reviews = reviewRepository.findByAccommodationId(accommodationId, cursorId,
         size + 1);
 
@@ -100,12 +104,19 @@ public class ReviewService {
   public void deleteReview(Long reviewId, Long userId) {
     // 리뷰 조회 및 권한 검증
     Review review = getReviewIfAuthorized(reviewId, userId);
+    Accommodation accommodation = review.getAccommodation();
+    double userRating = review.getUserRating();
+    double petFriendlyRating = review.getPetFriendlyRating();
 
     // 리뷰에 포함된 모든 이미지 삭제
     deleteAllReviewImages(reviewId);
 
     // 리뷰 삭제
     reviewRepository.delete(review);
+
+    // 숙소 총 평점 업데이트
+    updateAccommodationRatingOnDelete(accommodation, userRating,
+        petFriendlyRating);
   }
 
   @Transactional
@@ -125,6 +136,13 @@ public class ReviewService {
 
     // 리뷰 내용 업데이트
     updateReviewDetails(review, request);
+
+    double oldRating =
+        Math.round(((review.getUserRating() + review.getPetFriendlyRating()) / 2) * 10) / 10.0;
+
+    // 숙소 총 평점 업데이트
+    updateAccommodationRating(review.getAccommodation(), oldRating, request.getUserRating(),
+        request.getPetRating());
   }
 
   /**
@@ -133,7 +151,7 @@ public class ReviewService {
   public HostReviewResponse getHostReviews(Long hostId, Long cursorId, int pageSize) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
     List<Review> reviews = getReviews(cursorId, pageSize, accommodation);
-    
+
     boolean hasNext = reviews.size() > pageSize;
 
     if (hasNext) {
@@ -310,5 +328,44 @@ public class ReviewService {
     return pagedReviews.stream()
         .map(review -> ReviewContent.of(review, reviewImagesMap.get(review.getId())))
         .toList();
+  }
+
+  private void updateAccommodationRating(Accommodation accommodation, double oldRating,
+      double userRating,
+      double petFriendlyRating) {
+    double existingTotalRating = accommodation.getTotalRating();
+    int reviewCount = reviewRepository.countByAccommodationId(accommodation.getId());
+
+    double newReviewRating = Math.round(((userRating + petFriendlyRating) / 2) * 10) / 10.0;
+
+    double newTotalRating;
+
+    if (oldRating == 0) {  // 리뷰 등록
+      newTotalRating = ((existingTotalRating * (reviewCount - 1)) + newReviewRating) / reviewCount;
+    } else {  // 리뷰 수정
+      newTotalRating =
+          ((existingTotalRating * reviewCount) - oldRating + newReviewRating) / reviewCount;
+    }
+
+    accommodation.setTotalRating(Math.round(newTotalRating * 10) / 10.0);
+  }
+
+  private void updateAccommodationRatingOnDelete(Accommodation accommodation, double userRating,
+      double petFriendlyRating) {
+    int reviewCount = reviewRepository.countByAccommodationId(accommodation.getId());
+
+    if (reviewCount == 0) {
+      accommodation.setTotalRating(0.0);
+      return;
+    }
+
+    double existingTotalRating = accommodation.getTotalRating();
+    double removedReviewRating = Math.round(((userRating + petFriendlyRating) / 2) * 10) / 10.0;
+
+    double newTotalRating = Math.round(
+        ((existingTotalRating * (reviewCount + 1) - removedReviewRating) / reviewCount) * 10)
+        / 10.0;
+
+    accommodation.setTotalRating(newTotalRating);
   }
 }
