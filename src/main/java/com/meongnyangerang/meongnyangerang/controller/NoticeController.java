@@ -1,6 +1,8 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.dto.NoticeRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
+import com.meongnyangerang.meongnyangerang.service.NoticeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
