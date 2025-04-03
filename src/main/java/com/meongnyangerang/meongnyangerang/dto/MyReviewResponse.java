@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.dto;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -10,7 +11,6 @@ public class MyReviewResponse {
   private String accommodationName;
   private Double totalRating;
   private String content;
-  private String reviewImageUrl;
+  private List<ReviewImageResponse> reviewImages;
   private String createdAt;
-
 }
