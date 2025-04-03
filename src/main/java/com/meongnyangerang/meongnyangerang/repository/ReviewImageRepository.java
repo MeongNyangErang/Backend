@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.repository;
 
+import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,4 +24,6 @@ public interface ReviewImageRepository extends JpaRepository<ReviewImage, Long> 
       "FROM ReviewImage ri " +
       "WHERE ri.review.id IN :reviewIds")
   List<ReviewImageProjection> findByReviewIds(@Param("reviewIds") List<Long> reviewIds);
+
+  void deleteAllByReviewId(Long reviewId);
 }

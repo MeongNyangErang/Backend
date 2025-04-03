@@ -185,6 +185,7 @@ public class ReviewService {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }
 
+    reviewImageRepository.deleteAllByReviewId(review.getId());
     reviewRepository.delete(review);
   }
 
