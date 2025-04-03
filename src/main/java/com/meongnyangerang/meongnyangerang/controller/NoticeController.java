@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -41,10 +42,19 @@ public class NoticeController {
       @AuthenticationPrincipal UserDetailsImpl adminDetails,
       @PathVariable Long noticeId,
       @RequestPart("request") @Valid NoticeRequest request,
-      @RequestPart(value = "image", required = false) MultipartFile imageFile
-  ) {
+      @RequestPart(value = "image", required = false) MultipartFile imageFile) {
+
     noticeService.updateNotice(adminDetails.getId(), noticeId, request, imageFile);
     return ResponseEntity.ok().build();
   }
 
+  // 공지사항 삭제 API
+  @DeleteMapping("/{noticeId}")
+  public ResponseEntity<Void> deleteNotice(
+      @AuthenticationPrincipal UserDetailsImpl adminDetails,
+      @PathVariable Long noticeId) {
+
+    noticeService.deleteNotice(adminDetails.getId(), noticeId);
+    return ResponseEntity.noContent().build();
+  }
 }
