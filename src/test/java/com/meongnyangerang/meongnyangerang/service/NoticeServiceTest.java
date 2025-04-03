@@ -207,4 +207,22 @@ public class NoticeServiceTest {
     assertThrows(MeongnyangerangException.class, () ->
         noticeService.updateNotice(adminId, noticeId, request, null));
   }
+
+  @Test
+  @DisplayName("공지사항 수정 실패 - 존재하지 않는 공지사항")
+  void updateNotice_fail_noticeNotFound() {
+    // given
+    Long adminId = 3L;
+    Long noticeId = 300L;
+
+    Admin admin = Admin.builder().id(adminId).email("admin3@example.com").build();
+    NoticeRequest request = new NoticeRequest("제목", "내용");
+
+    given(adminRepository.findById(adminId)).willReturn(Optional.of(admin));
+    given(noticeRepository.findById(noticeId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        noticeService.updateNotice(adminId, noticeId, request, null));
+  }
 }
