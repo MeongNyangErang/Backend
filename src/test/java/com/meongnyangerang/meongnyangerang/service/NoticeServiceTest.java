@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -224,5 +225,28 @@ public class NoticeServiceTest {
     // when & then
     assertThrows(MeongnyangerangException.class, () ->
         noticeService.updateNotice(adminId, noticeId, request, null));
+  }
+
+  @Test
+  @DisplayName("공지사항 삭제 성공")
+  void deleteNoticeSuccess() {
+    Long adminId = 1L;
+    Long noticeId = 10L;
+    Admin admin = Admin.builder().id(adminId).build();
+    Notice notice = Notice.builder()
+        .id(noticeId)
+        .admin(admin)
+        .imageUrl("https://s3.com/image/notice.jpg")
+        .build();
+
+    given(adminRepository.findById(adminId)).willReturn(Optional.of(admin));
+    given(noticeRepository.findById(noticeId)).willReturn(Optional.of(notice));
+
+    // when
+    assertDoesNotThrow(() -> noticeService.deleteNotice(adminId, noticeId));
+
+    // then
+    verify(imageService).registerImagesForDeletion("https://s3.com/image/notice.jpg");
+    verify(noticeRepository).delete(notice);
   }
 }
