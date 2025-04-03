@@ -192,4 +192,19 @@ public class NoticeServiceTest {
     verify(imageService).storeImage(newImage);
     verify(imageService, never()).registerImagesForDeletion(anyString()); // 삭제 등록 안 됨
   }
+
+  @Test
+  @DisplayName("공지사항 수정 실패 - 존재하지 않는 관리자")
+  void updateNotice_fail_adminNotFound() {
+    // given
+    Long adminId = 999L;
+    Long noticeId = 1L;
+    NoticeRequest request = new NoticeRequest("제목", "내용");
+
+    given(adminRepository.findById(adminId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThrows(MeongnyangerangException.class, () ->
+        noticeService.updateNotice(adminId, noticeId, request, null));
+  }
 }
