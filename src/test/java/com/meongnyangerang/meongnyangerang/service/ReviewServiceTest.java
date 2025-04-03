@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
@@ -39,6 +40,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,7 +84,9 @@ class ReviewServiceTest {
   void createReview_success() {
     // given
     User user = User.builder().id(1L).build();
-    Room room = Room.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).totalRating(4.0).build();
+    Room room = Room.builder().id(1L)
+        .accommodation(accommodation).build();
 
     Reservation reservation = Reservation.builder()
         .id(1L)
@@ -116,6 +120,8 @@ class ReviewServiceTest {
         request.getReservationId())).thenReturn(false);
     when(imageService.storeImage(images.get(0))).thenReturn(url);
 
+    double previousTotalRating = accommodation.getTotalRating();
+
     // when
     reviewService.createReview(user.getId(), request, images);
 
@@ -138,6 +144,8 @@ class ReviewServiceTest {
     assertEquals(3.0, capturedReview.getUserRating());
     assertEquals(4.0, capturedReview.getPetFriendlyRating());
     assertEquals("반려동물이 즐거워해요", capturedReview.getContent());
+
+    assertNotEquals(previousTotalRating, accommodation.getTotalRating());
   }
 
   @Test
@@ -368,7 +376,8 @@ class ReviewServiceTest {
   void createReview_review_max_image_limit_exceeded() {
     // given
     User user = User.builder().id(1L).build();
-    Room room = Room.builder().id(1L).build();
+    Room room = Room.builder().id(1L)
+        .accommodation(Accommodation.builder().id(1L).totalRating(4.0).build()).build();
 
     Reservation reservation = Reservation.builder()
         .id(1L)
@@ -419,7 +428,7 @@ class ReviewServiceTest {
 
     Accommodation accommodation = Accommodation.builder().id(1L).build();
 
-    Review review = Review.builder()
+    Review review1 = Review.builder()
         .id(1L)
         .accommodation(accommodation)
         .user(user)
@@ -430,19 +439,38 @@ class ReviewServiceTest {
         .reportCount(0)
         .build();
 
-    ReviewImage reviewImage = ReviewImage.builder().id(1L).review(review)
+    ReviewImage reviewImage1 = ReviewImage.builder().id(1L).review(review1)
+        .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
+
+    Review review2 = Review.builder()
+        .id(1L)
+        .accommodation(accommodation)
+        .user(user)
+        .content("content")
+        .userRating(3.0)
+        .petFriendlyRating(4.0)
+        .createdAt(LocalDateTime.now())
+        .reportCount(0)
+        .build();
+
+    ReviewImage reviewImage2 = ReviewImage.builder().id(1L).review(review2)
         .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
 
     MyReviewResponse expectedResponse = MyReviewResponse.builder()
-        .accommodationName(review.getAccommodation().getName())
-        .reviewImageUrl(reviewImage.getImageUrl())
+        .accommodationName(review1.getAccommodation().getName())
+        .reviewImageUrl(reviewImage1.getImageUrl())
         .totalRating(3.5)
-        .content(review.getContent())
-        .createdAt(review.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+        .content(review1.getContent())
+        .createdAt(review1.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
         .build();
 
-    when(reviewRepository.findByUserId(user.getId(), 0L, 5 + 1)).thenReturn(List.of(review));
-    when(reviewImageRepository.findByReviewId(review.getId())).thenReturn(reviewImage);
+    when(reviewRepository.findByUserId(user.getId(), 0L, 5 + 1)).thenAnswer(
+        invocation -> Stream.of(review1, review2)
+            .filter(review -> review.getReportCount() < 20)
+            .toList()
+    );
+    when(reviewImageRepository.findByReviewId(review1.getId())).thenReturn(reviewImage1);
+    when(reviewImageRepository.findByReviewId(review2.getId())).thenReturn(reviewImage2);
 
     // when
     CustomReviewResponse<MyReviewResponse> customResponse = reviewService.getUsersReviews(
@@ -466,7 +494,7 @@ class ReviewServiceTest {
     Accommodation accommodation = Accommodation.builder().id(1L).build();
     Room room = Room.builder().id(1L).name("test").build();
 
-    Review review = Review.builder()
+    Review review1 = Review.builder()
         .id(1L)
         .accommodation(accommodation)
         .reservation(Reservation.builder().id(1L).room(room).build())
@@ -478,30 +506,50 @@ class ReviewServiceTest {
         .reportCount(0)
         .build();
 
-    ReviewImage reviewImage = ReviewImage.builder().id(1L).review(review)
+    ReviewImage reviewImage1 = ReviewImage.builder().id(1L).review(review1)
+        .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
+
+    Review review2 = Review.builder()
+        .id(1L)
+        .accommodation(accommodation)
+        .reservation(Reservation.builder().id(1L).room(room).build())
+        .user(user)
+        .content("content")
+        .userRating(3.0)
+        .petFriendlyRating(4.0)
+        .createdAt(LocalDateTime.now())
+        .reportCount(20)
+        .build();
+
+    ReviewImage reviewImage2 = ReviewImage.builder().id(1L).review(review2)
         .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
 
     double totalRating =
-        Math.round(((review.getUserRating() + review.getPetFriendlyRating()) / 2) * 10) / 10.0;
+        Math.round(((review1.getUserRating() + review1.getPetFriendlyRating()) / 2) * 10) / 10.0;
 
     AccommodationReviewResponse expectedResponse = AccommodationReviewResponse.builder()
-        .roomName(review.getReservation().getRoom().getName())
-        .profileImageUrl(review.getUser().getProfileImage())
-        .reviewImageUrl(reviewImage.getImageUrl())
+        .roomName(review1.getReservation().getRoom().getName())
+        .profileImageUrl(review1.getUser().getProfileImage())
+        .reviewImageUrl(reviewImage1.getImageUrl())
         .totalRating(totalRating)
-        .content(review.getContent())
-        .createdAt(review.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+        .content(review1.getContent())
+        .createdAt(review1.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
         .build();
 
-    when(reviewRepository.findByAccommodationId(accommodation.getId(), 0L, 5 + 1)).thenReturn(
-        List.of(review));
-    when(reviewImageRepository.findByReviewId(review.getId())).thenReturn(reviewImage);
+    when(reviewRepository.findByAccommodationId(accommodation.getId(), 0L, 5 + 1)).thenAnswer(
+        invocation -> Stream.of(review1, review2)
+            .filter(review -> review.getReportCount() < 20)
+            .toList()
+    );
+    when(reviewImageRepository.findByReviewId(review1.getId())).thenReturn(reviewImage1);
+    when(reviewImageRepository.findByReviewId(review2.getId())).thenReturn(reviewImage2);
 
     // when
     CustomReviewResponse<AccommodationReviewResponse> customResponse = reviewService.getAccommodationReviews(
         accommodation.getId(), 0L, 5);
 
     // then
+    assertEquals(1, customResponse.getContent().size());
     assertEquals(expectedResponse.getNickname(),
         customResponse.getContent().get(0).getNickname());
     assertEquals(expectedResponse.getTotalRating(),
@@ -515,13 +563,16 @@ class ReviewServiceTest {
   void deleteReview_success() {
     // when
     User user = User.builder().id(1L).build();
-    Accommodation accommodation = Accommodation.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).totalRating(4.0).build();
 
-    Review review = Review.builder().id(1L).user(user).accommodation(accommodation).build();
+    Review review = Review.builder().id(1L).user(user).userRating(3.0).petFriendlyRating(4.0)
+        .accommodation(accommodation).build();
     ReviewImage image = ReviewImage.builder().id(1L).review(review).build();
 
     when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
     when(reviewImageRepository.findAllByReviewId(review.getId())).thenReturn(List.of(image));
+
+    double previousTotalRating = accommodation.getTotalRating();
 
     // when
     reviewService.deleteReview(review.getId(), user.getId());
@@ -535,6 +586,9 @@ class ReviewServiceTest {
     verify(reviewImageRepository, times(1)).deleteAll(reviewImagesCaptor.capture());
     assertEquals(1, reviewImagesCaptor.getValue().size());
     assertEquals(image.getId(), reviewImagesCaptor.getValue().get(0).getId());
+
+    assertNotEquals(previousTotalRating, accommodation.getTotalRating());
+    assertEquals(0, accommodation.getTotalRating());
   }
 
   @Test
@@ -581,7 +635,8 @@ class ReviewServiceTest {
   void updateReview_success() {
     // given
     User user = User.builder().id(1L).build();
-    Room room = Room.builder().id(1L).build();
+    Room room = Room.builder().id(1L)
+        .accommodation(Accommodation.builder().id(1L).totalRating(4.0).build()).build();
 
     Reservation reservation = Reservation.builder()
         .id(1L)
@@ -599,7 +654,7 @@ class ReviewServiceTest {
     Review review = Review.builder()
         .id(1L)
         .user(user)
-        .accommodation(Accommodation.builder().id(1L).build())
+        .accommodation(room.getAccommodation())
         .reservation(reservation)
         .userRating(3.0)
         .petFriendlyRating(4.0)

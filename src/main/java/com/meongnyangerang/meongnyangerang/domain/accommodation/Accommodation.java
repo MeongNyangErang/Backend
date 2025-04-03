@@ -1,7 +1,6 @@
 package com.meongnyangerang.meongnyangerang.domain.accommodation;
 
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
-import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,12 +18,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -61,6 +62,9 @@ public class Accommodation {
 
   @Column(nullable = false)
   private String thumbnailUrl;
+
+  @Column(nullable = false)
+  private Double totalRating = 0.0;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)

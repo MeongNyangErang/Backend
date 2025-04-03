@@ -16,6 +16,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
   @Query(value = "SELECT * FROM review r " +
       "WHERE r.user_id = :userId " +
       "AND (:cursorId = 0 OR r.id <= :cursorId) " +
+      "AND r.report_count < 20 " +
       "ORDER BY r.created_at DESC LIMIT :size",
       nativeQuery = true)
   List<Review> findByUserId(
@@ -26,6 +27,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
   @Query(value = "SELECT * FROM review r " +
       "WHERE r.accommodation_id = :accommodationId " +
       "AND (:cursorId = 0 OR r.id <= :cursorId) " +
+      "AND r.report_count < 20 " +
       "ORDER BY r.created_at DESC LIMIT :size",
       nativeQuery = true)
   List<Review> findByAccommodationId(
@@ -39,11 +41,13 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
       "JOIN r.reservation res JOIN res.room rm " +
       "WHERE rm.accommodation.id = :accommodationId " +
       "AND (:cursorId IS NULL OR r.id < :cursorId) " +
-      "AND r.isHidden = false " +
+      "AND r.reportCount < 20 " +
       "ORDER BY r.id DESC")
   List<Review> findByAccommodationIdWithCursor(
       @Param("accommodationId") Long accommodationId,
       @Param("cursorId") Long cursorId,
       Pageable pageable
   );
+
+  int countByAccommodationId(Long accommodationId);
 }
