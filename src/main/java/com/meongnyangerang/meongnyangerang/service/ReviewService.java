@@ -137,8 +137,7 @@ public class ReviewService {
     // 리뷰 내용 업데이트
     updateReviewDetails(review, request);
 
-    double oldRating =
-        Math.round(((review.getUserRating() + review.getPetFriendlyRating()) / 2) * 10) / 10.0;
+    double oldRating = calculateReviewRating(review.getUserRating(), review.getPetFriendlyRating());
 
     // 숙소 총 평점 업데이트
     updateAccommodationRating(review.getAccommodation(), oldRating, request.getUserRating(),
@@ -331,15 +330,14 @@ public class ReviewService {
   }
 
   private void updateAccommodationRating(Accommodation accommodation, double oldRating,
-      double userRating,
-      double petFriendlyRating) {
+      double userRating, double petFriendlyRating) {
+
     double existingTotalRating = accommodation.getTotalRating();
     int reviewCount = reviewRepository.countByAccommodationId(accommodation.getId());
 
-    double newReviewRating = Math.round(((userRating + petFriendlyRating) / 2) * 10) / 10.0;
+    double newReviewRating = calculateReviewRating(userRating, petFriendlyRating);
 
     double newTotalRating;
-
     if (oldRating == 0) {  // 리뷰 등록
       newTotalRating = ((existingTotalRating * (reviewCount - 1)) + newReviewRating) / reviewCount;
     } else {  // 리뷰 수정
@@ -360,12 +358,16 @@ public class ReviewService {
     }
 
     double existingTotalRating = accommodation.getTotalRating();
-    double removedReviewRating = Math.round(((userRating + petFriendlyRating) / 2) * 10) / 10.0;
+    double removedReviewRating = calculateReviewRating(userRating, petFriendlyRating);
 
     double newTotalRating = Math.round(
         ((existingTotalRating * (reviewCount + 1) - removedReviewRating) / reviewCount) * 10)
         / 10.0;
 
     accommodation.setTotalRating(newTotalRating);
+  }
+
+  private double calculateReviewRating(double userRating, double petFriendlyRating) {
+    return Math.round(((userRating + petFriendlyRating) / 2) * 10) / 10.0;
   }
 }
