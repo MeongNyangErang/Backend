@@ -65,4 +65,21 @@ public class NoticeService {
     notice.setTitle(request.getTitle());
     notice.setContent(request.getContent());
   }
+
+  // 공지사항 삭제
+  @Transactional
+  public void deleteNotice(Long adminId, Long noticeId) {
+    Admin admin = adminRepository.findById(adminId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    Notice notice = noticeRepository.findById(noticeId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_NOTICE));
+
+    // 이미지 삭제 등록
+    if (notice.getImageUrl() != null) {
+      imageService.registerImagesForDeletion(notice.getImageUrl());
+    }
+
+    noticeRepository.delete(notice);
+  }
 }
