@@ -264,4 +264,21 @@ public class NoticeServiceTest {
     assertEquals(ErrorCode.NOT_EXIST_ACCOUNT, exception.getErrorCode());
     assertEquals("해당 계정은 존재하지 않습니다.", exception.getMessage());
   }
+
+  @Test
+  @DisplayName("공지사항 삭제 실패 - 존재하지 않는 공지사항")
+  void deleteNoticeFailNotExistNotice() {
+    // given
+    Long adminId = 1L;
+    given(adminRepository.findById(adminId)).willReturn(Optional.of(Admin.builder().id(adminId).build()));
+    given(noticeRepository.findById(99L)).willReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException exception = assertThrows(MeongnyangerangException.class,
+        () -> noticeService.deleteNotice(adminId, 99L));
+
+    // then
+    assertEquals(ErrorCode.NOT_EXIST_NOTICE, exception.getErrorCode());
+    assertEquals("존재하지 않는 공지사항입니다.", exception.getMessage());
+  }
 }
