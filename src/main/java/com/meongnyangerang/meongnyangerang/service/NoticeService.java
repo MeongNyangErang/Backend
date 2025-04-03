@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_NOTICE;
 
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.admin.Notice;
@@ -40,5 +41,28 @@ public class NoticeService {
         .content(request.getContent())
         .imageUrl(imageUrl)
         .build());
+  }
+
+  // 공지사항 수정
+  @Transactional
+  public void updateNotice(Long adminId, Long noticeId, NoticeRequest request, MultipartFile newImage) {
+    Admin admin = adminRepository.findById(adminId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    Notice notice = noticeRepository.findById(noticeId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_NOTICE));
+
+    // 이미지가 새로 첨부되었을 경우
+    if (newImage != null && !newImage.isEmpty()) {
+      // 기존 이미지가 있다면 삭제 등록
+      if (notice.getImageUrl() != null) {
+        imageService.registerImagesForDeletion(notice.getImageUrl());
+      }
+
+      notice.setImageUrl(imageService.storeImage(newImage));
+    }
+
+    notice.setTitle(request.getTitle());
+    notice.setContent(request.getContent());
   }
 }
