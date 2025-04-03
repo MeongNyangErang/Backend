@@ -37,9 +37,9 @@ public class RoomController {
   public ResponseEntity<Void> createRoom(
       @AuthenticationPrincipal UserDetailsImpl userDetail,
       @Valid @RequestPart RoomCreateRequest request,
-      @RequestPart MultipartFile image
+      @RequestPart MultipartFile thumbnail
   ) {
-    roomService.createRoom(userDetail.getId(), request, image);
+    roomService.createRoom(userDetail.getId(), request, thumbnail);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
@@ -73,9 +73,9 @@ public class RoomController {
   public ResponseEntity<RoomResponse> updateRoom(
       @AuthenticationPrincipal UserDetailsImpl userDetail,
       @Valid @RequestPart RoomUpdateRequest request,
-      @RequestPart(required = false) MultipartFile newImage
+      @RequestPart(required = false) MultipartFile newThumbnail
   ) {
-    return ResponseEntity.ok(roomService.updateRoom(userDetail.getId(), request, newImage));
+    return ResponseEntity.ok(roomService.updateRoom(userDetail.getId(), request, newThumbnail));
   }
 
   /**
