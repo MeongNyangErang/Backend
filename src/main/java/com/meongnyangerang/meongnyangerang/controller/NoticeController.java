@@ -9,7 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +33,18 @@ public class NoticeController {
 
     noticeService.createNotice(adminDetails.getId(), request, imageFile);
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  // 공지사항 수정 API
+  @PutMapping("/notices/{noticeId}")
+  public ResponseEntity<Void> updateNotice(
+      @AuthenticationPrincipal UserDetailsImpl adminDetails,
+      @PathVariable Long noticeId,
+      @RequestPart("request") @Valid NoticeRequest request,
+      @RequestPart(value = "image", required = false) MultipartFile imageFile
+  ) {
+    noticeService.updateNotice(adminDetails.getId(), noticeId, request, imageFile);
+    return ResponseEntity.ok().build();
   }
 
 }
