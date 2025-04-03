@@ -20,6 +20,7 @@ public class NoticeController {
 
   private final NoticeService noticeService;
 
+  // 공지사항 등록 API
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<Void> createNotice(
       @AuthenticationPrincipal UserDetailsImpl adminDetails,
