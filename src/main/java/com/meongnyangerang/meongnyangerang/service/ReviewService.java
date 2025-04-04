@@ -268,7 +268,7 @@ public class ReviewService {
   private void deleteAllReviewImages(Long reviewId) {
     List<ReviewImage> images = reviewImageRepository.findAllByReviewId(reviewId);
 
-    images.forEach(image -> imageService.deleteImage(image.getImageUrl()));
+    images.forEach(image -> imageService.deleteImageAsync(image.getImageUrl()));
 
     reviewImageRepository.deleteAll(images);
   }
@@ -288,7 +288,7 @@ public class ReviewService {
   private void deleteReviewImagesByIds(List<Long> deletedImageIds) {
     deletedImageIds.forEach(id ->
         reviewImageRepository.findById(id).ifPresent(image -> {
-          imageService.deleteImage(image.getImageUrl());
+          imageService.deleteImageAsync(image.getImageUrl());
           reviewImageRepository.delete(image);
         })
     );

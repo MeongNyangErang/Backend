@@ -68,7 +68,7 @@ public class AccommodationService {
       log.info("숙소 등록 성공, 호스트 ID : {}, 숙소 ID : {}", hostId, accommodation.getId());
     } catch (Exception e) {
       log.error("숙소 등록 에러 발생, S3에 업로드된 이미지 삭제, 원인: {}", e.getMessage());
-      imageService.deleteImages(trackingList);
+      imageService.deleteImagesAsync(trackingList);
       throw new MeongnyangerangException(ErrorCode.ACCOMMODATION_REGISTRATION_FAILED);
     }
   }
@@ -118,13 +118,13 @@ public class AccommodationService {
           accommodation, newAdditionalImages, trackingList, oldImageUrlsToDelete);
 
       updateEntities(accommodation, request, newThumbnailUrl, newAdditionalImageUrls);
-      imageService.registerImagesForDeletion(oldImageUrlsToDelete);
+      imageService.deleteImagesAsync(oldImageUrlsToDelete);
 
       log.info("숙소 수정 성공, 숙소 ID : {}", accommodation.getId());
       return createAccommodationResponse(accommodation);
     } catch (Exception e) {
       log.error("숙소 수정 에러 발생, S3에 업로드된 이미지 삭제 처리, 원인: {}", e.getMessage());
-      imageService.deleteImages(trackingList);
+      imageService.deleteImagesAsync(trackingList);
       throw new MeongnyangerangException(ErrorCode.ACCOMMODATION_REGISTRATION_FAILED);
     }
   }

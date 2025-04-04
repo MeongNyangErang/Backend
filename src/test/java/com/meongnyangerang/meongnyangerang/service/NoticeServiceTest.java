@@ -156,7 +156,7 @@ public class NoticeServiceTest {
     assertEquals("새로운 제목", notice.getTitle());
     assertEquals("새로운 내용", notice.getContent());
     assertEquals("http://s3.com/new-image.jpg", notice.getImageUrl());
-    verify(imageService).registerImagesForDeletion("http://s3.com/old-image.jpg");
+    verify(imageService).deleteImageAsync("http://s3.com/old-image.jpg");
   }
 
   @Test
@@ -192,7 +192,7 @@ public class NoticeServiceTest {
     assertEquals("수정 내용", notice.getContent());
     assertEquals("http://s3.com/newfile.jpg", notice.getImageUrl());
     verify(imageService).storeImage(newImage);
-    verify(imageService, never()).registerImagesForDeletion(anyString()); // 삭제 등록 안 됨
+    verify(imageService, never()).deleteImageAsync(anyString()); // 삭제 등록 안 됨
   }
 
   @Test
@@ -247,7 +247,7 @@ public class NoticeServiceTest {
     assertDoesNotThrow(() -> noticeService.deleteNotice(adminId, noticeId));
 
     // then
-    verify(imageService).registerImagesForDeletion("https://s3.com/image/notice.jpg");
+    verify(imageService).deleteImageAsync("https://s3.com/image/notice.jpg");
     verify(noticeRepository).delete(notice);
   }
   @Test

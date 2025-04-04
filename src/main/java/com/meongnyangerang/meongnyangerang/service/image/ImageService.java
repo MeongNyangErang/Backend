@@ -1,19 +1,15 @@
 package com.meongnyangerang.meongnyangerang.service.image;
 
-import com.meongnyangerang.meongnyangerang.domain.image.ImageDeletionQueue;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
-import com.meongnyangerang.meongnyangerang.repository.ImageDeletionQueueRepository;
 import com.meongnyangerang.meongnyangerang.service.adptor.ImageStorage;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
@@ -22,37 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class ImageService {
 
   private final ImageStorage imageStorage;
-  private final ImageDeletionQueueRepository imageDeletionQueueRepository;
-
-  private static final int BATCH_SIZE = 100;
-
-  // TODO: 젠킨스 사용 고려
-  //@Scheduled(cron = "0 0/10 * * * ?") // 10분마다 실행
-//  @Scheduled(cron = "0/10 * * * * ?") // 10초마다 실행 (테스트)
-  @Transactional
-  public void processImageDeletionQueue() {
-    log.info("이미지 삭제 큐 처리 시작");
-
-    try {
-      List<ImageDeletionQueue> images = fetchPendingImages();
-
-      if (images.isEmpty()) {
-        log.info("처리할 삭제 대기 이미지가 없습니다.");
-        return;
-      }
-
-      List<String> imageUrls = images.stream()
-          .map(ImageDeletionQueue::getImageUrl)
-          .toList();
-
-      deleteImages(imageUrls);
-
-      imageDeletionQueueRepository.deleteAll(images);
-      log.info("이미지 삭제 큐 처리 완료");
-    } catch (Exception e) {
-      log.error("이미지 삭제 큐 처리 중 오류 발생: {}", e.getMessage(), e);
-    }
-  }
 
   /**
    * 이미지 업로드
@@ -63,64 +28,36 @@ public class ImageService {
   }
 
   /**
-   * 이미지 삭제
+   * 단일 이미지 비동기 삭제
    */
-  public void deleteImage(String imageUrl) {
-    validateImageUrl(imageUrl);
-    imageStorage.deleteFile(imageUrl);
-  }
-
-  /**
-   * 다중 이미지 삭제
-   */
-  public void deleteImages(List<String> imageUrls) {
-    List<String> validUrls = validateImageUrls(imageUrls);
-    imageStorage.deleteFiles(validUrls);
-  }
-
-  /**
-   * 이미지 삭제를 배치 처리하기 위해 삭제할 데이터 저장 (단일)
-   */
-  public void registerImagesForDeletion(String imageUrl) {
-    if (imageUrl == null || imageUrl.isEmpty()) {
-      log.info("등록할 이미지 URL이 없습니다.");
+  @Async
+  public void deleteImageAsync(String imageUrl) {
+    try {
+      validateImageUrl(imageUrl);
+      imageStorage.deleteFile(imageUrl);
+      log.info("이미지 비동기 삭제 완료: {}", imageUrl);
+    } catch (Exception e) {
+      log.error("이미지 비동기 삭제 중 오류 발생: {}", e.getMessage(), e);
     }
-    ImageDeletionQueue imageDeletionQueue = ImageDeletionQueue.from(imageUrl);
-    imageDeletionQueueRepository.save(imageDeletionQueue);
-    log.info("이미지 삭제 큐에 단일 항목 등록 완료");
   }
 
   /**
-   * 이미지 삭제를 배치 처리하기 위해 삭제할 데이터 저장 (다중)
+   * 다중 이미지 비동기 삭제
    */
-  public void registerImagesForDeletion(List<String> imageUrls) {
-    List<String> validUrls = validateImageUrls(imageUrls);
-
-    if (validUrls.isEmpty()) {
-      log.info("등록할 유효한 이미지 URL이 없습니다.");
-      return;
+  @Async
+  public void deleteImagesAsync(List<String> imageUrls) {
+    try{
+      List<String> validUrls = validateImageUrls(imageUrls);
+      imageStorage.deleteFiles(validUrls);
+      log.info("다중 이미지 비동기 삭제 완료: {}", imageUrls);
+    } catch (Exception e) {
+      log.error("이미지 비동기 삭제 중 오류 발생: {}", e.getMessage(), e);
     }
-
-    List<ImageDeletionQueue> deletionEntries = validUrls.stream()
-        .map(ImageDeletionQueue::from)
-        .toList();
-
-    imageDeletionQueueRepository.saveAll(deletionEntries);
-    log.info("이미지 삭제 큐에 {}개 항목 등록 완료", deletionEntries.size());
-  }
-
-  public void deregisterImageForDeletion(ImageDeletionQueue imageDeletionQueueId) {
-    imageDeletionQueueRepository.delete(imageDeletionQueueId);
-    log.info("등록한 삭제 큐에서 항목 제거 완료: {}", imageDeletionQueueId.getImageUrl());
-  }
-
-  private List<ImageDeletionQueue> fetchPendingImages() {
-    return imageDeletionQueueRepository
-        .findAllByOrderByRegisteredAtAsc(PageRequest.of(0, BATCH_SIZE));
   }
 
   private void validateImage(MultipartFile image) {
     if (image == null || image.isEmpty()) {
+      log.info("파일이 비어있습니다.");
       throw new MeongnyangerangException(ErrorCode.MISSING_IMAGE_FILE);
     }
     validateImageFormat(image.getContentType(), image.getOriginalFilename());
