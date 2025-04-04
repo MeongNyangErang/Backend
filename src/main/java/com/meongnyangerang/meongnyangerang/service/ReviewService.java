@@ -267,8 +267,9 @@ public class ReviewService {
   // 특정 리뷰에 포함된 모든 이미지 삭제
   private void deleteAllReviewImages(Long reviewId) {
     List<ReviewImage> images = reviewImageRepository.findAllByReviewId(reviewId);
+    List<String> imageUrls = images.stream().map(ReviewImage::getImageUrl).toList();
 
-    images.forEach(image -> imageService.deleteImageAsync(image.getImageUrl()));
+    imageService.deleteImagesAsync(imageUrls);
 
     reviewImageRepository.deleteAll(images);
   }
@@ -286,12 +287,12 @@ public class ReviewService {
 
   // 요청된 이미지 ID 목록을 찾아 삭제 (존재하지 않는 이미지 ID는 무시)
   private void deleteReviewImagesByIds(List<Long> deletedImageIds) {
-    deletedImageIds.forEach(id ->
-        reviewImageRepository.findById(id).ifPresent(image -> {
-          imageService.deleteImageAsync(image.getImageUrl());
-          reviewImageRepository.delete(image);
-        })
-    );
+    List<ReviewImage> images = reviewImageRepository.findAllById(deletedImageIds);
+
+    List<String> imageUrls = images.stream().map(ReviewImage::getImageUrl).toList();
+    imageService.deleteImagesAsync(imageUrls);
+
+    reviewImageRepository.deleteAll(images);
   }
 
   // 리뷰 내용과 평점을 업데이트

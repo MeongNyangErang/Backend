@@ -8,7 +8,6 @@ import com.meongnyangerang.meongnyangerang.service.AccommodationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +37,7 @@ public class AccommodationController {
   ) {
     accommodationService.createAccommodation(
         userDetail.getId(), request, thumbnail, additionalImages);
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+    return ResponseEntity.ok().build();
   }
 
   /**

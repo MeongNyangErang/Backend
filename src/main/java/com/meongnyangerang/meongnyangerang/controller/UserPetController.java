@@ -7,7 +7,6 @@ import com.meongnyangerang.meongnyangerang.service.UserPetService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +31,7 @@ public class UserPetController {
       @Valid @RequestBody UserPetRequest request) {
 
     userPetService.registerPet(userDetails.getId(), request);
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+    return ResponseEntity.ok().build();
   }
 
   // 사용자 반려동물 수정 API
@@ -48,12 +47,13 @@ public class UserPetController {
   public ResponseEntity<Void> deletePet(@AuthenticationPrincipal UserDetailsImpl userDetails,
       @PathVariable Long petId) {
     userPetService.deletePet(userDetails.getId(), petId);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok().build();
   }
 
   // 사용자 반려동물 조회 API
   @GetMapping
-  public ResponseEntity<List<UserPetResponse>> getPets(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+  public ResponseEntity<List<UserPetResponse>> getPets(
+      @AuthenticationPrincipal UserDetailsImpl userDetails) {
     return ResponseEntity.ok(userPetService.getUserPets(userDetails.getId()));
   }
 }
