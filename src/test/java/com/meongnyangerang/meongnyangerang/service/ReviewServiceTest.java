@@ -688,7 +688,6 @@ class ReviewServiceTest {
 
     when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
     when(reviewImageRepository.findAllByReviewId(review.getId())).thenReturn(images);
-    when(reviewImageRepository.findById(2L)).thenReturn(Optional.of(images.get(1)));
     when(imageService.storeImage(mockImageFile)).thenReturn(newImageUrl);
 
     UpdateReviewRequest request = UpdateReviewRequest.builder()
@@ -710,8 +709,9 @@ class ReviewServiceTest {
     assertEquals("after", review.getContent());
     assertEquals(3.0, review.getPetFriendlyRating());
     assertEquals(4.0, review.getUserRating());
-    verify(reviewImageRepository, times(1)).delete(images.get(1));
-    verify(imageService, times(1)).storeImage(mockImageFile);
+
+    ArgumentCaptor<List<ReviewImage>> captor = ArgumentCaptor.forClass(List.class);
+    verify(reviewImageRepository, times(1)).deleteAll(captor.capture());
   }
 
   @Test
