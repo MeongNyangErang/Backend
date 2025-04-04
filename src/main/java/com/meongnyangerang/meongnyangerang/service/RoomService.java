@@ -1,7 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
-import com.meongnyangerang.meongnyangerang.domain.image.ImageDeletionQueue;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.Hashtag;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.HashtagType;
@@ -26,8 +25,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -95,7 +92,7 @@ public class RoomService {
     try {
       if (newThumbnail != null && !newThumbnail.isEmpty()) {
         newThumbnailUrl = imageService.storeImage(newThumbnail);
-        imageService.registerImagesForDeletion(room.getImageUrl());
+        imageService.deleteImageAsync(room.getImageUrl());
       }
 
       Room updatedRoom = room.updateRoom(
@@ -191,7 +188,7 @@ public class RoomService {
 
   private void rollbackProcess(String newImageUrl) {
     if (newImageUrl != null) {
-      imageService.deleteImage(newImageUrl); // 새로 업로드한 이미지 삭제
+      imageService.deleteImageAsync(newImageUrl); // 새로 업로드한 이미지 삭제
       log.info("새로운 이미지 저장 롤백 -> S3에서 제거: {}", newImageUrl);
     }
   }

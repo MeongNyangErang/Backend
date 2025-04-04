@@ -1,33 +1,27 @@
 package com.meongnyangerang.meongnyangerang.service.image;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.meongnyangerang.meongnyangerang.domain.image.ImageDeletionQueue;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
-import com.meongnyangerang.meongnyangerang.repository.ImageDeletionQueueRepository;
 import com.meongnyangerang.meongnyangerang.service.adptor.ImageStorage;
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class ImageServiceTest {
@@ -35,21 +29,57 @@ class ImageServiceTest {
   @Mock
   private ImageStorage imageStorage;
 
-  @Mock
-  private ImageDeletionQueueRepository imageDeletionQueueRepository;
-
-  @Spy
   @InjectMocks
   private ImageService imageService;
 
-  private List<String> imageUrls;
-  private final String IMAGE_URL_1 = "http://example.com/image1.jpg";
-  private final String IMAGE_URL_2 = "http://example.com/image2.jpg";
-
+  private MockMultipartFile validImageFile;
+  private String validImageUrl;
+  private List<String> validImageUrls;
 
   @BeforeEach
   void setUp() {
-    imageUrls = Arrays.asList(IMAGE_URL_1, IMAGE_URL_2);
+    // 유효한 이미지 파일 생성
+    validImageFile = new MockMultipartFile(
+        "image",
+        "test-image.jpg",
+        "image/jpeg",
+        "image content".getBytes()
+    );
+
+    // 유효한, 이미지 URL 설정
+    validImageUrl = "https://storage.example.com/images/test-image.jpg";
+    validImageUrls = Arrays.asList(
+        "https://storage.example.com/images/image1.jpg",
+        "https://storage.example.com/images/image2.jpg",
+        "https://storage.example.com/images/image3.jpg"
+    );
+  }
+
+  @Test
+  @DisplayName("단일 이미지 업로드 성공")
+  void storeImage_Success() {
+    // given
+    when(imageStorage.uploadFile(validImageFile)).thenReturn(validImageUrl);
+
+    // when
+    String result = imageService.storeImage(validImageFile);
+
+    // then
+    assertEquals(validImageUrl, result);
+    verify(imageStorage, times(1)).uploadFile(validImageFile);
+  }
+
+  @Test
+  @DisplayName("단일 이미지 업로드 실패 - 이미지 파일이 없음")
+  void storeImage_WithNullImage_ThrowsException() {
+    // given
+    MultipartFile nullFile = null;
+
+    // when
+    // then
+    assertThatThrownBy(() -> imageService.storeImage(nullFile))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.MISSING_IMAGE_FILE);
   }
 
   @Test
@@ -71,118 +101,36 @@ class ImageServiceTest {
   }
 
   @Test
-  @DisplayName("이미지 URL 등록 - 성공")
-  void registerImagesForDeletion_Success() {
+  @DisplayName("단일 이미지 비동기 삭제 성공")
+  void deleteImageAsync_Success() {
     // given
+    doNothing().when(imageStorage).deleteFile(validImageUrl);
+
     // when
-    imageService.registerImagesForDeletion(imageUrls);
-
     // then
-    ArgumentCaptor<List<ImageDeletionQueue>> queueCaptor = ArgumentCaptor.forClass(List.class);
-    verify(imageDeletionQueueRepository).saveAll(queueCaptor.capture());
+    assertDoesNotThrow(() -> {
+      imageService.deleteImageAsync(validImageUrl);
+      Thread.sleep(100); // 비동기 메서드가 완료될 시간을 주기 위해 대기
+    });
 
-    List<ImageDeletionQueue> capturedEntries = queueCaptor.getValue();
-    assertThat(capturedEntries).hasSize(2);
-    assertThat(capturedEntries.get(0).getImageUrl()).isEqualTo(IMAGE_URL_1);
-    assertThat(capturedEntries.get(1).getImageUrl()).isEqualTo(IMAGE_URL_2);
+    // 메서드가 호출되었는지 확인
+    verify(imageStorage, times(1)).deleteFile(validImageUrl);
   }
 
   @Test
-  @DisplayName("이미지 URL 등록 - 빈 문자열 필터링")
-  void registerImagesForDeletion_FilterEmptyStrings() {
+  @DisplayName("다중 이미지 비동기 삭제 성공")
+  void deleteImagesAsync_Success() {
     // given
-    List<String> imageUrls = Arrays.asList(
-        IMAGE_URL_1,
-        "",
-        IMAGE_URL_2
-    );
+    doNothing().when(imageStorage).deleteFiles(validImageUrls);
 
     // when
-    imageService.registerImagesForDeletion(imageUrls);
-
     // then
-    ArgumentCaptor<List<ImageDeletionQueue>> queueCaptor = ArgumentCaptor.forClass(List.class);
-    verify(imageDeletionQueueRepository).saveAll(queueCaptor.capture());
+    assertDoesNotThrow(() -> {
+      imageService.deleteImagesAsync(validImageUrls);
+      Thread.sleep(100); // 비동기 메서드가 완료될 시간을 주기 위한 짧은 대기
+    });
 
-    List<ImageDeletionQueue> capturedEntries = queueCaptor.getValue();
-    assertThat(capturedEntries).hasSize(2); // 빈 문자열은 필터링됨
-    assertThat(capturedEntries.get(0).getImageUrl())
-        .isEqualTo(IMAGE_URL_1);
-    assertThat(capturedEntries.get(1).getImageUrl())
-        .isEqualTo(IMAGE_URL_2);
-  }
-
-  @Test
-  @DisplayName("이미지 삭제 큐 처리 - 성공")
-  void processImageDeletionQueue_Success() {
-    // given
-    List<ImageDeletionQueue> mockImages = Arrays.asList(
-        createMockImageDeletionQueue(IMAGE_URL_1),
-        createMockImageDeletionQueue(IMAGE_URL_2)
-    );
-
-    when(imageDeletionQueueRepository
-        .findAllByOrderByRegisteredAtAsc(PageRequest.of(0, 100)))
-        .thenReturn(mockImages);
-
-    // when
-    imageService.processImageDeletionQueue();
-
-    // then
-    ArgumentCaptor<List<String>> urlsCaptor = ArgumentCaptor.forClass(List.class);
-    verify(imageService, times(1)).deleteImages(urlsCaptor.capture());
-
-    List<String> capturedUrls = urlsCaptor.getValue();
-    assertThat(capturedUrls).containsExactly(IMAGE_URL_1, IMAGE_URL_2);
-    verify(imageDeletionQueueRepository, times(1)).deleteAll(mockImages);
-  }
-
-  @Test
-  @DisplayName("이미지 삭제 큐 처리 - 빈 큐")
-  void processImageDeletionQueue_EmptyQueue() {
-    // given
-    List<ImageDeletionQueue> mockImages = Collections.emptyList();
-
-    when(imageDeletionQueueRepository
-        .findAllByOrderByRegisteredAtAsc(PageRequest.of(0, 100)))
-        .thenReturn(mockImages);
-
-    // when
-    imageService.processImageDeletionQueue();
-
-    // then
-    verify(imageService, never()).deleteImages(Collections.emptyList());
-    verify(imageDeletionQueueRepository, never()).deleteAll(mockImages);
-  }
-
-  @Test
-  @DisplayName("이미지 삭제 큐 처리 - 삭제 실패해도 큐에서 제거")
-  void processImageDeletionQueue_DeleteFailedButStillRemoveFromQueue() {
-    // given
-    List<ImageDeletionQueue> mockImages = List.of(
-        createMockImageDeletionQueue(IMAGE_URL_1),
-        createMockImageDeletionQueue(IMAGE_URL_2)
-    );
-
-    when(imageDeletionQueueRepository
-        .findAllByOrderByRegisteredAtAsc(PageRequest.of(0, 100)))
-        .thenReturn(mockImages);
-
-    doThrow(new MeongnyangerangException(ErrorCode.FILE_IS_EMPTY))
-        .when(imageService).deleteImages(imageUrls);
-
-    // when
-    imageService.processImageDeletionQueue();
-
-    // then
-    verify(imageService, times(1)).deleteImages(imageUrls);
-    verify(imageDeletionQueueRepository, never()).deleteAll(mockImages);
-  }
-
-  private ImageDeletionQueue createMockImageDeletionQueue(String imageUrl) {
-    return ImageDeletionQueue.builder()
-        .imageUrl(imageUrl)
-        .registeredAt(LocalDateTime.now())
-        .build();
+    // 메서드가 호출되었는지 확인
+    verify(imageStorage, times(1)).deleteFiles(validImageUrls);
   }
 }
