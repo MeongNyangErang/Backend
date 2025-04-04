@@ -10,6 +10,7 @@ import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
+import com.meongnyangerang.meongnyangerang.dto.ReviewImageResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
@@ -211,7 +212,11 @@ public class ReviewService {
 
   // entity -> dto 변환
   private MyReviewResponse mapToMyReviewResponse(Review review) {
-    ReviewImage reviewImage = reviewImageRepository.findByReviewId(review.getId());
+    List<ReviewImage> reviewImage = reviewImageRepository.findAllByReviewId(review.getId());
+
+    List<ReviewImageResponse> reviewImageResponses = reviewImage.stream()
+        .map(image -> new ReviewImageResponse(image.getId(), image.getImageUrl()))
+        .toList();
 
     // 소숫점 한자리까지만 필요
     double totalRating =
@@ -221,7 +226,7 @@ public class ReviewService {
 
     return MyReviewResponse.builder()
         .accommodationName(review.getAccommodation().getName())
-        .reviewImageUrl(reviewImage.getImageUrl())
+        .reviewImages(reviewImageResponses)
         .totalRating(totalRating)
         .content(review.getContent())
         .createdAt(review.getCreatedAt().format(dateFormatter))
