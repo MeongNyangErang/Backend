@@ -7,7 +7,6 @@ import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.HostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,7 +34,7 @@ public class HostController {
       @RequestPart("submitDocument") MultipartFile submitDocumentImage
   ) {
     hostService.registerHost(request, profileImage, businessLicenseImage, submitDocumentImage);
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+    return ResponseEntity.ok().build();
   }
 
   // 호스트 로그인 API
@@ -48,6 +47,6 @@ public class HostController {
   @DeleteMapping("/me")
   public ResponseEntity<Void> deleteHost(@AuthenticationPrincipal UserDetailsImpl userDetails) {
     hostService.deleteHost(userDetails.getId());
-    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    return ResponseEntity.ok().build();
   }
 }

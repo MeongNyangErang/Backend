@@ -10,7 +10,6 @@ import com.meongnyangerang.meongnyangerang.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Range;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,7 +35,7 @@ public class ReservationController {
 
     reservationService.createReservation(userDetails.getId(), reservationRequest);
 
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+    return ResponseEntity.ok().build();
   }
 
   @GetMapping("/users/reservations")
@@ -58,7 +57,7 @@ public class ReservationController {
 
     reservationService.cancelReservation(userDetails.getId(), reservationId);
 
-    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    return ResponseEntity.ok().build();
   }
 
   @GetMapping("/hosts/reservations")
