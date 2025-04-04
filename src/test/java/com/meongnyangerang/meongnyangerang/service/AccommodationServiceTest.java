@@ -422,7 +422,7 @@ class AccommodationServiceTest {
 
     // 이미지 삭제 등록 확인
     ArgumentCaptor<List<String>> deletedImagesCaptor = ArgumentCaptor.forClass(List.class);
-    verify(imageService).registerImagesForDeletion(deletedImagesCaptor.capture());
+    verify(imageService).deleteImagesAsync(deletedImagesCaptor.capture());
     List<String> deletedImages = deletedImagesCaptor.getValue();
     assertThat(deletedImages).contains(OLD_THUMBNAIL_URL);
   }

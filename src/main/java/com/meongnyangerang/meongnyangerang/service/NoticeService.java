@@ -56,7 +56,7 @@ public class NoticeService {
     if (newImage != null && !newImage.isEmpty()) {
       // 기존 이미지가 있다면 삭제 등록
       if (notice.getImageUrl() != null) {
-        imageService.registerImagesForDeletion(notice.getImageUrl());
+        imageService.deleteImageAsync(notice.getImageUrl());
       }
 
       notice.setImageUrl(imageService.storeImage(newImage));
@@ -77,7 +77,7 @@ public class NoticeService {
 
     // 이미지 삭제 등록
     if (notice.getImageUrl() != null) {
-      imageService.registerImagesForDeletion(notice.getImageUrl());
+      imageService.deleteImageAsync(notice.getImageUrl());
     }
 
     noticeRepository.delete(notice);
