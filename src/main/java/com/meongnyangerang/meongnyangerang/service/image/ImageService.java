@@ -33,6 +33,9 @@ public class ImageService {
   @Async
   public void deleteImageAsync(String imageUrl) {
     try {
+      String threadName = Thread.currentThread().getName();
+      log.info("비동기 이미지 삭제 시작 - 스레드: {}, 이미지: {}", threadName, imageUrl);
+
       validateImageUrl(imageUrl);
       imageStorage.deleteFile(imageUrl);
       log.info("이미지 비동기 삭제 완료: {}", imageUrl);
