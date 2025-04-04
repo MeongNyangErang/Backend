@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -13,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.admin.Notice;
 import com.meongnyangerang.meongnyangerang.dto.NoticeRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.NoticeRepository;
@@ -224,5 +226,59 @@ public class NoticeServiceTest {
     // when & then
     assertThrows(MeongnyangerangException.class, () ->
         noticeService.updateNotice(adminId, noticeId, request, null));
+  }
+
+  @Test
+  @DisplayName("공지사항 삭제 성공")
+  void deleteNoticeSuccess() {
+    Long adminId = 1L;
+    Long noticeId = 10L;
+    Admin admin = Admin.builder().id(adminId).build();
+    Notice notice = Notice.builder()
+        .id(noticeId)
+        .admin(admin)
+        .imageUrl("https://s3.com/image/notice.jpg")
+        .build();
+
+    given(adminRepository.findById(adminId)).willReturn(Optional.of(admin));
+    given(noticeRepository.findById(noticeId)).willReturn(Optional.of(notice));
+
+    // when
+    assertDoesNotThrow(() -> noticeService.deleteNotice(adminId, noticeId));
+
+    // then
+    verify(imageService).registerImagesForDeletion("https://s3.com/image/notice.jpg");
+    verify(noticeRepository).delete(notice);
+  }
+  @Test
+  @DisplayName("공지사항 삭제 실패 - 존재하지 않는 관리자")
+  void deleteNoticeFailNotExistAdmin() {
+    // given
+    given(adminRepository.findById(1L)).willReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException exception = assertThrows(MeongnyangerangException.class,
+        () -> noticeService.deleteNotice(1L, 10L));
+
+    // then
+    assertEquals(ErrorCode.NOT_EXIST_ACCOUNT, exception.getErrorCode());
+    assertEquals("해당 계정은 존재하지 않습니다.", exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("공지사항 삭제 실패 - 존재하지 않는 공지사항")
+  void deleteNoticeFailNotExistNotice() {
+    // given
+    Long adminId = 1L;
+    given(adminRepository.findById(adminId)).willReturn(Optional.of(Admin.builder().id(adminId).build()));
+    given(noticeRepository.findById(99L)).willReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException exception = assertThrows(MeongnyangerangException.class,
+        () -> noticeService.deleteNotice(adminId, 99L));
+
+    // then
+    assertEquals(ErrorCode.NOT_EXIST_NOTICE, exception.getErrorCode());
+    assertEquals("존재하지 않는 공지사항입니다.", exception.getMessage());
   }
 }
