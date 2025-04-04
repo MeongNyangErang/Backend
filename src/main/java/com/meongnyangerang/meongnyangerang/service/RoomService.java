@@ -194,12 +194,6 @@ public class RoomService {
       imageService.deleteImage(newImageUrl); // 새로 업로드한 이미지 삭제
       log.info("새로운 이미지 저장 롤백 -> S3에서 제거: {}", newImageUrl);
     }
-
-    // TODO: 롤백 필요없음 DB는 자동 롤백
-    /*if (imageDeletionQueue != null) {
-      imageService.deregisterImageForDeletion(imageDeletionQueue); // 삭제 예약 취소
-      log.info("이미지 삭제 예약 취소: {}, ", imageDeletionQueue.getImageUrl());
-    }*/
   }
 
   private Room getAuthorizedRoom(Long hostId, Long roomId) {
