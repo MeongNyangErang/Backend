@@ -81,16 +81,13 @@ public class ImageService {
   /**
    * 이미지 삭제를 배치 처리하기 위해 삭제할 데이터 저장 (단일)
    */
-  public ImageDeletionQueue registerImagesForDeletion(String imageUrl) {
+  public void registerImagesForDeletion(String imageUrl) {
     if (imageUrl == null || imageUrl.isEmpty()) {
       log.info("등록할 이미지 URL이 없습니다.");
-      return null;
     }
     ImageDeletionQueue imageDeletionQueue = ImageDeletionQueue.from(imageUrl);
-    ImageDeletionQueue saved = imageDeletionQueueRepository.save(imageDeletionQueue);
+    imageDeletionQueueRepository.save(imageDeletionQueue);
     log.info("이미지 삭제 큐에 단일 항목 등록 완료");
-
-    return saved;
   }
 
   /**
