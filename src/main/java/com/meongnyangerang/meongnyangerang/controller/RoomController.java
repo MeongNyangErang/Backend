@@ -40,7 +40,7 @@ public class RoomController {
       @RequestPart MultipartFile thumbnail
   ) {
     roomService.createRoom(userDetail.getId(), request, thumbnail);
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+    return ResponseEntity.ok().build();
   }
 
   /**

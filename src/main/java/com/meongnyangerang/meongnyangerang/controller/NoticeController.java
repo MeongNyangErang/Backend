@@ -5,7 +5,6 @@ import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.NoticeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,7 +32,7 @@ public class NoticeController {
       @RequestPart(value = "image", required = false) MultipartFile imageFile) {
 
     noticeService.createNotice(adminDetails.getId(), request, imageFile);
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+    return ResponseEntity.ok().build();
   }
 
   // 공지사항 수정 API
@@ -45,7 +44,7 @@ public class NoticeController {
       @RequestPart(value = "image", required = false) MultipartFile imageFile) {
 
     noticeService.updateNotice(adminDetails.getId(), noticeId, request, imageFile);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok().build();
   }
 
   // 공지사항 삭제 API
@@ -55,6 +54,6 @@ public class NoticeController {
       @PathVariable Long noticeId) {
 
     noticeService.deleteNotice(adminDetails.getId(), noticeId);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok().build();
   }
 }
