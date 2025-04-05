@@ -9,6 +9,7 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.Accommo
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacility;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
@@ -20,6 +21,7 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +45,8 @@ public class AccommodationService {
   private final AllowPetRepository allowPetRepository;
   private final AccommodationImageRepository accommodationImageRepository;
   private final ImageService imageService;
+  private final RoomRepository roomRepository;
+  private final AccommodationRoomSearchService searchService;
 
   /**
    * 숙소 등록
@@ -119,6 +123,10 @@ public class AccommodationService {
 
       updateEntities(accommodation, request, newThumbnailUrl, newAdditionalImageUrls);
       imageService.deleteImagesAsync(oldImageUrlsToDelete);
+
+      // 색인 갱신 - 객실이 있을 경우에만
+      List<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId());
+      searchService.updateAllRooms(accommodation, rooms);
 
       log.info("숙소 수정 성공, 숙소 ID : {}", accommodation.getId());
       return createAccommodationResponse(accommodation);
