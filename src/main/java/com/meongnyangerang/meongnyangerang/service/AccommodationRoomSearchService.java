@@ -75,4 +75,13 @@ public class AccommodationRoomSearchService {
     elasticsearchOperations.delete(id, AccommodationRoomDocument.class);
     log.info("[색인 삭제] 숙소: {}, 객실: {} 색인 삭제 완료", accommodationId, roomId);
   }
+
+  /**
+   * 숙소 수정 시 연결된 객실 모두 색인 재저장
+   */
+  public void updateAllRooms(Accommodation accommodation, List<Room> rooms) {
+    for (Room room : rooms) {
+      save(accommodation, room);
+    }
+  }
 }
