@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import com.meongnyangerang.meongnyangerang.component.AccommodationRoomMapper;
+import com.meongnyangerang.meongnyangerang.domain.AccommodationRoomDocument;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AllowPet;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationFacility;
@@ -64,5 +65,14 @@ public class AccommodationRoomSearchService {
         allowPets
     ));
     log.info("[색인 저장] 숙소: {}, 객실: {} 색인 완료", accommodationId, roomId);
+  }
+
+  /**
+   * 객실 삭제 시 색인 삭제
+   */
+  public void delete(Long accommodationId, Long roomId) {
+    String id = accommodationId + "_" + roomId;
+    elasticsearchOperations.delete(id, AccommodationRoomDocument.class);
+    log.info("[색인 삭제] 숙소: {}, 객실: {} 색인 삭제 완료", accommodationId, roomId);
   }
 }
