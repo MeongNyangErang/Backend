@@ -6,15 +6,17 @@ import com.meongnyangerang.meongnyangerang.domain.chat.ChatRoom;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
 import java.time.LocalDateTime;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -32,27 +34,31 @@ public class ChatService {
   /**
    * 채팅방 목록 조회
    */
-  public List<ChatRoomResponse> getChatRooms(Long viewerId, Role viewerRole) {
-    List<ChatRoom> chatRooms = findChatRoomsByViewer(viewerId, viewerRole);
+  public PageResponse<ChatRoomResponse> getChatRooms(
+      Long viewerId,
+      Role viewerRole,
+      Pageable pageable
+  ) {
+    Page<ChatRoom> chatRooms = findChatRoomsByViewer(viewerId, viewerRole, pageable);
 
-    return chatRooms.stream()
-        .map(chatRoom -> {
-          ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(
-              chatRoom.getId()); // 마지막 메시지 정보
-          int unreadCount = calculateUnreadCount(chatRoom, viewerRole); // 읽지 않은 메시지 수
-          return ChatRoomResponse.of(chatRoom, lastMessage, unreadCount, viewerRole);
-        })
-        .toList();
+    Page<ChatRoomResponse> response = chatRooms.map(chatRoom -> {
+      ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(
+          chatRoom.getId()); // 마지막 메시지 정보
+      int unreadCount = calculateUnreadCount(chatRoom, viewerRole); // 읽지 않은 메시지 수
+      return ChatRoomResponse.of(chatRoom, lastMessage, unreadCount, viewerRole);
+    });
+
+    return PageResponse.from(response);
   }
 
   /**
    * 참여자 역할에 따른 채팅방 목록 조회
    */
-  private List<ChatRoom> findChatRoomsByViewer(Long viewerId, Role viewerRole) {
+  private Page<ChatRoom> findChatRoomsByViewer(Long viewerId, Role viewerRole, Pageable pageable) {
     if (viewerRole == Role.ROLE_USER) {
-      return chatRoomRepository.findAllByUserIdOrderByUpdatedAtDesc(viewerId);
+      return chatRoomRepository.findAllByUserIdOrderByUpdatedAtDesc(viewerId, pageable);
     } else if (viewerRole == Role.ROLE_HOST) {
-      return chatRoomRepository.findAllByHostIdOrderByUpdatedAtDesc(viewerId);
+      return chatRoomRepository.findAllByHostIdOrderByUpdatedAtDesc(viewerId, pageable);
     } else {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }
