@@ -40,16 +40,19 @@ public class RoomService {
   private final RoomPetFacilityRepository roomPetFacilityRepository;
   private final HashtagRepository hashtagRepository;
   private final ImageService imageService;
+  private final AccommodationRoomSearchService searchService;
 
   /**
    * 객실 등록
    */
+  @Transactional
   public void createRoom(Long hostId, RoomCreateRequest request, MultipartFile thumbnail) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
     String thumbnailUrl = imageService.storeImage(thumbnail);
 
     Room room = request.toEntity(accommodation, thumbnailUrl);
     roomRepository.save(room);
+    searchService.save(accommodation, room); // Elasticsearch 색인 저장
   }
 
   /**
