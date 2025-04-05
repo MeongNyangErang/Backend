@@ -107,6 +107,8 @@ public class RoomService {
           request.petFacilityTypes(), room);
       List<Hashtag> updatedHashtags = updateHashtags(request.hashtagTypes(), room);
 
+      searchService.save(room.getAccommodation(), updatedRoom); // Elasticsearch 색인 업데이트
+
       return RoomResponse.of(updatedRoom, updatedFacilities, updatedPetFacilities, updatedHashtags);
     } catch (Exception e) {
       log.error("객실 업데이트 실행: {}", e.getMessage(), e);
