@@ -3,6 +3,8 @@ package com.meongnyangerang.meongnyangerang.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatMessage;
@@ -13,6 +15,7 @@ import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
@@ -20,6 +23,7 @@ import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusReposit
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +33,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
@@ -52,16 +61,13 @@ class ChatServiceTest {
   private ChatMessage lastMessage1;
   private ChatMessage lastMessage2;
   private ChatReadStatus userReadStatus;
-  private ChatReadStatus hostReadStatus;
-  private LocalDateTime now;
+  private final LocalDateTime now = LocalDateTime.now();
 
   private static final LocalDateTime DEFAULT_LAST_READ_TIME =
       LocalDateTime.of(2000, 1, 1, 0, 0);
 
   @BeforeEach
   void setUp() {
-    now = LocalDateTime.now();
-
     // 사용자와 호스트 설정
     user = User.builder()
         .id(1L)
@@ -115,14 +121,6 @@ class ChatServiceTest {
         .participantType(SenderType.USER)
         .lastReadTime(now.minusHours(1))
         .build();
-
-    hostReadStatus = ChatReadStatus.builder()
-        .id(2L)
-        .chatRoomId(chatRoom1.getId())
-        .participantId(host.getId())
-        .participantType(SenderType.HOST)
-        .lastReadTime(now.minusMinutes(30))
-        .build();
   }
 
   @Test
@@ -133,8 +131,14 @@ class ChatServiceTest {
     Long chatRoomId1 = chatRooms.get(0).getId();
     Long chatRoomId2 = chatRooms.get(1).getId();
     Long userId = user.getId();
+    SenderType senderType = SenderType.USER;
 
-    when(chatRoomRepository.findAllByUserIdOrderByUpdatedAtDesc(userId)).thenReturn(chatRooms);
+    Pageable pageable = PageRequest.of(
+        0, 10, Sort.by("updatedAt").descending());
+    Page<ChatRoom> pagedChatRooms = new PageImpl<>(chatRooms, pageable, chatRooms.size());
+
+    when(chatRoomRepository.findAllByUserIdOrderByUpdatedAtDesc(userId, pageable))
+        .thenReturn(pagedChatRooms);
 
     when(chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1))
         .thenReturn(lastMessage1);
@@ -142,10 +146,10 @@ class ChatServiceTest {
         .thenReturn(lastMessage2);
 
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
-        chatRoomId1, userId, SenderType.USER)).thenReturn(Optional.of(userReadStatus));
+        chatRoomId1, userId, senderType)).thenReturn(Optional.of(userReadStatus));
 
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
-        chatRoomId2, userId, SenderType.USER)).thenReturn(Optional.empty());
+        chatRoomId2, userId, senderType)).thenReturn(Optional.empty());
 
     when(chatMessageRepository.countUnreadMessages(
         chatRoomId1, SenderType.HOST, userReadStatus.getLastReadTime())).thenReturn(2);
@@ -153,22 +157,32 @@ class ChatServiceTest {
         chatRoomId2, SenderType.HOST, DEFAULT_LAST_READ_TIME)).thenReturn(0);
 
     // when
-    List<ChatRoomResponse> responses = chatService.getChatRooms(userId, Role.ROLE_USER);
+    PageResponse<ChatRoomResponse> responses = chatService.getChatRooms(
+        userId, Role.ROLE_USER, pageable);
 
     // then
-    assertThat(responses).hasSize(2);
+    assertEquals(2, responses.content().size());
 
     // 첫 번째 채팅방 검증
-    ChatRoomResponse response1 = responses.get(0);
+    ChatRoomResponse response1 = responses.content().get(0);
     assertThat(response1.chatRoomId()).isEqualTo(chatRoomId1);
     assertThat(response1.lastMessage()).isEqualTo("안녕하세요.");
     assertThat(response1.unreadCount()).isEqualTo(2);
 
     // 두 번째 채팅방 검증
-    ChatRoomResponse response2 = responses.get(1);
+    ChatRoomResponse response2 = responses.content().get(1);
     assertThat(response2.chatRoomId()).isEqualTo(chatRoomId2);
     assertThat(response2.lastMessage()).isEqualTo("문의 드립니다.");
     assertThat(response2.unreadCount()).isEqualTo(0);
+
+    // 메서드 호출 검증
+    verify(chatRoomRepository).findAllByUserIdOrderByUpdatedAtDesc(userId, pageable);
+    verify(chatMessageRepository, times(1))
+        .findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1);
+    verify(chatMessageRepository, times(1))
+        .findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId2);
+    verify(chatReadStatusRepository, times(1))
+        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId1, userId, senderType);
   }
 
   @Test
@@ -179,8 +193,14 @@ class ChatServiceTest {
     Long chatRoomId1 = chatRooms.get(0).getId();
     Long chatRoomId2 = chatRooms.get(1).getId();
     Long hostId = host.getId();
+    SenderType senderType = SenderType.HOST;
 
-    when(chatRoomRepository.findAllByHostIdOrderByUpdatedAtDesc(hostId)).thenReturn(chatRooms);
+    Pageable pageable = PageRequest.of(
+        0, 10, Sort.by("updatedAt").descending());
+    Page<ChatRoom> pagedChatRooms = new PageImpl<>(chatRooms, pageable, chatRooms.size());
+
+    when(chatRoomRepository.findAllByHostIdOrderByUpdatedAtDesc(hostId, pageable))
+        .thenReturn(pagedChatRooms);
 
     when(chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1))
         .thenReturn(lastMessage1);
@@ -188,10 +208,10 @@ class ChatServiceTest {
         .thenReturn(lastMessage2);
 
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
-        chatRoomId1, hostId, SenderType.HOST)).thenReturn(Optional.of(userReadStatus));
+        chatRoomId1, hostId, senderType)).thenReturn(Optional.of(userReadStatus));
 
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
-        chatRoomId2, hostId, SenderType.HOST)).thenReturn(Optional.empty());
+        chatRoomId2, hostId, senderType)).thenReturn(Optional.empty());
 
     when(chatMessageRepository.countUnreadMessages(
         chatRoomId1, SenderType.USER, userReadStatus.getLastReadTime())).thenReturn(0);
@@ -199,31 +219,66 @@ class ChatServiceTest {
         chatRoomId2, SenderType.USER, DEFAULT_LAST_READ_TIME)).thenReturn(3);
 
     // when
-    List<ChatRoomResponse> responses = chatService.getChatRooms(hostId, Role.ROLE_HOST);
+    PageResponse<ChatRoomResponse> responses = chatService.getChatRooms(
+        hostId, Role.ROLE_HOST, pageable);
 
     // then
-    assertThat(responses).hasSize(2);
+    assertEquals(2, responses.content().size());
 
     // 첫 번째 채팅방 검증
-    ChatRoomResponse response1 = responses.get(0);
+    ChatRoomResponse response1 = responses.content().get(0);
     assertThat(response1.chatRoomId()).isEqualTo(chatRoomId1);
     assertThat(response1.lastMessage()).isEqualTo("안녕하세요.");
     assertThat(response1.unreadCount()).isEqualTo(0);
 
     // 두 번째 채팅방 검증
-    ChatRoomResponse response2 = responses.get(1);
+    ChatRoomResponse response2 = responses.content().get(1);
     assertThat(response2.chatRoomId()).isEqualTo(chatRoomId2);
     assertThat(response2.lastMessage()).isEqualTo("문의 드립니다.");
     assertThat(response2.unreadCount()).isEqualTo(3);
+
+    // 메서드 호출 검증
+    verify(chatRoomRepository).findAllByHostIdOrderByUpdatedAtDesc(hostId, pageable);
+    verify(chatMessageRepository, times(1))
+        .findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1);
+    verify(chatMessageRepository, times(1))
+        .findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId2);
+    verify(chatReadStatusRepository, times(1))
+        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId1, hostId, senderType);
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 채팅방 목록 조회")
+  void getChatRooms_withEmptyResult_shouldReturnEmptyPage() {
+    // given
+    Long userId = user.getId();
+    Role role = Role.ROLE_USER;
+    Pageable pageable = PageRequest.of(
+        0, 10, Sort.by("updatedAt").descending());
+
+    // 빈 페이지 반환
+    Page<ChatRoom> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+
+    when(chatRoomRepository.findAllByUserIdOrderByUpdatedAtDesc(userId, pageable))
+        .thenReturn(emptyPage);
+
+    // when
+    PageResponse<ChatRoomResponse> response = chatService.getChatRooms(userId, role, pageable);
+
+    // then
+    assertNotNull(response);
   }
 
   @Test
   @DisplayName("채팅방 목록 조회 실패 - 유효하지 않은 Role")
   void getChatRooms_InvalidRole_ThrowsException() {
     // given
+    Pageable pageable = PageRequest.of(
+        0, 10, Sort.by("updatedAt").descending());
+
     // when
     // then
-    assertThatThrownBy(() -> chatService.getChatRooms(user.getId(), Role.ROLE_ADMIN))
+    assertThatThrownBy(() -> chatService.getChatRooms(user.getId(), Role.ROLE_ADMIN, pageable))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.INVALID_AUTHORIZED);
   }
