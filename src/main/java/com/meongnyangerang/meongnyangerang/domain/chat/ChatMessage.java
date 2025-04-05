@@ -39,7 +39,7 @@ public class ChatMessage {
   @Column(nullable = false)
   private SenderType senderType;
 
-  @Column(nullable = false, columnDefinition = "TEXT")
+  @Column(columnDefinition = "TEXT", nullable = false)
   private String content;
 
   @CreatedDate
