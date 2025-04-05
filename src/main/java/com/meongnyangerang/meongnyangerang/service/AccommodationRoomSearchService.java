@@ -80,6 +80,11 @@ public class AccommodationRoomSearchService {
    * 숙소 수정 시 연결된 객실 모두 색인 재저장
    */
   public void updateAllRooms(Accommodation accommodation, List<Room> rooms) {
+
+    if (rooms == null || rooms.isEmpty()) {
+      log.info("[색인 갱신] 숙소 ID: {} - 연결된 객실이 없어 색인 생략", accommodation.getId());
+      return;
+    }
     for (Room room : rooms) {
       save(accommodation, room);
     }
