@@ -9,6 +9,7 @@ import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.Hashtag;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacility;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
@@ -53,9 +54,9 @@ public class AccommodationRoomMapper {
   }
   private <T> List<String> extractEnumNames(List<T> list, Function<T, Enum<?>> extractor) {
 
-//    if (list == null || list.isEmpty()) {
-//      return Collections.emptyList();
-//    }
+    if (list == null || list.isEmpty()) {
+      return Collections.emptyList();
+    }
     return list.stream()
         .map(extractor)
         .map(Enum::name)
