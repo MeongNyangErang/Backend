@@ -24,7 +24,7 @@ public class AccommodationSearchResponse {
         .accommodationId(doc.getAccommodationId())
         .accommodationName(doc.getAccommodationName())
         .address(doc.getAddress())
-        .thumbnailUrl(doc.getThumbanilUrl)
+        .thumbnailUrl(doc.getThumbnailUrl())
         .totalRating(doc.getTotalRating())
         .price(doc.getPrice())
         .accommodationType(doc.getAccommodationType())

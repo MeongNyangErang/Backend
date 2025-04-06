@@ -9,7 +9,6 @@ import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.Hashtag;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacility;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +35,7 @@ public class AccommodationRoomMapper {
         .accommodationName(accommodation.getName())
         .roomName(room.getName())
         .address(accommodation.getAddress())
+        .thumbnailUrl(accommodation.getThumbnailUrl())
         .accommodationType(accommodation.getType())
         .totalRating(accommodation.getTotalRating())
         .price(room.getPrice())
