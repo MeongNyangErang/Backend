@@ -51,6 +51,7 @@ public record AccommodationCreateRequest(
         .detailedAddress(this.detailedAddress)
         .latitude(this.latitude)
         .longitude(this.longitude)
+        .totalRating(0.0)
         .type(this.type)
         .thumbnailUrl(thumbnailUrl)
         .build();
