@@ -14,7 +14,6 @@ public class AccommodationSearchResponse {
   private Long accommodationId;
   private String accommodationName;
   private String address;
-  private String detailedAddress;
   private String thumbnailUrl;
   private Double totalRating;
   private Long price;
@@ -25,7 +24,6 @@ public class AccommodationSearchResponse {
         .accommodationId(doc.getAccommodationId())
         .accommodationName(doc.getAccommodationName())
         .address(doc.getAddress())
-        .detailedAddress(doc.getDetailedAddress)
         .thumbnailUrl(doc.getThumbanilUrl)
         .totalRating(doc.getTotalRating())
         .price(doc.getPrice())
