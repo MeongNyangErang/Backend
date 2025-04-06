@@ -1,5 +1,8 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.meongnyangerang.meongnyangerang.component.AccommodationRoomMapper;
 import com.meongnyangerang.meongnyangerang.domain.AccommodationRoomDocument;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
@@ -16,10 +19,10 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepo
 import com.meongnyangerang.meongnyangerang.repository.room.HashtagRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
+import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Service;
 
 // Elasticsearch 색인 저장 및 삭제를 담당하는 서비스
@@ -29,7 +32,7 @@ import org.springframework.stereotype.Service;
 public class AccommodationRoomSearchService {
 
   private final AccommodationRoomMapper mapper;
-  private final ElasticsearchOperations elasticsearchOperations;
+  private final ElasticsearchClient elasticsearchClient;
   private final RoomFacilityRepository roomFacilityRepository;
   private final RoomPetFacilityRepository roomPetFacilityRepository;
   private final HashtagRepository hashtagRepository;
@@ -54,17 +57,27 @@ public class AccommodationRoomSearchService {
     List<RoomPetFacility> roomPetFacilities = roomPetFacilityRepository.findAllByRoomId(roomId);
     List<Hashtag> hashtags = hashtagRepository.findAllByRoomId(roomId);
 
-    elasticsearchOperations.save(mapper.toDocument(
-        accommodation,
-        room,
-        accFacilities,
-        accPetFacilities,
-        roomFacilities,
-        roomPetFacilities,
-        hashtags,
-        allowPets
-    ));
-    log.info("[색인 저장] 숙소: {}, 객실: {} 색인 완료", accommodationId, roomId);
+    AccommodationRoomDocument doc = mapper.toDocument(
+        accommodation, room,
+        accFacilities, accPetFacilities,
+        roomFacilities, roomPetFacilities,
+        hashtags, allowPets
+    );
+
+    try {
+      IndexResponse response = elasticsearchClient.index(i -> i
+          .index("accommodation_room")
+          .id(doc.getId())
+          .document(doc)
+      );
+      log.info("[색인 저장] 숙소: {}, 객실: {}, result: {}", accommodation.getId(), room.getId(),
+          response.result());
+
+    } catch (IOException e) {
+      log.error("Elasticsearch 색인 실패: 숙소 {}, 객실 {}, 에러: {}", accommodation.getId(), room.getId(),
+          e.getMessage());
+      throw new RuntimeException("Elasticsearch 색인 실패", e);
+    }
   }
 
   /**
@@ -72,8 +85,16 @@ public class AccommodationRoomSearchService {
    */
   public void delete(Long accommodationId, Long roomId) {
     String id = accommodationId + "_" + roomId;
-    elasticsearchOperations.delete(id, AccommodationRoomDocument.class);
-    log.info("[색인 삭제] 숙소: {}, 객실: {} 색인 삭제 완료", accommodationId, roomId);
+    try {
+      DeleteResponse response = elasticsearchClient.delete(d -> d
+          .index("accommodation_room")
+          .id(id)
+      );
+      log.info("[색인 삭제] 숙소: {}, 객실: {}, result: {}", accommodationId, roomId, response.result());
+    } catch (IOException e) {
+      log.error("Elasticsearch 삭제 실패: 숙소 {}, 객실 {}, 에러: {}", accommodationId, roomId,
+          e.getMessage());
+    }
   }
 
   /**
