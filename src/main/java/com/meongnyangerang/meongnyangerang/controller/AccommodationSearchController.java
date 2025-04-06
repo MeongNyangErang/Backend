@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
+import com.meongnyangerang.meongnyangerang.service.AccommodationSearchService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
