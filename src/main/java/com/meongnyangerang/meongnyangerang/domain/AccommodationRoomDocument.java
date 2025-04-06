@@ -29,7 +29,7 @@ public class AccommodationRoomDocument {
 
   private AccommodationType accommodationType;
   private Double totalRating;
-
+  private String thumbnailUrl;
   private Long price;
 
   private Integer standardPeopleCount;
