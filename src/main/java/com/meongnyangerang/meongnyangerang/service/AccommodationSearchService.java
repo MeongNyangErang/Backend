@@ -10,6 +10,7 @@ import co.elastic.clients.json.JsonData;
 import com.meongnyangerang.meongnyangerang.domain.AccommodationRoomDocument;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
+import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,9 +24,11 @@ import org.springframework.stereotype.Service;
 public class AccommodationSearchService {
 
   private final ElasticsearchClient elasticsearchClient;
+  private final ReservationSlotRepository reservationSlotRepository;
 
   public List<AccommodationSearchResponse> searchAccommodation(AccommodationSearchRequest request) {
     List<Query> mustQueries = new ArrayList<>();
+    List<Query> mustNotQueries = new ArrayList<>();
 
     // 위치 필터 (wildcard - 주소 전체에서 특정 키워드 포함 검색)
     if (request.getLocation() != null) {
@@ -84,10 +87,23 @@ public class AccommodationSearchService {
               .gte(JsonData.of(request.getMinRating())))));
     }
 
+    // 예약된 객실 제외 (must_not)
+    List<Long> reservedRoomIds = reservationSlotRepository.findReservedRoomIdsBetweenDates(
+        request.getCheckInDate(), request.getCheckOutDate().minusDays(1));  // 체크아웃날은 제외
+
+    if (!reservedRoomIds.isEmpty()) {
+      mustNotQueries.add(Query.of(q -> q
+          .terms(t -> t
+              .field("roomId")
+              .terms(terms -> terms
+                  .value(reservedRoomIds.stream().map(FieldValue::of).toList())
+              )
+          )));
+    }
+
     // terms 필터들
     applyTermsFilter(mustQueries, "accommodationFacilities", request.getAccommodationFacilities());
-    applyTermsFilter(mustQueries, "accommodationPetFacilities",
-        request.getAccommodationPetFacilities());
+    applyTermsFilter(mustQueries, "accommodationPetFacilities", request.getAccommodationPetFacilities());
     applyTermsFilter(mustQueries, "roomFacilities", request.getRoomFacilities());
     applyTermsFilter(mustQueries, "roomPetFacilities", request.getRoomPetFacilities());
     applyTermsFilter(mustQueries, "hashtags", request.getHashtags());
@@ -95,7 +111,9 @@ public class AccommodationSearchService {
 
     // Bool Query 조합
     Query finalQuery = Query.of(q -> q
-        .bool(b -> b.must(mustQueries)));
+        .bool(b -> b
+            .must(mustQueries)
+            .mustNot(mustNotQueries)));
 
     try {
       SearchResponse<AccommodationRoomDocument> response = elasticsearchClient.search(s -> s
@@ -113,7 +131,7 @@ public class AccommodationSearchService {
       for (Hit<AccommodationRoomDocument> hit : response.hits().hits()) {
         AccommodationRoomDocument doc = hit.source();
         if (doc != null) {
-          unique.putIfAbsent(doc.getAccommodationId(), doc);
+          unique.putIfAbsent(doc.getAccommodationId(), doc); // 숙소 ID 기준 중복 제거
         }
       }
 
