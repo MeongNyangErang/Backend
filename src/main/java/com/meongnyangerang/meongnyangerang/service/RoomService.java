@@ -50,6 +50,9 @@ public class RoomService {
 
     Room room = request.toEntity(accommodation, thumbnailUrl);
     roomRepository.save(room);
+    saveRoomFacilities(request.facilityTypes(), room);
+    saveRoomPetFacilities(request.petFacilityTypes(), room);
+    saveHashtags(request.hashtagTypes(), room);
   }
 
   /**
