@@ -165,13 +165,13 @@ class ChatServiceTest {
 
     // 첫 번째 채팅방 검증
     ChatRoomResponse response1 = responses.content().get(0);
-    assertThat(response1.chatRoomId()).isEqualTo(chatRoomId1);
+    assertThat(response1.chatroomId()).isEqualTo(chatRoomId1);
     assertThat(response1.lastMessage()).isEqualTo("안녕하세요.");
     assertThat(response1.unreadCount()).isEqualTo(2);
 
     // 두 번째 채팅방 검증
     ChatRoomResponse response2 = responses.content().get(1);
-    assertThat(response2.chatRoomId()).isEqualTo(chatRoomId2);
+    assertThat(response2.chatroomId()).isEqualTo(chatRoomId2);
     assertThat(response2.lastMessage()).isEqualTo("문의 드립니다.");
     assertThat(response2.unreadCount()).isEqualTo(0);
 
@@ -227,13 +227,13 @@ class ChatServiceTest {
 
     // 첫 번째 채팅방 검증
     ChatRoomResponse response1 = responses.content().get(0);
-    assertThat(response1.chatRoomId()).isEqualTo(chatRoomId1);
+    assertThat(response1.chatroomId()).isEqualTo(chatRoomId1);
     assertThat(response1.lastMessage()).isEqualTo("안녕하세요.");
     assertThat(response1.unreadCount()).isEqualTo(0);
 
     // 두 번째 채팅방 검증
     ChatRoomResponse response2 = responses.content().get(1);
-    assertThat(response2.chatRoomId()).isEqualTo(chatRoomId2);
+    assertThat(response2.chatroomId()).isEqualTo(chatRoomId2);
     assertThat(response2.lastMessage()).isEqualTo("문의 드립니다.");
     assertThat(response2.unreadCount()).isEqualTo(3);
 
