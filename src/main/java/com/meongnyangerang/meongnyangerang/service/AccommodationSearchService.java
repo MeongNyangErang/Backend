@@ -103,7 +103,9 @@ public class AccommodationSearchService {
               .query(finalQuery)
               .size(100)
               .sort(so -> so
-                  .score(score -> score.order(SortOrder.Desc))),
+                  .field(f -> f
+                      .field("totalRating")
+                      .order(SortOrder.Desc))),
           AccommodationRoomDocument.class
       );
 
