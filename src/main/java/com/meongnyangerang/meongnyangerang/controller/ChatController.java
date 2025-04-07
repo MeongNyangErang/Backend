@@ -1,7 +1,10 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
+import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ChatService;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +33,14 @@ public class ChatController {
       @PageableDefault(size = 20, sort = "updatedAt", direction = Sort.Direction.DESC)
       Pageable pageable
   ) {
-    return ResponseEntity.ok(
-        chatService.getChatRooms(userDetails.getId(), userDetails.getRole(), pageable));
+    Role viewerRole = userDetails.getRole();
+
+    if (viewerRole == Role.ROLE_USER) {
+      return ResponseEntity.ok(chatService.getChatRoomsAsUser(userDetails.getId(), pageable));
+    } else if (viewerRole == Role.ROLE_HOST) {
+      return ResponseEntity.ok(chatService.getChatRoomsAsHost(userDetails.getId(), pageable));
+    } else {
+      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
   }
 }
