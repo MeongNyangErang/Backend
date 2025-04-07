@@ -52,6 +52,9 @@ public class RoomService {
 
     Room room = request.toEntity(accommodation, thumbnailUrl);
     roomRepository.save(room);
+    saveRoomFacilities(request.facilityTypes(), room);
+    saveRoomPetFacilities(request.petFacilityTypes(), room);
+    saveHashtags(request.hashtagTypes(), room);
     searchService.save(accommodation, room); // Elasticsearch 색인 저장
   }
 
@@ -128,7 +131,6 @@ public class RoomService {
     roomPetFacilityRepository.deleteAllByRoomId(roomId);
     roomFacilityRepository.deleteAllByRoomId(roomId);
     roomRepository.delete(room);
-    searchService.delete(room.getAccommodation().getId(), roomId); // Elasticsearch 색인 삭제
   }
 
   private List<RoomFacility> updateFacilities(List<RoomFacilityType> newFacilityTypes, Room room) {
