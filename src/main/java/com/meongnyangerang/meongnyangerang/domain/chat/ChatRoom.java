@@ -47,4 +47,8 @@ public class ChatRoom {
   @LastModifiedDate
   @Column(nullable = false)
   private LocalDateTime updatedAt;
+
+  public Long getHostId() {
+    return this.getHost().getId();
+  }
 }
