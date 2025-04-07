@@ -7,6 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatMessage;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatReadStatus;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatRoom;
@@ -18,6 +19,7 @@ import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
@@ -51,11 +53,15 @@ class ChatServiceTest {
   @Mock
   private ChatReadStatusRepository chatReadStatusRepository;
 
+  @Mock
+  private AccommodationRepository accommodationRepository;
+
   @InjectMocks
   private ChatService chatService;
 
   private User user;
   private Host host;
+  private Accommodation accommodation;
   private ChatRoom chatRoom1;
   private ChatRoom chatRoom2;
   private ChatMessage lastMessage1;
@@ -77,6 +83,13 @@ class ChatServiceTest {
     host = Host.builder()
         .id(2L)
         .nickname("호스트1")
+        .build();
+
+    accommodation = Accommodation.builder()
+        .id(3L)
+        .host(host)
+        .name("숙소")
+        .thumbnailUrl("test-accommodation-thumbnail.jpg")
         .build();
 
     // 채팅방 설정
@@ -137,8 +150,14 @@ class ChatServiceTest {
         0, 10, Sort.by("updatedAt").descending());
     Page<ChatRoom> pagedChatRooms = new PageImpl<>(chatRooms, pageable, chatRooms.size());
 
-    when(chatRoomRepository.findAllByUserIdOrderByUpdatedAtDesc(userId, pageable))
+    when(chatRoomRepository.findAllByUser_IdOrderByUpdatedAtDesc(userId, pageable))
         .thenReturn(pagedChatRooms);
+
+    when(accommodationRepository.findByHostId(chatRooms.get(0).getHostId()))
+        .thenReturn(Optional.of(accommodation));
+
+    when(accommodationRepository.findByHostId(chatRooms.get(1).getHostId()))
+        .thenReturn(Optional.of(accommodation));
 
     when(chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1))
         .thenReturn(lastMessage1);
@@ -157,26 +176,34 @@ class ChatServiceTest {
         chatRoomId2, SenderType.HOST, DEFAULT_LAST_READ_TIME)).thenReturn(0);
 
     // when
-    PageResponse<ChatRoomResponse> responses = chatService.getChatRooms(
-        userId, Role.ROLE_USER, pageable);
+    PageResponse<ChatRoomResponse> responses = chatService.getChatRoomsAsUser(userId, pageable);
 
     // then
     assertEquals(2, responses.content().size());
 
     // 첫 번째 채팅방 검증
     ChatRoomResponse response1 = responses.content().get(0);
-    assertThat(response1.chatroomId()).isEqualTo(chatRoomId1);
+    assertThat(response1.chatRoomId()).isEqualTo(chatRoomId1);
+    assertThat(response1.partnerId()).isEqualTo(chatRooms.get(0).getHostId());
+    assertThat(response1.partnerName()).isEqualTo(accommodation.getName());
+    assertThat(response1.partnerImageUrl()).isEqualTo(accommodation.getThumbnailUrl());
     assertThat(response1.lastMessage()).isEqualTo("안녕하세요.");
     assertThat(response1.unreadCount()).isEqualTo(2);
 
     // 두 번째 채팅방 검증
     ChatRoomResponse response2 = responses.content().get(1);
-    assertThat(response2.chatroomId()).isEqualTo(chatRoomId2);
+    assertThat(response2.chatRoomId()).isEqualTo(chatRoomId2);
+    assertThat(response1.partnerId()).isEqualTo(chatRooms.get(1).getHostId());
+    assertThat(response1.partnerName()).isEqualTo(accommodation.getName());
+    assertThat(response1.partnerImageUrl()).isEqualTo(accommodation.getThumbnailUrl());
     assertThat(response2.lastMessage()).isEqualTo("문의 드립니다.");
     assertThat(response2.unreadCount()).isEqualTo(0);
 
     // 메서드 호출 검증
-    verify(chatRoomRepository).findAllByUserIdOrderByUpdatedAtDesc(userId, pageable);
+    verify(chatRoomRepository, times(1))
+        .findAllByUser_IdOrderByUpdatedAtDesc(userId, pageable);
+    verify(accommodationRepository, times(2))
+        .findByHostId(chatRooms.get(0).getHostId());
     verify(chatMessageRepository, times(1))
         .findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1);
     verify(chatMessageRepository, times(1))
@@ -199,7 +226,7 @@ class ChatServiceTest {
         0, 10, Sort.by("updatedAt").descending());
     Page<ChatRoom> pagedChatRooms = new PageImpl<>(chatRooms, pageable, chatRooms.size());
 
-    when(chatRoomRepository.findAllByHostIdOrderByUpdatedAtDesc(hostId, pageable))
+    when(chatRoomRepository.findAllByHost_IdOrderByUpdatedAtDesc(hostId, pageable))
         .thenReturn(pagedChatRooms);
 
     when(chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1))
@@ -219,26 +246,25 @@ class ChatServiceTest {
         chatRoomId2, SenderType.USER, DEFAULT_LAST_READ_TIME)).thenReturn(3);
 
     // when
-    PageResponse<ChatRoomResponse> responses = chatService.getChatRooms(
-        hostId, Role.ROLE_HOST, pageable);
+    PageResponse<ChatRoomResponse> responses = chatService.getChatRoomsAsHost(hostId, pageable);
 
     // then
     assertEquals(2, responses.content().size());
 
     // 첫 번째 채팅방 검증
     ChatRoomResponse response1 = responses.content().get(0);
-    assertThat(response1.chatroomId()).isEqualTo(chatRoomId1);
+    assertThat(response1.chatRoomId()).isEqualTo(chatRoomId1);
     assertThat(response1.lastMessage()).isEqualTo("안녕하세요.");
     assertThat(response1.unreadCount()).isEqualTo(0);
 
     // 두 번째 채팅방 검증
     ChatRoomResponse response2 = responses.content().get(1);
-    assertThat(response2.chatroomId()).isEqualTo(chatRoomId2);
+    assertThat(response2.chatRoomId()).isEqualTo(chatRoomId2);
     assertThat(response2.lastMessage()).isEqualTo("문의 드립니다.");
     assertThat(response2.unreadCount()).isEqualTo(3);
 
     // 메서드 호출 검증
-    verify(chatRoomRepository).findAllByHostIdOrderByUpdatedAtDesc(hostId, pageable);
+    verify(chatRoomRepository).findAllByHost_IdOrderByUpdatedAtDesc(hostId, pageable);
     verify(chatMessageRepository, times(1))
         .findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1);
     verify(chatMessageRepository, times(1))
@@ -252,34 +278,19 @@ class ChatServiceTest {
   void getChatRooms_withEmptyResult_shouldReturnEmptyPage() {
     // given
     Long userId = user.getId();
-    Role role = Role.ROLE_USER;
     Pageable pageable = PageRequest.of(
         0, 10, Sort.by("updatedAt").descending());
 
     // 빈 페이지 반환
     Page<ChatRoom> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
-    when(chatRoomRepository.findAllByUserIdOrderByUpdatedAtDesc(userId, pageable))
+    when(chatRoomRepository.findAllByUser_IdOrderByUpdatedAtDesc(userId, pageable))
         .thenReturn(emptyPage);
 
     // when
-    PageResponse<ChatRoomResponse> response = chatService.getChatRooms(userId, role, pageable);
+    PageResponse<ChatRoomResponse> response = chatService.getChatRoomsAsUser(userId, pageable);
 
     // then
     assertNotNull(response);
-  }
-
-  @Test
-  @DisplayName("채팅방 목록 조회 실패 - 유효하지 않은 Role")
-  void getChatRooms_InvalidRole_ThrowsException() {
-    // given
-    Pageable pageable = PageRequest.of(
-        0, 10, Sort.by("updatedAt").descending());
-
-    // when
-    // then
-    assertThatThrownBy(() -> chatService.getChatRooms(user.getId(), Role.ROLE_ADMIN, pageable))
-        .isInstanceOf(MeongnyangerangException.class)
-        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.INVALID_AUTHORIZED);
   }
 }
