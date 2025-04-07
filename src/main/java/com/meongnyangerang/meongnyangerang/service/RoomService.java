@@ -131,6 +131,7 @@ public class RoomService {
     roomPetFacilityRepository.deleteAllByRoomId(roomId);
     roomFacilityRepository.deleteAllByRoomId(roomId);
     roomRepository.delete(room);
+    searchService.delete(room.getAccommodation().getId(), roomId); // Elasticsearch 색인 삭제
   }
 
   private List<RoomFacility> updateFacilities(List<RoomFacilityType> newFacilityTypes, Room room) {
