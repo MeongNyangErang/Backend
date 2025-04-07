@@ -8,11 +8,11 @@ import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import java.time.LocalDateTime;
 
 public record ChatRoomResponse(
-    Long chatRoomId,
-    Long viewerId,
+    Long chatroomId,
     Long partnerId,
-    String viewerName,
-    String partnerName,
+    String viewerNickname,
+    String partnerNickname,
+    String partnerProfileImageUrl,
     String lastMessage,
     LocalDateTime lastMessageTime,
     int unreadCount // 현재 보는 사람 기준 읽지 않은 메시지 수
@@ -46,10 +46,10 @@ public record ChatRoomResponse(
   ) {
     return new ChatRoomResponse(
         chatRoom.getId(),
-        chatRoom.getUser().getId(),        // 조회자 ID (사용자)
-        chatRoom.getHost().getId(),        // 상대방 ID (호스트)
-        chatRoom.getUser().getNickname(),  // 조회자 이름 (사용자)
-        chatRoom.getHost().getNickname(),  // 상대방 이름 (호스트)
+        chatRoom.getHost().getId(),              // 상대방 ID (호스트)
+        chatRoom.getUser().getNickname(),        // 조회자 이름 (사용자)
+        chatRoom.getHost().getNickname(),        // 상대방 이름 (호스트)
+        chatRoom.getHost().getProfileImageUrl(), // 상대방의 프로필 사진 URL (호스트)
         lastMessage != null ? lastMessage.getContent() : "",
         lastMessage != null ? lastMessage.getCreatedAt() : null,
         unreadCount
@@ -66,10 +66,10 @@ public record ChatRoomResponse(
   ) {
     return new ChatRoomResponse(
         chatRoom.getId(),
-        chatRoom.getHost().getId(),        // 조회자 ID (호스트)
-        chatRoom.getUser().getId(),        // 상대방 ID (사용자)
-        chatRoom.getHost().getNickname(),  // 조회자 이름 (호스트)
-        chatRoom.getUser().getNickname(),  // 상대방 이름 (사용자)
+        chatRoom.getUser().getId(),           // 상대방 ID (사용자)
+        chatRoom.getHost().getNickname(),     // 조회자 이름 (호스트)
+        chatRoom.getUser().getNickname(),     // 상대방 이름 (사용자)
+        chatRoom.getUser().getProfileImage(), // 상대방의 프로필 사진 URL (호스트)
         lastMessage != null ? lastMessage.getContent() : "",
         lastMessage != null ? lastMessage.getCreatedAt() : null,
         unreadCount
