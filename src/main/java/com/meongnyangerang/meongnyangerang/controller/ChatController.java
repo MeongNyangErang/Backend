@@ -24,7 +24,7 @@ public class ChatController {
   /**
    * 채팅방 목록 조회
    */
-  @GetMapping("/rooms")
+  @GetMapping
   public ResponseEntity<PageResponse<ChatRoomResponse>> getChatRooms(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
       @PageableDefault(size = 20, sort = "updatedAt", direction = Sort.Direction.DESC)
