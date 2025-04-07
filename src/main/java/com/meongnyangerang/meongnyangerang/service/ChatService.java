@@ -40,15 +40,18 @@ public class ChatService {
       Pageable pageable
   ) {
     Page<ChatRoom> chatRooms = findChatRoomsByViewer(viewerId, viewerRole, pageable);
-
-    Page<ChatRoomResponse> response = chatRooms.map(chatRoom -> {
-      ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(
-          chatRoom.getId()); // 마지막 메시지 정보
-      int unreadCount = calculateUnreadCount(chatRoom, viewerRole); // 읽지 않은 메시지 수
-      return ChatRoomResponse.of(chatRoom, lastMessage, unreadCount, viewerRole);
-    });
+    Page<ChatRoomResponse> response = chatRooms.map(
+        chatRoom -> createChatRoomResponse(viewerRole, chatRoom));
 
     return PageResponse.from(response);
+  }
+
+  private ChatRoomResponse createChatRoomResponse(Role viewerRole, ChatRoom chatRoom) {
+    ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(
+        chatRoom.getId()); // 마지막 메시지 정보
+    int unreadCount = calculateUnreadCount(chatRoom, viewerRole); // 읽지 않은 메시지 수
+
+    return ChatRoomResponse.of(chatRoom, lastMessage, unreadCount, viewerRole);
   }
 
   /**
