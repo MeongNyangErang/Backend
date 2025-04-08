@@ -31,5 +31,8 @@ spring:
           starttls:
             enable: true
 
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URI}
+
   jwt:
     secret: ${JWT_SECRET}
