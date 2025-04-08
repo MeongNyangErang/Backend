@@ -60,6 +60,8 @@ public class AccommodationRecommendationService {
                   .order(SortOrder.Desc)
               )
           )
+          .source(src -> src.filter(
+              f -> f.includes("id", "name", "price", "totalRating", "thumbnailUrl")))
           .size(SIZE)
       );
 

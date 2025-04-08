@@ -112,7 +112,7 @@ class AccommodationRecommendationServiceTest {
       AccommodationDocument doc) {
     return DefaultRecommendationResponse.builder()
         .id(doc.getId())
-        .accommodationName(doc.getName())
+        .name(doc.getName())
         .totalRating(doc.getTotalRating())
         .price(doc.getPrice())
         .build();
