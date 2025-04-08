@@ -10,6 +10,7 @@ import co.elastic.clients.json.JsonData;
 import com.meongnyangerang.meongnyangerang.domain.AccommodationRoomDocument;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,7 +28,9 @@ public class AccommodationSearchService {
   private final ElasticsearchClient elasticsearchClient;
   private final ReservationSlotRepository reservationSlotRepository;
 
-  public List<AccommodationSearchResponse> searchAccommodation(AccommodationSearchRequest request) {
+  public PageResponse<AccommodationSearchResponse> searchAccommodation(AccommodationSearchRequest request,
+      Pageable pageable) {
+
     List<Query> mustQueries = new ArrayList<>();
     List<Query> mustNotQueries = new ArrayList<>();
 
@@ -103,7 +107,8 @@ public class AccommodationSearchService {
 
     // terms 필터들
     applyTermsFilter(mustQueries, "accommodationFacilities", request.getAccommodationFacilities());
-    applyTermsFilter(mustQueries, "accommodationPetFacilities", request.getAccommodationPetFacilities());
+    applyTermsFilter(mustQueries, "accommodationPetFacilities",
+        request.getAccommodationPetFacilities());
     applyTermsFilter(mustQueries, "roomFacilities", request.getRoomFacilities());
     applyTermsFilter(mustQueries, "roomPetFacilities", request.getRoomPetFacilities());
     applyTermsFilter(mustQueries, "hashtags", request.getHashtags());
@@ -119,7 +124,8 @@ public class AccommodationSearchService {
       SearchResponse<AccommodationRoomDocument> response = elasticsearchClient.search(s -> s
               .index("accommodation_room")
               .query(finalQuery)
-              .size(100)
+              .size(pageable.getPageSize())
+              .from((int) pageable.getOffset())
               .sort(so -> so
                   .field(f -> f
                       .field("totalRating")
@@ -127,6 +133,7 @@ public class AccommodationSearchService {
           AccommodationRoomDocument.class
       );
 
+      // 중복 제거
       Map<Long, AccommodationRoomDocument> unique = new LinkedHashMap<>();
       for (Hit<AccommodationRoomDocument> hit : response.hits().hits()) {
         AccommodationRoomDocument doc = hit.source();
@@ -135,9 +142,23 @@ public class AccommodationSearchService {
         }
       }
 
-      return unique.values().stream()
+      List<AccommodationSearchResponse> content = unique.values().stream()
           .map(AccommodationSearchResponse::fromDocument)
           .toList();
+
+      // total count 가져오는 방식은 정확도에 따라 다름 (지금은 hits.total.value 사용)
+      long totalElements = response.hits().total().value(); // 총 개수
+      int totalPages = (int) Math.ceil((double) totalElements / pageable.getPageSize());
+
+      return new PageResponse<>(
+          content,
+          pageable.getPageNumber(),
+          pageable.getPageSize(),
+          totalElements,
+          totalPages,
+          pageable.getPageNumber() == 0,
+          (pageable.getOffset() + pageable.getPageSize()) >= totalElements // 마지막 페이지 여부
+      );
 
     } catch (IOException e) {
       throw new RuntimeException("Elasticsearch 검색 실패", e);
