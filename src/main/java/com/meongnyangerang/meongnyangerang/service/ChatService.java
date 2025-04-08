@@ -5,7 +5,10 @@ import com.meongnyangerang.meongnyangerang.domain.chat.ChatMessage;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatReadStatus;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatRoom;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagesResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
@@ -15,11 +18,14 @@ import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -39,7 +45,7 @@ public class ChatService {
    */
   public PageResponse<ChatRoomResponse> getChatRoomsAsUser(Long userId, Pageable pageable) {
     log.info("일반회원 채팅방 목록 조회");
-    
+
     Page<ChatRoom> chatRooms = chatRoomRepository.findAllByUser_IdOrderByUpdatedAtDesc(
         userId, pageable);
     Page<ChatRoomResponse> response = chatRooms.map(this::createChatRoomResponseAsUser);
@@ -59,6 +65,60 @@ public class ChatService {
     Page<ChatRoomResponse> response = chatRooms.map(this::createChatRoomResponseAsHost);
 
     return PageResponse.from(response);
+  }
+
+  /**
+   * 메시지 이력 조회
+   */
+  public ChatMessagesResponse getChatMessages(
+      Long viewerId, Long chatRoomId, Long cursorId, int size, SenderType senderType
+  ) {
+    ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_CHAT_ROOM));
+
+    validateChatRoomAccess(viewerId, chatRoom, senderType);
+
+    Pageable pageable = PageRequest.of(0, size + 1);
+
+    List<ChatMessage> messages = chatMessageRepository.findByChatRoomIdWithCursor(
+        chatRoomId, cursorId, pageable);
+
+    boolean hasNext = messages.size() > size;
+    if (hasNext) {
+      messages = messages.subList(0, size);
+    }
+    Long nextCursorId = hasNext ? messages.get(messages.size() - 1).getId() : null;
+
+    // 읽음 상태 업데이트 (채팅방에 들어왔으므로 메시지를 읽음으로 표시)
+    updateReadStatus(chatRoomId, viewerId, senderType);
+
+    List<ChatMessageResponse> messageResponses = messages.stream()
+        .map(ChatMessageResponse::from)
+        .toList();
+
+    return new ChatMessagesResponse(messageResponses, nextCursorId, hasNext);
+  }
+
+  @Transactional
+  public void updateReadStatus(Long chatRoomId, Long participantId, SenderType senderType) {
+    ChatReadStatus chatReadStatus = chatReadStatusRepository
+        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, participantId, senderType)
+        .orElseGet(() -> ChatReadStatus.builder()
+            .chatRoomId(chatRoomId)
+            .participantId(participantId)
+            .participantType(senderType)
+            .build());
+
+    chatReadStatus.updateLastReadTime(LocalDateTime.now());
+    chatReadStatusRepository.save(chatReadStatus);
+  }
+
+  private void validateChatRoomAccess(Long viewerId, ChatRoom chatRoom, SenderType senderType) {
+    if (senderType == SenderType.USER && !chatRoom.getUser().getId().equals(viewerId)) {
+      throw new MeongnyangerangException(ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
+    } else if (senderType == SenderType.HOST && !chatRoom.getHost().getId().equals(viewerId)) {
+      throw new MeongnyangerangException(ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
+    }
   }
 
   private ChatRoomResponse createChatRoomResponseAsUser(ChatRoom chatRoom) {
