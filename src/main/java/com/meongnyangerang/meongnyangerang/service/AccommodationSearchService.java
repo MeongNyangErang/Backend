@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -11,6 +13,8 @@ import com.meongnyangerang.meongnyangerang.domain.AccommodationRoomDocument;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
+import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -161,7 +165,7 @@ public class AccommodationSearchService {
       );
 
     } catch (IOException e) {
-      throw new RuntimeException("Elasticsearch 검색 실패", e);
+      throw new MeongnyangerangException(SEARCH_FAILED);
     }
   }
 
