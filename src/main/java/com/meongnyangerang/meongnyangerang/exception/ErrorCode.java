@@ -63,6 +63,7 @@ public enum ErrorCode {
 
   // 409 Conflict
   ROOM_ALREADY_RESERVED(HttpStatus.CONFLICT, "객실이 이미 예약되었습니다."),
+  CHAT_ALREADY_EXISTS(HttpStatus.CONFLICT, "채팅방이 이미 존재합니다."),
 
 
   // 409 CONFLICT

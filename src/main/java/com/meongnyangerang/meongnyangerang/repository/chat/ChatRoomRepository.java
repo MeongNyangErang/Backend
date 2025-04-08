@@ -14,4 +14,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
   // 호스트 ID로 채팅방 목록 조회
   Page<ChatRoom> findAllByHost_IdOrderByUpdatedAtDesc(Long hostId, Pageable pageable);
+
+  boolean existsByUser_IdAndHost_Id(Long id, Long id1);
 }
