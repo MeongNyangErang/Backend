@@ -136,7 +136,7 @@ class RoomServiceTest {
     List<RoomFacilityType> facilityTypes = List.of(RoomFacilityType.STYLER);
     List<RoomPetFacilityType> petFacilityTypes =
         Arrays.asList(RoomPetFacilityType.CAT_WHEEL, RoomPetFacilityType.CAT_TOWER,
-            RoomPetFacilityType.DRY_ROOM, RoomPetFacilityType.BED, RoomPetFacilityType.TOY);
+            RoomPetFacilityType.BED, RoomPetFacilityType.TOY);
     List<HashtagType> hashtagTypes = Arrays.asList(HashtagType.FAMILY_TRIP, HashtagType.SPA);
 
     facilities = Arrays.asList(
@@ -247,11 +247,6 @@ class RoomServiceTest {
             .id(2L)
             .room(room)
             .type(RoomPetFacilityType.CAT_TOWER)
-            .build(),
-        RoomPetFacility.builder()
-            .id(3L)
-            .room(room)
-            .type(RoomPetFacilityType.DRY_ROOM)
             .build(),
         RoomPetFacility.builder()
             .id(4L)
