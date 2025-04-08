@@ -20,6 +20,8 @@ import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.repository.HostRepository;
+import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -57,6 +60,9 @@ class ChatServiceTest {
 
   @Mock
   private AccommodationRepository accommodationRepository;
+
+  @Mock
+  private UserRepository userRepository;
 
   @InjectMocks
   private ChatService chatService;
@@ -136,6 +142,98 @@ class ChatServiceTest {
         .participantType(SenderType.USER)
         .lastReadTime(now.minusHours(1))
         .build();
+  }
+
+  @Test
+  @DisplayName("채팅방 생성 성공")
+  public void createChatRoom_Success() {
+    // given
+    Long userId = user.getId();
+    Long hostId = accommodation.getHost().getId();
+    Long accommodationId = accommodation.getId();
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+    when(chatRoomRepository.existsByUser_IdAndHost_Id(userId, hostId)).thenReturn(false);
+
+    ArgumentCaptor<ChatRoom> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatRoom.class);
+    when(chatRoomRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatRoom1);
+
+    // when
+    chatService.createChatRoom(userId, accommodationId);
+
+    // then
+    verify(userRepository, times(1)).findById(userId);
+    verify(accommodationRepository, times(1))
+        .findById(accommodationId);
+    verify(chatRoomRepository, times(1))
+        .existsByUser_IdAndHost_Id(userId, hostId);
+    verify(chatRoomRepository, times(1))
+        .save(chatRoomArgumentCaptor.capture());
+  }
+
+  @Test
+  @DisplayName("채팅방 생성 실패 - 존재하지 않는 일반회원")
+  void createChatRoom_UserNotFound_ThrowsException() {
+    // given
+    Long userId = user.getId();
+    Long accommodationId = accommodation.getId();
+
+    when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.createChatRoom(userId, accommodationId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.USER_NOT_FOUND);
+
+    verify(userRepository, times(1)).findById(userId);
+  }
+
+  @Test
+  @DisplayName("채팅방 생성 실패 - 존재하지 않는 숙소")
+  void createChatRoom_AccommodationNotFound_ThrowsException() {
+    // given
+    Long userId = user.getId();
+    Long accommodationId = accommodation.getId();
+
+    when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.createChatRoom(userId, accommodationId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
+
+    verify(userRepository, times(1)).findById(userId);
+    verify(accommodationRepository, times(1))
+        .findById(accommodationId);
+  }
+
+  @Test
+  @DisplayName("채팅방 생성 실패 - 이미 채팅방 존재")
+  void createChatRoom_AlreadyExists_ThrowsException() {
+    // given
+    Long userId = user.getId();
+    Long hostId = accommodation.getHost().getId();
+    Long accommodationId = accommodation.getId();
+
+    when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+    when(chatRoomRepository.existsByUser_IdAndHost_Id(userId, hostId)).thenReturn(true);
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.createChatRoom(userId, accommodationId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ALREADY_EXISTS);
+
+    verify(userRepository, times(1)).findById(userId);
+    verify(accommodationRepository, times(1))
+        .findById(accommodationId);
+    verify(chatRoomRepository, times(1))
+        .existsByUser_IdAndHost_Id(userId, hostId);
   }
 
   @Test

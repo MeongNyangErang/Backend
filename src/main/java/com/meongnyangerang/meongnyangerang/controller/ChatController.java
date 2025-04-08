@@ -5,6 +5,7 @@ import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagesResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
@@ -17,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,6 +30,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class ChatController {
 
   private final ChatService chatService;
+
+  /**
+   * 채팅 시작
+   */
+  @PostMapping("users/create")
+  public ResponseEntity<Void> createChatRoom(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @RequestBody ChatCreateRequest request
+  ) {
+    chatService.createChatRoom(userDetails.getId(), request.accommodationId());
+    return ResponseEntity.ok().build();
+  }
 
   /**
    * 채팅방 목록 조회
