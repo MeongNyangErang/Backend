@@ -78,6 +78,7 @@ public enum ErrorCode {
   ACCOMMODATION_REGISTRATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 등록 오류"),
   ACCOMMODATION_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 수정 오류"),
   ROOM_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "객실 수정 오류"),
+  DEFAULT_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기본 추천 조회 중 오류가 발생했습니다."),
   ;
 
   private final HttpStatus status;

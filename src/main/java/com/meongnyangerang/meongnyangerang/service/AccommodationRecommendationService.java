@@ -73,7 +73,7 @@ public class AccommodationRecommendationService {
           .map(Hit::source)
           .collect(Collectors.toList());
     } catch (IOException e) {
-      throw new MeongnyangerangException(ErrorCode.INTERNAL_SERVER_ERROR);
+      throw new MeongnyangerangException(ErrorCode.DEFAULT_RECOMMENDATION_FAILED);
     }
   }
 }
