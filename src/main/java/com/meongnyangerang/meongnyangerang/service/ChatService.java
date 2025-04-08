@@ -48,7 +48,7 @@ public class ChatService {
   @Transactional
   public void createChatRoom(Long userId, Long accommodationId) {
     log.info("채팅방 생성");
-    
+
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
 
@@ -146,6 +146,7 @@ public class ChatService {
     } else if (senderType == SenderType.HOST && !chatRoom.getHost().getId().equals(viewerId)) {
       throw new MeongnyangerangException(ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
     }
+  }
 
   /**
    * 채팅방 참여자들의 읽음 상태 생성
