@@ -124,7 +124,7 @@ class AccommodationRecommendationServiceTest {
     SearchResponse<DefaultRecommendationResponse> response = mock(SearchResponse.class);
     HitsMetadata<DefaultRecommendationResponse> hits = mock(HitsMetadata.class);
 
-    // 각 AccommodationDocument를 Elasticsearch의 Hit 객체로 매핑
+    // 각 DefaultRecommendationResponse를 Elasticsearch의 Hit 객체로 매핑
     List<Hit<DefaultRecommendationResponse>> hitList = docs.stream()
         .map(doc -> Hit.<DefaultRecommendationResponse>of(h -> h
             .id(String.valueOf(doc.getId()))
