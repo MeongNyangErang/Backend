@@ -48,6 +48,10 @@ public class ChatRoom {
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 
+  public Long getUserId() {
+    return this.getUser().getId();
+  }
+
   public Long getHostId() {
     return this.getHost().getId();
   }

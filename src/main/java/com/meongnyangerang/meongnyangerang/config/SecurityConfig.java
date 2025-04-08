@@ -47,6 +47,7 @@ public class SecurityConfig {
                 "/api/v1/accommodations/{accommodationId}/reviews"
             ).permitAll()
             .requestMatchers("/api/v1/users/**").hasAuthority("ROLE_USER")
+            .requestMatchers("/api/v1/chats/users/create").hasAuthority("ROLE_USER")
             .requestMatchers("/api/v1/hosts/**").hasAuthority("ROLE_HOST")
             .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
             .anyRequest().authenticated() // 그 외 모든 요청은 인증 필요

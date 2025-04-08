@@ -5,11 +5,13 @@ import com.meongnyangerang.meongnyangerang.domain.chat.ChatMessage;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatReadStatus;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatRoom;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
@@ -20,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -29,17 +32,43 @@ public class ChatService {
   private final ChatRoomRepository chatRoomRepository;
   private final ChatReadStatusRepository chatReadStatusRepository;
   private final ChatMessageRepository chatMessageRepository;
+  private final UserRepository userRepository;
   private final AccommodationRepository accommodationRepository;
 
   private static final LocalDateTime DEFAULT_LAST_READ_TIME =
       LocalDateTime.of(2000, 1, 1, 0, 0);
 
   /**
+   * 채팅방 생성
+   */
+  @Transactional
+  public void createChatRoom(Long userId, Long accommodationId) {
+    log.info("채팅방 생성");
+    
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
+
+    Accommodation accommodation = accommodationRepository.findById(accommodationId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
+
+    Host host = accommodation.getHost();
+
+    if (chatRoomRepository.existsByUser_IdAndHost_Id(user.getId(), host.getId())) {
+      throw new MeongnyangerangException(ErrorCode.CHAT_ALREADY_EXISTS);
+    }
+
+    ChatRoom newChatRoom = createChatRoom(user, host);
+    ChatRoom savedChatRoom = chatRoomRepository.save(newChatRoom);
+
+    createReadStatusForParticipants(savedChatRoom, userId, host.getId()); // 읽음 상태 초기화
+  }
+
+  /**
    * 일반회원이 채팅방 목록 조회
    */
   public PageResponse<ChatRoomResponse> getChatRoomsAsUser(Long userId, Pageable pageable) {
     log.info("일반회원 채팅방 목록 조회");
-    
+
     Page<ChatRoom> chatRooms = chatRoomRepository.findAllByUser_IdOrderByUpdatedAtDesc(
         userId, pageable);
     Page<ChatRoomResponse> response = chatRooms.map(this::createChatRoomResponseAsUser);
@@ -61,6 +90,34 @@ public class ChatService {
     return PageResponse.from(response);
   }
 
+  /**
+   * 채팅방 참여자들의 읽음 상태 생성
+   */
+  private void createReadStatusForParticipants(ChatRoom chatRoom, Long userId, Long hostId) {
+    ChatReadStatus userReadStatus = createChatReadStatus(chatRoom, userId, SenderType.USER);
+    ChatReadStatus hostReadStatus = createChatReadStatus(chatRoom, hostId, SenderType.HOST);
+    chatReadStatusRepository.save(userReadStatus);
+    chatReadStatusRepository.save(hostReadStatus);
+  }
+
+  private static ChatReadStatus createChatReadStatus(
+      ChatRoom chatRoom, Long participantId, SenderType participantType
+  ) {
+    return ChatReadStatus.builder()
+        .chatRoomId(chatRoom.getId())
+        .participantId(participantId)
+        .participantType(participantType)
+        .lastReadTime(LocalDateTime.now())
+        .build();
+  }
+
+  private static ChatRoom createChatRoom(User user, Host host) {
+    return ChatRoom.builder()
+        .user(user)
+        .host(host)
+        .build();
+  }
+
   private ChatRoomResponse createChatRoomResponseAsUser(ChatRoom chatRoom) {
     Accommodation accommodation = accommodationRepository.findByHostId(chatRoom.getHostId())
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
@@ -68,15 +125,19 @@ public class ChatService {
     ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(
         chatRoom.getId()); // 마지막 메시지 정보
 
-    int unreadCount = countUnreadMessagesForUser(chatRoom); // 읽지 않은 메시지 수
+    int unreadCount = chatMessageRepository.countUnreadMessages(
+        chatRoom.getId(),
+        SenderType.HOST, // 호스트가 보낸 메시지 중에서
+        getLastReadTime(chatRoom.getId(), chatRoom.getUserId(), SenderType.USER)
+    ); // 읽지 않은 메시지 수
 
-    return ChatRoomResponse.createChatRoomResponse(
+    return new ChatRoomResponse(
         chatRoom.getId(),
         chatRoom.getHostId(),
         accommodation.getName(),
         accommodation.getThumbnailUrl(),
-        lastMessage.getContent(),
-        lastMessage.getCreatedAt(),
+        getLastMessage(lastMessage),
+        getLastMessageTime(lastMessage),
         unreadCount
     );
   }
@@ -86,42 +147,20 @@ public class ChatService {
         chatRoom.getId()); // 마지막 메시지 정보
 
     User user = chatRoom.getUser();
-    int unreadCount = countUnreadMessagesForHost(chatRoom); // 읽지 않은 메시지 수
+    int unreadCount = chatMessageRepository.countUnreadMessages(
+        chatRoom.getId(),
+        SenderType.USER, // 사용자가 보낸 메시지 중에서
+        getLastReadTime(chatRoom.getId(), chatRoom.getHostId(), SenderType.HOST)
+    ); // 읽지 않은 메시지 수
 
-    return ChatRoomResponse.createChatRoomResponse(
+    return new ChatRoomResponse(
         chatRoom.getId(),
         user.getId(),
         user.getNickname(),
         user.getProfileImage(),
-        lastMessage.getContent(),
-        lastMessage.getCreatedAt(),
+        getLastMessage(lastMessage),
+        getLastMessageTime(lastMessage),
         unreadCount
-    );
-  }
-
-  /**
-   * 사용자 관점에서 읽지 않은 메시지 수 계산
-   */
-  private int countUnreadMessagesForUser(ChatRoom chatRoom) {
-    Long userId = chatRoom.getUser().getId();
-
-    return chatMessageRepository.countUnreadMessages(
-        chatRoom.getId(),
-        SenderType.HOST, // 호스트가 보낸 메시지 중에서
-        getLastReadTime(chatRoom.getId(), userId, SenderType.USER)
-    );
-  }
-
-  /**
-   * 호스트 관점에서 읽지 않은 메시지 수 계산
-   */
-  private int countUnreadMessagesForHost(ChatRoom chatRoom) {
-    Long hostId = chatRoom.getHost().getId();
-
-    return chatMessageRepository.countUnreadMessages(
-        chatRoom.getId(),
-        SenderType.USER, // 사용자가 보낸 메시지 중에서
-        getLastReadTime(chatRoom.getId(), hostId, SenderType.HOST)
     );
   }
 
@@ -134,5 +173,13 @@ public class ChatService {
         .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, viewerId, viewerType)
         .map(ChatReadStatus::getLastReadTime)
         .orElse(DEFAULT_LAST_READ_TIME);
+  }
+
+  private static String getLastMessage(ChatMessage lastMessage) {
+    return lastMessage != null ? lastMessage.getContent() : "";
+  }
+
+  private static LocalDateTime getLastMessageTime(ChatMessage lastMessage) {
+    return lastMessage != null ? lastMessage.getCreatedAt() : null;
   }
 }
