@@ -14,6 +14,8 @@ import com.meongnyangerang.meongnyangerang.domain.chat.ChatRoom;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagesResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
@@ -25,6 +27,7 @@ import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -389,5 +392,106 @@ class ChatServiceTest {
 
     // then
     assertNotNull(response);
+  }
+
+  @Test
+  @DisplayName("메시지 조회 성공")
+  void getChatMessages_Success() {
+    // given
+    Long userId = user.getId();
+    Long chatRoomId = chatRoom1.getId();
+    Long cursorId = null;
+    int size = 5;
+    ChatReadStatus chatReadStatus = ChatReadStatus.builder()
+        .chatRoomId(chatRoomId)
+        .participantId(userId)
+        .participantType(SenderType.USER)
+        .build();
+
+    Pageable pageable = PageRequest.of(0, size + 1);
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+    when(chatMessageRepository.findByChatRoomIdWithCursor(chatRoomId, cursorId, pageable))
+        .thenReturn(createTestMessageResponses(chatRoom1, size));
+    when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, userId, SenderType.USER)).thenReturn(Optional.of(chatReadStatus));
+
+    // when
+    ChatMessagesResponse response = chatService.getChatMessages(
+        userId, chatRoomId, cursorId, size, SenderType.USER);
+
+    // then
+    List<ChatMessageResponse> messages = response.messages();
+    for (int i = 0; i < size; i++) {
+      assertThat(messages.get(i).messageId()).isEqualTo(size - i);
+      assertThat(messages.get(i).senderType())
+          .isEqualTo(i % 2 == 0 ? SenderType.USER : SenderType.HOST);
+      assertThat(messages.get(i).content()).isEqualTo("Test message " + i);
+    }
+    assertThat(response.nextCursorId()).isNull();
+    assertThat(response.hasNext()).isFalse();
+
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+    verify(chatMessageRepository, times(1))
+        .findByChatRoomIdWithCursor(chatRoomId, cursorId, pageable);
+    verify(chatReadStatusRepository, times(1))
+        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, userId, SenderType.USER);
+    verify(chatReadStatusRepository, times(1)).save(chatReadStatus);
+  }
+
+  @Test
+  @DisplayName("메시지 조회 실패 - 존재하지 않는 채팅방")
+  void getChatMessages_ChatRoomNotExists_ThrowsException() {
+    // given
+    Long userId = user.getId();
+    Long chatRoomId = chatRoom1.getId();
+    Long cursorId = null;
+    int size = 5;
+
+    // when
+    // then
+    assertThatThrownBy(
+        () -> chatService.getChatMessages(userId, chatRoomId, cursorId, size, SenderType.USER))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
+
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+  }
+
+  @Test
+  @DisplayName("메시지 조회 실패 - 채팅방 권한 없음")
+  void getChatMessages_NotAuthorized_ThrowsException() {
+    // given
+    User notAuthorizedUser = User.builder()
+        .id(10L)
+        .build();
+    Long chatRoomId = chatRoom1.getId();
+    Long cursorId = null;
+    int size = 5;
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.getChatMessages(
+        notAuthorizedUser.getId(), chatRoomId, cursorId, size, SenderType.USER))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
+
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+  }
+
+  private List<ChatMessage> createTestMessageResponses(ChatRoom chatRoom, int size) {
+    List<ChatMessage> messages = new ArrayList<>();
+    for (int i = 0; i < size; i++) {
+      messages.add(new ChatMessage(
+          (long) (size - i),
+          chatRoom,
+          i % 2 == 0 ? SenderType.USER : SenderType.HOST,
+          "Test message " + i,
+          LocalDateTime.now().minusMinutes(i)
+      ));
+    }
+    return messages;
   }
 }
