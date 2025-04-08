@@ -5,7 +5,6 @@ import com.meongnyangerang.meongnyangerang.domain.chat.ChatMessage;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatReadStatus;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatRoom;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
-import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagesResponse;
