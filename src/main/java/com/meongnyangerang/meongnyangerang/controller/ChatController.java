@@ -73,7 +73,6 @@ public class ChatController {
       @RequestParam(defaultValue = "20") int size,
       @AuthenticationPrincipal UserDetailsImpl userDetails
   ) {
-
     SenderType senderType =
         userDetails.getRole() == Role.ROLE_USER ? SenderType.USER : SenderType.HOST;
 
