@@ -1,6 +1,8 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagesResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateRequest;
@@ -15,9 +17,11 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -57,5 +61,22 @@ public class ChatController {
     } else {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }
+  }
+
+  /**
+   * 메시지 이력 조회
+   */
+  @GetMapping("/{chatRoomId}/messages")
+  public ResponseEntity<ChatMessagesResponse> getChatMessages(
+      @PathVariable Long chatRoomId,
+      @RequestParam(required = false) Long cursorId,
+      @RequestParam(defaultValue = "20") int size,
+      @AuthenticationPrincipal UserDetailsImpl userDetails
+  ) {
+    SenderType senderType =
+        userDetails.getRole() == Role.ROLE_USER ? SenderType.USER : SenderType.HOST;
+
+    return ResponseEntity.ok(
+        chatService.getChatMessages(userDetails.getId(), chatRoomId, cursorId, size, senderType));
   }
 }

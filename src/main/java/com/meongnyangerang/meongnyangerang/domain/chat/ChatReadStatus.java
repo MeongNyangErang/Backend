@@ -39,4 +39,8 @@ public class ChatReadStatus {
 
   @Column(nullable = false)
   private LocalDateTime lastReadTime;
+
+  public void updateLastReadTime(LocalDateTime time) {
+    this.lastReadTime = time;
+  }
 }

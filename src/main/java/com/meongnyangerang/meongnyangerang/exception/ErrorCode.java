@@ -46,6 +46,7 @@ public enum ErrorCode {
   ACCOUNT_PENDING(HttpStatus.FORBIDDEN, "관리자 승인 대기 중입니다."),
   REVIEW_CREATION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "리뷰 작성 가능 기간이 만료되었습니다."),
   REVIEW_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "해당 리뷰에 대한 권한이 없습니다."),
+  CHAT_ROOM_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "해당 채팅방에 대한 권한이 없습니다."),
 
   // 404  NOT FOUND
   NOT_EXISTS_HOST(HttpStatus.NOT_FOUND, "존재하지 않는 호스트입니다."),
@@ -59,6 +60,7 @@ public enum ErrorCode {
   NOT_EXIST_PET(HttpStatus.NOT_FOUND, "존재하지 않는 반려동물입니다."),
   NOT_EXIST_WISHLIST(HttpStatus.NOT_FOUND, "존재하지 않는 찜 목록입니다."),
   NOT_EXIST_NOTICE(HttpStatus.NOT_FOUND, "존재하지 않는 공지사항입니다."),
+  NOT_EXIST_CHAT_ROOM(HttpStatus.NOT_FOUND, "채팅방이 존재하지 않습니다."),
 
 
   // 409 Conflict
@@ -79,6 +81,7 @@ public enum ErrorCode {
   ACCOMMODATION_REGISTRATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 등록 오류"),
   ACCOMMODATION_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 수정 오류"),
   ROOM_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "객실 수정 오류"),
+  DEFAULT_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기본 추천 조회 중 오류가 발생했습니다."),
   ;
 
   private final HttpStatus status;
