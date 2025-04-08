@@ -1,6 +1,6 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
-import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationDocument;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.DefaultRecommendationResponse;
 import com.meongnyangerang.meongnyangerang.service.AccommodationRecommendationService;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +19,7 @@ public class AccommodationRecommendationController {
 
   // 비로그인 사용자 기본 추천
   @GetMapping("/default")
-  public ResponseEntity<Map<String, List<AccommodationDocument>>> getDefaultRecommendations() {
+  public ResponseEntity<Map<String, List<DefaultRecommendationResponse>>> getDefaultRecommendations() {
 
     return ResponseEntity.ok(recommendationService.getDefaultRecommendations());
   }

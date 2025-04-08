@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationDocument;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.DefaultRecommendationResponse;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
@@ -67,7 +68,8 @@ class AccommodationRecommendationServiceTest {
 
     List<AccommodationDocument> allDocs = List.of(doc1, doc2, doc3);
 
-    when(elasticsearchClient.search(any(SearchRequest.class), eq(AccommodationDocument.class)))
+    when(elasticsearchClient.search(any(SearchRequest.class),
+        eq(DefaultRecommendationResponse.class)))
         .thenAnswer(invocation -> {
           // SearchRequest 를 꺼냄
           SearchRequest request = invocation.getArgument(0);
@@ -75,16 +77,17 @@ class AccommodationRecommendationServiceTest {
           String petType = request.query().term().value().stringValue();
 
           // allowedPetTypes 에 petType 포함된 문서만 추출 (totalRating 내림차순 정렬)
-          List<AccommodationDocument> filtered = allDocs.stream()
+          List<DefaultRecommendationResponse> filtered = allDocs.stream()
               .filter(doc -> doc.getAllowedPetTypes().contains(petType))
               .sorted(Comparator.comparingDouble(AccommodationDocument::getTotalRating).reversed())
+              .map(this::convertToDefaultRecommendationResponse)
               .toList();
 
           return mockSearchResponse(filtered);
         });
 
     // when
-    Map<String, List<AccommodationDocument>> result = recommendationService.getDefaultRecommendations();
+    Map<String, List<DefaultRecommendationResponse>> result = recommendationService.getDefaultRecommendations();
 
     // then
     // 결과에 각 petType이 key로 들어 있는지 확인
@@ -100,20 +103,30 @@ class AccommodationRecommendationServiceTest {
     assertEquals(1, result.get("CAT").size());
 
     // LARGE_DOG 추천 목록이 평점 높은 순으로 정렬되어 있는지 확인
-    List<AccommodationDocument> largeDogList = result.get("LARGE_DOG");
+    List<DefaultRecommendationResponse> largeDogList = result.get("LARGE_DOG");
     assertEquals(4.7, largeDogList.get(0).getTotalRating());
     assertEquals(4.5, largeDogList.get(1).getTotalRating());
   }
 
-  private SearchResponse<AccommodationDocument> mockSearchResponse(
-      List<AccommodationDocument> docs) {
+  private DefaultRecommendationResponse convertToDefaultRecommendationResponse(
+      AccommodationDocument doc) {
+    return DefaultRecommendationResponse.builder()
+        .id(doc.getId())
+        .accommodationName(doc.getName())
+        .totalRating(doc.getTotalRating())
+        .price(doc.getPrice())
+        .build();
+  }
+
+  private SearchResponse<DefaultRecommendationResponse> mockSearchResponse(
+      List<DefaultRecommendationResponse> docs) {
     // SearchResponse, HitsMetadata를 mock 객체로 생성
-    SearchResponse<AccommodationDocument> response = mock(SearchResponse.class);
-    HitsMetadata<AccommodationDocument> hits = mock(HitsMetadata.class);
+    SearchResponse<DefaultRecommendationResponse> response = mock(SearchResponse.class);
+    HitsMetadata<DefaultRecommendationResponse> hits = mock(HitsMetadata.class);
 
     // 각 AccommodationDocument를 Elasticsearch의 Hit 객체로 매핑
-    List<Hit<AccommodationDocument>> hitList = docs.stream()
-        .map(doc -> Hit.<AccommodationDocument>of(h -> h
+    List<Hit<DefaultRecommendationResponse>> hitList = docs.stream()
+        .map(doc -> Hit.<DefaultRecommendationResponse>of(h -> h
             .id(String.valueOf(doc.getId()))
             .index("accommodations")
             .source(doc)))
