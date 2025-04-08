@@ -148,7 +148,7 @@ public class AccommodationSearchService {
     if (values != null && !values.isEmpty()) {
       mustQueries.add(Query.of(q -> q
           .terms(t -> t
-              .field(field)
+              .field(field + ".keyword")
               .terms(terms -> terms
                   .value(values.stream().map(FieldValue::of).toList())
               )
