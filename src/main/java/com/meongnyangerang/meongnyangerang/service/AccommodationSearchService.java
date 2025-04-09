@@ -10,6 +10,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.meongnyangerang.meongnyangerang.domain.AccommodationRoomDocument;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
@@ -17,6 +18,7 @@ import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,80 +41,29 @@ public class AccommodationSearchService {
     List<Query> mustNotQueries = new ArrayList<>();
 
     // 위치 필터 (wildcard - 주소 전체에서 특정 키워드 포함 검색)
-    if (request.getLocation() != null) {
-      mustQueries.add(Query.of(q -> q
-          .wildcard(w -> w
-              .field("address")
-              .wildcard("*" + request.getLocation() + "*")
-          )));
-    }
+    applyLocationFilter(mustQueries, request.getLocation());
 
     // 인원 수 필터
-    if (request.getPeopleCount() != null) {
-      mustQueries.add(Query.of(q -> q
-          .range(r -> r.field("standardPeopleCount").lte(JsonData.of(request.getPeopleCount())))));
-      mustQueries.add(Query.of(q -> q
-          .range(r -> r.field("maxPeopleCount").gte(JsonData.of(request.getPeopleCount())))));
-    }
+    applyPeopleCountFilter(mustQueries, request.getPeopleCount());
 
     // 반려동물 수 필터
-    if (request.getPetCount() != null) {
-      mustQueries.add(Query.of(q -> q
-          .range(r -> r.field("standardPetCount").lte(JsonData.of(request.getPetCount())))));
-      mustQueries.add(Query.of(q -> q
-          .range(r -> r.field("maxPetCount").gte(JsonData.of(request.getPetCount())))));
-    }
+    applyPetCountFilter(mustQueries, request.getPetCount());
 
     // 숙소 유형
-    if (request.getAccommodationType() != null) {
-      mustQueries.add(Query.of(q -> q
-          .term(t -> t
-              .field("accommodationType.keyword") // enum은 keyword 필드 기준
-              .value(request.getAccommodationType().name()))));
-    }
+    applyAccommodationTypeFilter(mustQueries, request.getAccommodationType());
 
     // 가격 필터
-    if (request.getMinPrice() != null || request.getMaxPrice() != null) {
-      mustQueries.add(Query.of(q -> q
-          .range(r -> {
-            r.field("price");
-            if (request.getMinPrice() != null) {
-              r.gte(JsonData.of(request.getMinPrice()));
-            }
-            if (request.getMaxPrice() != null) {
-              r.lte(JsonData.of(request.getMaxPrice()));
-            }
-            return r;
-          })
-      ));
-    }
+    applyPriceFilter(mustQueries, request.getMinPrice(), request.getMaxPrice());
 
     // 평점 필터
-    if (request.getMinRating() != null) {
-      mustQueries.add(Query.of(q -> q
-          .range(r -> r
-              .field("totalRating")
-              .gte(JsonData.of(request.getMinRating())))));
-    }
+    applyRatingFilter(mustQueries, request.getMinRating());
 
     // 예약된 객실 제외 (must_not)
-    List<Long> reservedRoomIds = reservationSlotRepository.findReservedRoomIdsBetweenDates(
-        request.getCheckInDate(), request.getCheckOutDate().minusDays(1));  // 체크아웃날은 제외
-
-    if (!reservedRoomIds.isEmpty()) {
-      mustNotQueries.add(Query.of(q -> q
-          .terms(t -> t
-              .field("roomId")
-              .terms(terms -> terms
-                  .value(reservedRoomIds.stream().map(FieldValue::of).toList())
-              )
-          )));
-    }
+    applyReservedRoomFilter(mustNotQueries, request.getCheckInDate(), request.getCheckOutDate());
 
     // terms 필터들
     applyTermsFilter(mustQueries, "accommodationFacilities", request.getAccommodationFacilities());
-    applyTermsFilter(mustQueries, "accommodationPetFacilities",
-        request.getAccommodationPetFacilities());
+    applyTermsFilter(mustQueries, "accommodationPetFacilities", request.getAccommodationPetFacilities());
     applyTermsFilter(mustQueries, "roomFacilities", request.getRoomFacilities());
     applyTermsFilter(mustQueries, "roomPetFacilities", request.getRoomPetFacilities());
     applyTermsFilter(mustQueries, "hashtags", request.getHashtags());
@@ -169,6 +120,80 @@ public class AccommodationSearchService {
     }
   }
 
+  private void applyLocationFilter(List<Query> mustQueries, String location) {
+    if (location != null) {
+      mustQueries.add(Query.of(q -> q
+          .wildcard(w -> w
+              .field("address")
+              .wildcard("*" + location + "*")
+          )));
+    }
+  }
+
+  private void applyPeopleCountFilter(List<Query> mustQueries, Integer peopleCount) {
+    if (peopleCount != null) {
+      mustQueries.add(Query.of(q -> q
+          .range(r -> r.field("standardPeopleCount").lte(JsonData.of(peopleCount)))));
+      mustQueries.add(Query.of(q -> q
+          .range(r -> r.field("maxPeopleCount").gte(JsonData.of(peopleCount)))));
+    }
+  }
+
+  private void applyPetCountFilter(List<Query> mustQueries, Integer petCount) {
+    if (petCount != null) {
+      mustQueries.add(Query.of(q -> q
+          .range(r -> r.field("standardPetCount").lte(JsonData.of(petCount)))));
+      mustQueries.add(Query.of(q -> q
+          .range(r -> r.field("maxPetCount").gte(JsonData.of(petCount)))));
+    }
+  }
+
+  private void applyAccommodationTypeFilter(List<Query> mustQueries, AccommodationType type) {
+    if (type != null) {
+      mustQueries.add(Query.of(q -> q
+          .term(t -> t
+              .field("accommodationType.keyword")
+              .value(type.name()))));
+    }
+  }
+
+  private void applyPriceFilter(List<Query> mustQueries, Long minPrice, Long maxPrice) {
+    if (minPrice != null || maxPrice != null) {
+      mustQueries.add(Query.of(q -> q
+          .range(r -> {
+            r.field("price");
+            if (minPrice != null) r.gte(JsonData.of(minPrice));
+            if (maxPrice != null) r.lte(JsonData.of(maxPrice));
+            return r;
+          })
+      ));
+    }
+  }
+
+  private void applyRatingFilter(List<Query> mustQueries, Double minRating) {
+    if (minRating != null) {
+      mustQueries.add(Query.of(q -> q
+          .range(r -> r
+              .field("totalRating")
+              .gte(JsonData.of(minRating)))));
+    }
+  }
+
+  private void applyReservedRoomFilter(List<Query> mustNotQueries, LocalDate checkInDate, LocalDate checkOutDate) {
+    List<Long> reservedRoomIds = reservationSlotRepository.findReservedRoomIdsBetweenDates(
+        checkInDate, checkOutDate.minusDays(1));
+
+    if (!reservedRoomIds.isEmpty()) {
+      mustNotQueries.add(Query.of(q -> q
+          .terms(t -> t
+              .field("roomId")
+              .terms(terms -> terms
+                  .value(reservedRoomIds.stream().map(FieldValue::of).toList())
+              )
+          )));
+    }
+  }
+
   private void applyTermsFilter(List<Query> mustQueries, String field, List<String> values) {
     if (values != null && !values.isEmpty()) {
       mustQueries.add(Query.of(q -> q
@@ -182,4 +207,3 @@ public class AccommodationSearchService {
     }
   }
 }
-
