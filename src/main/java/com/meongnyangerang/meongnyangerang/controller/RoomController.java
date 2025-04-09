@@ -86,6 +86,6 @@ public class RoomController {
       @PathVariable Long roomId
   ){
     roomService.deleteRoom(userDetail.getId(), roomId);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok().build();
   }
 }
