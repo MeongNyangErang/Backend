@@ -8,7 +8,8 @@ public record NotificationReceiverInfo(
     Long receiverId,
     SenderType receiverType,
     User user,
-    Host host
+    Host host,
+    String receiverEmail
 ) {
 
 }

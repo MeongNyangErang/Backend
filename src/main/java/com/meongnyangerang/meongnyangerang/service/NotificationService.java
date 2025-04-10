@@ -49,6 +49,7 @@ public class NotificationService {
       NotificationReceiverInfo receiverInfo = determineReceiverInfo(chatRoom, senderId, senderType);
       saveNotification(receiverInfo.user(), receiverInfo.host(), content);
       sendWebSocketNotification(
+          receiverInfo.receiverEmail(),
           chatRoom,
           senderId,
           senderType,
@@ -56,7 +57,7 @@ public class NotificationService {
           receiverInfo.receiverId(),
           receiverInfo.receiverType()
       );
-      log.info("비동기 알림 전송  성공 sender: {}, {}, receiver: {}, {}",
+      log.info("비동기 알림 전송  성공 senderId: {}, senderType: {}, receiverId: {}, receiverType: {}",
           senderId, senderType, receiverInfo.receiverId(), receiverInfo.receiverType());
     } catch (Exception e) {
       log.error("비동기 알림 전송 예외 발생", e);
@@ -70,6 +71,7 @@ public class NotificationService {
   ) {
     Long receiverId;
     SenderType receiverType;
+    String receiverName;
     User user;
     Host host;
 
@@ -80,6 +82,7 @@ public class NotificationService {
           .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
       host = hostRepository.findById(receiverId)
           .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
+      receiverName = host.getEmail();
     } else if (senderType == SenderType.HOST) {
       receiverId = chatRoom.getUserId();
       receiverType = SenderType.USER;
@@ -87,10 +90,11 @@ public class NotificationService {
           .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
       user = userRepository.findById(receiverId)
           .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
+      receiverName = user.getEmail();
     } else {
       throw new MeongnyangerangException(ErrorCode.NOTIFICATION_NOT_AUTHORIZED);
     }
-    return new NotificationReceiverInfo(receiverId, receiverType, user, host);
+    return new NotificationReceiverInfo(receiverId, receiverType, user, host, receiverName);
   }
 
   private void saveNotification(User user, Host host, String content) {
@@ -105,6 +109,7 @@ public class NotificationService {
   }
 
   private void sendWebSocketNotification(
+      String receiverName,
       ChatRoom chatRoom,
       Long senderId,
       SenderType senderType,
@@ -113,7 +118,6 @@ public class NotificationService {
       SenderType receiverType
   ) {
     try {
-      String userIdentifier = receiverType.name() + "_" + receiverId;
       NotificationRecord notification = new NotificationRecord(
           chatRoom.getId(),
           senderId,
@@ -126,11 +130,11 @@ public class NotificationService {
       );
 
       messagingTemplate.convertAndSendToUser(
-          userIdentifier,
+          receiverName,
           NOTIFICATION_DESTINATION,
           notification
       );
-      log.debug("WebSocket 알림 전송 완료 - 수신자: {}", userIdentifier);
+      log.info("WebSocket 알림 전송 완료 - 수신자: {}", receiverName);
     } catch (Exception e) {
       log.error("WebSocket 알림 전송 중 오류 발생", e);
     }
