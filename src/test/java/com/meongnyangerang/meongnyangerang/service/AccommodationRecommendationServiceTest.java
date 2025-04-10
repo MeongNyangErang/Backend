@@ -13,7 +13,12 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationDocument;
-import com.meongnyangerang.meongnyangerang.dto.accommodation.DefaultRecommendationResponse;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
+import com.meongnyangerang.meongnyangerang.domain.user.ActivityLevel;
+import com.meongnyangerang.meongnyangerang.domain.user.Personality;
+import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
+import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
@@ -31,6 +36,9 @@ class AccommodationRecommendationServiceTest {
 
   @Mock
   private ElasticsearchClient elasticsearchClient;
+
+  @Mock
+  private UserPetRepository userPetRepository;
 
   @InjectMocks
   private AccommodationRecommendationService recommendationService;
@@ -69,7 +77,7 @@ class AccommodationRecommendationServiceTest {
     List<AccommodationDocument> allDocs = List.of(doc1, doc2, doc3);
 
     when(elasticsearchClient.search(any(SearchRequest.class),
-        eq(DefaultRecommendationResponse.class)))
+        eq(RecommendationResponse.class)))
         .thenAnswer(invocation -> {
           // SearchRequest 를 꺼냄
           SearchRequest request = invocation.getArgument(0);
@@ -77,17 +85,17 @@ class AccommodationRecommendationServiceTest {
           String petType = request.query().term().value().stringValue();
 
           // allowedPetTypes 에 petType 포함된 문서만 추출 (totalRating 내림차순 정렬)
-          List<DefaultRecommendationResponse> filtered = allDocs.stream()
+          List<RecommendationResponse> filtered = allDocs.stream()
               .filter(doc -> doc.getAllowedPetTypes().contains(petType))
               .sorted(Comparator.comparingDouble(AccommodationDocument::getTotalRating).reversed())
-              .map(this::convertToDefaultRecommendationResponse)
+              .map(this::convertToRecommendationResponse)
               .toList();
 
           return mockSearchResponse(filtered);
         });
 
     // when
-    Map<String, List<DefaultRecommendationResponse>> result = recommendationService.getDefaultRecommendations();
+    Map<String, List<RecommendationResponse>> result = recommendationService.getDefaultRecommendations();
 
     // then
     // 결과에 각 petType이 key로 들어 있는지 확인
@@ -103,14 +111,115 @@ class AccommodationRecommendationServiceTest {
     assertEquals(1, result.get("CAT").size());
 
     // LARGE_DOG 추천 목록이 평점 높은 순으로 정렬되어 있는지 확인
-    List<DefaultRecommendationResponse> largeDogList = result.get("LARGE_DOG");
+    List<RecommendationResponse> largeDogList = result.get("LARGE_DOG");
     assertEquals(4.7, largeDogList.get(0).getTotalRating());
     assertEquals(4.5, largeDogList.get(1).getTotalRating());
   }
 
-  private DefaultRecommendationResponse convertToDefaultRecommendationResponse(
+  @Test
+  @DisplayName("사용자가 등록한 반려동물 정보를 바탕으로 숙소를 추천해줘야 한다.")
+  void getUserPetRecommendations_success() throws IOException {
+    // given
+    UserPet pet1 = UserPet.builder()
+        .name("초코")
+        .type(PetType.SMALL_DOG)
+        .activityLevel(ActivityLevel.MEDIUM)
+        .personality(Personality.EXTROVERT)
+        .build();
+
+    UserPet pet2 = UserPet.builder()
+        .name("나비")
+        .type(PetType.CAT)
+        .activityLevel(ActivityLevel.LOW)
+        .personality(Personality.INTROVERT)
+        .build();
+
+    List<UserPet> userPets = List.of(pet1, pet2);
+
+    AccommodationDocument doc1 = AccommodationDocument.builder()
+        .id(1L)
+        .name("test1 숙소")
+        .thumbnailUrl("http://example.com/image1.jpg")
+        .price(70000L)
+        .totalRating(4.5)
+        .allowedPetTypes(Set.of("SMALL_DOG", "LARGE_DOG"))
+        .accommodationPetFacilities(Set.of("PLAYGROUND", "PET_FOOD", "FENCE_AREA"))
+        .roomPetFacilities(Set.of("EXCLUSIVE_YARD", "TOY", "PET_STEPS"))
+        .build();
+
+    AccommodationDocument doc2 = AccommodationDocument.builder()
+        .id(2L)
+        .name("test2 숙소")
+        .thumbnailUrl("http://example.com/image2.jpg")
+        .price(80000L)
+        .totalRating(4.7)
+        .allowedPetTypes(Set.of("LARGE_DOG", "MEDIUM_DOG"))
+        .accommodationPetFacilities(Set.of("PLAYGROUND", "EXERCISE_AREA", "FENCE_AREA"))
+        .roomPetFacilities(Set.of("EXCLUSIVE_YARD", "TOY", "POTTY_SUPPLIES"))
+        .build();
+
+    AccommodationDocument doc3 = AccommodationDocument.builder()
+        .id(3L)
+        .name("test3 숙소")
+        .thumbnailUrl("http://example.com/image3.jpg")
+        .price(75000L)
+        .totalRating(3.5)
+        .allowedPetTypes(Set.of("CAT"))
+        .accommodationPetFacilities(Set.of("PET_FOOD", "NEARBY_HOSPITAL"))
+        .roomPetFacilities(Set.of("CAT_TOWER", "TOY", "CAT_WHEEL"))
+        .build();
+
+    AccommodationDocument doc4 = AccommodationDocument.builder()
+        .id(4L)
+        .name("test4 숙소")
+        .thumbnailUrl("http://example.com/image4.jpg")
+        .price(80000L)
+        .totalRating(4.7)
+        .allowedPetTypes(Set.of("SMALL_DOG", "MEDIUM_DOG"))
+        .accommodationPetFacilities(Set.of("PLAYGROUND", "PET_FOOD", "EXERCISE_AREA"))
+        .roomPetFacilities(Set.of("EXCLUSIVE_YARD", "FENCE_AREA", "PET_STEPS"))
+        .build();
+
+    List<AccommodationDocument> allDocs = List.of(doc1, doc2, doc3, doc4);
+
+    when(userPetRepository.findAllByUserId(1L)).thenReturn(userPets);
+
+    when(elasticsearchClient.search(any(SearchRequest.class),
+        eq(AccommodationDocument.class)))
+        .thenAnswer(invocation -> {
+
+          SearchRequest request = invocation.getArgument(0);
+          String petType = request.query().term().value().stringValue();
+
+          List<AccommodationDocument> filtered = allDocs.stream()
+              .filter(doc -> doc.getAllowedPetTypes().contains(petType))
+              .toList();
+
+          return mockSearchResponses(filtered);
+        });
+
+    // when
+    Map<String, List<RecommendationResponse>> result = recommendationService.getUserPetRecommendations(
+        1L);
+
+    // then
+    assertTrue(result.containsKey("초코"));
+    assertTrue(result.containsKey("나비"));
+
+    List<RecommendationResponse> chocoList = result.get("초코");
+    List<RecommendationResponse> nabiList = result.get("나비");
+
+    assertEquals(2, chocoList.size());
+    assertEquals(1, nabiList.size());
+
+    assertEquals("test1 숙소", chocoList.get(0).getName());
+    assertEquals("test4 숙소", chocoList.get(1).getName());
+    assertEquals("test3 숙소", nabiList.get(0).getName());
+  }
+
+  private RecommendationResponse convertToRecommendationResponse(
       AccommodationDocument doc) {
-    return DefaultRecommendationResponse.builder()
+    return RecommendationResponse.builder()
         .id(doc.getId())
         .name(doc.getName())
         .totalRating(doc.getTotalRating())
@@ -118,15 +227,36 @@ class AccommodationRecommendationServiceTest {
         .build();
   }
 
-  private SearchResponse<DefaultRecommendationResponse> mockSearchResponse(
-      List<DefaultRecommendationResponse> docs) {
+  private SearchResponse<AccommodationDocument> mockSearchResponses(
+      List<AccommodationDocument> docs) {
     // SearchResponse, HitsMetadata를 mock 객체로 생성
-    SearchResponse<DefaultRecommendationResponse> response = mock(SearchResponse.class);
-    HitsMetadata<DefaultRecommendationResponse> hits = mock(HitsMetadata.class);
+    SearchResponse<AccommodationDocument> response = mock(SearchResponse.class);
+    HitsMetadata<AccommodationDocument> hits = mock(HitsMetadata.class);
 
     // 각 DefaultRecommendationResponse를 Elasticsearch의 Hit 객체로 매핑
-    List<Hit<DefaultRecommendationResponse>> hitList = docs.stream()
-        .map(doc -> Hit.<DefaultRecommendationResponse>of(h -> h
+    List<Hit<AccommodationDocument>> hitList = docs.stream()
+        .map(doc -> Hit.<AccommodationDocument>of(h -> h
+            .id(String.valueOf(doc.getId()))
+            .index("accommodations")
+            .source(doc)))
+        .toList();
+
+    // SearchResponse 내부의 hits 설정
+    when(hits.hits()).thenReturn(hitList);
+    when(response.hits()).thenReturn(hits);
+
+    return response;
+  }
+
+  private SearchResponse<RecommendationResponse> mockSearchResponse(
+      List<RecommendationResponse> docs) {
+    // SearchResponse, HitsMetadata를 mock 객체로 생성
+    SearchResponse<RecommendationResponse> response = mock(SearchResponse.class);
+    HitsMetadata<RecommendationResponse> hits = mock(HitsMetadata.class);
+
+    // 각 DefaultRecommendationResponse를 Elasticsearch의 Hit 객체로 매핑
+    List<Hit<RecommendationResponse>> hitList = docs.stream()
+        .map(doc -> Hit.<RecommendationResponse>of(h -> h
             .id(String.valueOf(doc.getId()))
             .index("accommodations")
             .source(doc)))
