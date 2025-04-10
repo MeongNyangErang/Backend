@@ -34,6 +34,7 @@ public class WebSocketChatController {
   ) {
     Authentication auth = (Authentication) principal;
     UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+    log.info("이름: {}", auth.getName());
 
     if (userDetails.getRole() == Role.ROLE_USER) {
       chatService.sendMessage(chatRoomId, request.content(), userDetails.getId(), SenderType.USER);
