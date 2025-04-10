@@ -45,7 +45,8 @@ public class SecurityConfig {
                 "/api/v1/hosts/login",
                 "/api/v1/admin/login",
                 "/api/v1/accommodations/{accommodationId}/reviews",
-                "/api/v1/recommendations/default"
+                "/api/v1/recommendations/default",
+                "/ws/**"
             ).permitAll()
             .requestMatchers("/api/v1/users/**").hasAuthority("ROLE_USER")
             .requestMatchers("/api/v1/chats/users/create").hasAuthority("ROLE_USER")
