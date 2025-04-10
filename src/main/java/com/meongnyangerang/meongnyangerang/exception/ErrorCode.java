@@ -47,6 +47,8 @@ public enum ErrorCode {
   REVIEW_CREATION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "리뷰 작성 가능 기간이 만료되었습니다."),
   REVIEW_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "해당 리뷰에 대한 권한이 없습니다."),
   CHAT_ROOM_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "해당 채팅방에 대한 권한이 없습니다."),
+  NOTIFICATION_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "알림 발송 권한이 없음"),
+  WEBSOCKET_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "WebSocket 권한 없음"),
 
   // 404  NOT FOUND
   NOT_EXISTS_HOST(HttpStatus.NOT_FOUND, "존재하지 않는 호스트입니다."),
@@ -82,6 +84,7 @@ public enum ErrorCode {
   ACCOMMODATION_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 수정 오류"),
   ROOM_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "객실 수정 오류"),
   DEFAULT_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기본 추천 조회 중 오류가 발생했습니다."),
+  WEBSOCKET_SERVER_ERROR(HttpStatus.FORBIDDEN, "WebSocket 에러"),
   ;
 
   private final HttpStatus status;
