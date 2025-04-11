@@ -150,4 +150,17 @@ class AuthServiceTest {
         () -> authService.checkUserEmail(email));
     assertEquals(DUPLICATE_EMAIL, ex.getErrorCode());
   }
+
+  @Test
+  @DisplayName("호스트 이메일 중복 - 예외 발생")
+  void checkHostEmail_Duplicated() {
+    // given
+    String email = "duplicate@host.com";
+    when(hostRepository.existsByEmail(email)).thenReturn(true);
+
+    // when & then
+    MeongnyangerangException ex = assertThrows(MeongnyangerangException.class,
+        () -> authService.checkHostEmail(email));
+    assertEquals(DUPLICATE_EMAIL, ex.getErrorCode());
+  }
 }
