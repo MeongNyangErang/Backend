@@ -28,7 +28,7 @@ public class NotificationAsyncSender {
       NotificationType notificationType
   ) {
     try {
-      NotificationRecord payload = NotificationRecord.from(
+      NotificationPayload payload = NotificationPayload.from(
           chatRoomId, senderId,
           senderType, receiverId,
           receiverType, content,

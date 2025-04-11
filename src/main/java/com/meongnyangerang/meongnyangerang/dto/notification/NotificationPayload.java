@@ -4,7 +4,7 @@ import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import java.time.LocalDateTime;
 
-public record NotificationRecord(
+public record NotificationPayload(
     Long chatRoomId,
     Long senderId,
     SenderType senderType,
@@ -15,7 +15,7 @@ public record NotificationRecord(
     LocalDateTime createdAt
 ) {
 
-  public static NotificationRecord from(
+  public static NotificationPayload from(
       Long chatRoomId,
       Long senderId,
       SenderType senderType,
@@ -24,7 +24,7 @@ public record NotificationRecord(
       String content,
       NotificationType notificationType
   ) {
-    return new NotificationRecord(
+    return new NotificationPayload(
         chatRoomId,
         senderId,
         senderType,
