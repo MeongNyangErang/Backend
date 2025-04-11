@@ -7,7 +7,6 @@ public record NotificationResponse(
     Long notificationId,
     String content,
     NotificationType notificationType,
-    Boolean isRead,
     LocalDateTime createdAt
 ) {
 
