@@ -80,6 +80,13 @@ public class AuthService {
     }
   }
 
+  // 호스트 이메일 중복 확인
+  public void checkHostEmail(String email) {
+    if (hostRepository.existsByEmail(email)) {
+      throw new MeongnyangerangException(DUPLICATE_EMAIL);
+    }
+  }
+
   // 닉네임 중복 확인
   public void checkNickname(String nickname) {
 
