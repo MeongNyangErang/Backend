@@ -85,7 +85,7 @@ class ChatServiceTest {
   private ChatMessage chatMessage;
   private final LocalDateTime now = LocalDateTime.now();
 
-  private static final String CHAT_DESTINATION = "/subscribe/chat";
+  private static final String CHAT_DESTINATION = "/subscribe/chats/";
   private static final LocalDateTime DEFAULT_LAST_READ_TIME =
       LocalDateTime.of(2000, 1, 1, 0, 0);
 
@@ -522,8 +522,6 @@ class ChatServiceTest {
         chatRoomId, senderId, senderType);
     verify(messagingTemplate).convertAndSend(
         CHAT_DESTINATION + chatRoomId, chatMessageResponse);
-    verify(notificationService).sendNotificationToMessagePartner(chatRoom1, senderId, senderType,
-        content);
   }
 
   @Test
@@ -557,8 +555,6 @@ class ChatServiceTest {
     verify(chatReadStatusRepository).save(chatReadStatusArgumentCaptor.capture());
     verify(messagingTemplate).convertAndSend(
         CHAT_DESTINATION + chatRoomId, chatMessageResponse);
-    verify(notificationService).sendNotificationToMessagePartner(
-        chatRoom1, senderId, senderType, content);
   }
 
   @Test
@@ -582,8 +578,6 @@ class ChatServiceTest {
     verify(chatRoomRepository).findById(chatRoomId);
     verify(chatMessageRepository, never()).save(chatMessage);
     verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
-    verify(notificationService, never()).sendNotificationToMessagePartner(
-        chatRoom1, senderId, senderType, content);
   }
 
   @Test
@@ -607,8 +601,6 @@ class ChatServiceTest {
     verify(chatRoomRepository).findById(chatRoomId);
     verify(chatMessageRepository, never()).save(chatMessage);
     verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
-    verify(notificationService, never()).sendNotificationToMessagePartner(
-        chatRoom1, senderId, senderType, content);
   }
 
   private List<ChatMessage> createTestMessageResponses(ChatRoom chatRoom, int size) {
