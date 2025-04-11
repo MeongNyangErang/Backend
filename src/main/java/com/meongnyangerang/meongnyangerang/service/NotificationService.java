@@ -8,6 +8,7 @@ import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.notification.NotificationReceiverInfo;
 import com.meongnyangerang.meongnyangerang.dto.notification.NotificationRecord;
+import com.meongnyangerang.meongnyangerang.dto.notification.SendNotificationRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
@@ -33,6 +34,41 @@ public class NotificationService {
 
   private static final String NOTIFICATION_DESTINATION = "/notifications";
 
+  @Async
+  @Transactional
+  public void sendGenericNotification(SendNotificationRequest request) {
+    User user = userRepository.findById(
+        request.receiverType() == SenderType.USER ? request.receiverId() : request.senderId())
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
+    Host host = hostRepository.findById(
+        request.receiverType() == SenderType.HOST ? request.receiverId() : request.senderId())
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
+
+    // 알림 DB 저장
+    notificationRepository.save(Notification.builder()
+        .user(user)
+        .host(host)
+        .content(request.content())
+        .type(request.notificationType())
+        .isRead(false)
+        .build());
+
+    // WebSocket 알림 전송
+    String receiverKey = request.receiverType().name() + "_" + request.receiverId();
+    messagingTemplate.convertAndSendToUser(receiverKey, "/notifications",
+        new NotificationRecord(
+            request.getChatRoomId(),
+            request.getSenderId(),
+            request.getSenderType(),
+            request.getReceiverId(),
+            request.getReceiverType(),
+            request.getContent(),
+            request.getType(),
+            LocalDateTime.now()
+        )
+    );
+  }
+
   /**
    * 상대방에게 알림 전송
    */
@@ -44,7 +80,6 @@ public class NotificationService {
       SenderType senderType,
       String content
   ) {
-    log.info("비동기 알림 전송 시작");
     try {
       NotificationReceiverInfo receiverInfo = determineReceiverInfo(chatRoom, senderId, senderType);
       saveNotification(receiverInfo.user(), receiverInfo.host(), content);
@@ -57,8 +92,6 @@ public class NotificationService {
           receiverInfo.receiverId(),
           receiverInfo.receiverType()
       );
-      log.info("비동기 알림 전송  성공 senderId: {}, senderType: {}, receiverId: {}, receiverType: {}",
-          senderId, senderType, receiverInfo.receiverId(), receiverInfo.receiverType());
     } catch (Exception e) {
       log.error("비동기 알림 전송 예외 발생", e);
     }
@@ -69,32 +102,51 @@ public class NotificationService {
       Long senderId,
       SenderType senderType
   ) {
-    Long receiverId;
-    SenderType receiverType;
-    String receiverName;
-    User user;
-    Host host;
-
     if (senderType == SenderType.USER) {
-      receiverId = chatRoom.getHostId();
-      receiverType = SenderType.HOST;
-      user = userRepository.findById(senderId)
-          .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
-      host = hostRepository.findById(receiverId)
-          .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
-      receiverName = host.getEmail();
+      return determineHostReceiverInfo(chatRoom, senderId);
     } else if (senderType == SenderType.HOST) {
-      receiverId = chatRoom.getUserId();
-      receiverType = SenderType.USER;
-      host = hostRepository.findById(senderId)
-          .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
-      user = userRepository.findById(receiverId)
-          .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
-      receiverName = user.getEmail();
+      return determineUserReceiverInfo(chatRoom, senderId);
     } else {
       throw new MeongnyangerangException(ErrorCode.NOTIFICATION_NOT_AUTHORIZED);
     }
-    return new NotificationReceiverInfo(receiverId, receiverType, user, host, receiverName);
+  }
+
+  private NotificationReceiverInfo determineHostReceiverInfo(ChatRoom chatRoom, Long userId) {
+    Long hostId = chatRoom.getHostId();
+    User sender = findUserById(userId);
+    Host receiver = findHostById(hostId);
+
+    return new NotificationReceiverInfo(
+        hostId,
+        SenderType.HOST,
+        sender,
+        receiver,
+        receiver.getEmail()
+    );
+  }
+
+  private NotificationReceiverInfo determineUserReceiverInfo(ChatRoom chatRoom, Long hostId) {
+    Long userId = chatRoom.getUserId();
+    Host sender = findHostById(hostId);
+    User receiver = findUserById(userId);
+
+    return new NotificationReceiverInfo(
+        userId,
+        SenderType.USER,
+        receiver,
+        sender,
+        receiver.getEmail()
+    );
+  }
+
+  private User findUserById(Long userId) {
+    return userRepository.findById(userId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
+  }
+
+  private Host findHostById(Long hostId) {
+    return hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
   }
 
   private void saveNotification(User user, Host host, String content) {
