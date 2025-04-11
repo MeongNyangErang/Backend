@@ -8,7 +8,6 @@ import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.notification.NotificationReceiverInfo;
 import com.meongnyangerang.meongnyangerang.dto.notification.NotificationRecord;
-import com.meongnyangerang.meongnyangerang.dto.notification.SendNotificationRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
@@ -36,7 +35,7 @@ public class NotificationService {
 
   @Async
   @Transactional
-  public void sendGenericNotification(SendNotificationRequest request) {
+  public void sendGenericNotification(NotificationRecord request) {
     User user = userRepository.findById(
         request.receiverType() == SenderType.USER ? request.receiverId() : request.senderId())
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
@@ -57,13 +56,13 @@ public class NotificationService {
     String receiverKey = request.receiverType().name() + "_" + request.receiverId();
     messagingTemplate.convertAndSendToUser(receiverKey, "/notifications",
         new NotificationRecord(
-            request.getChatRoomId(),
-            request.getSenderId(),
-            request.getSenderType(),
-            request.getReceiverId(),
-            request.getReceiverType(),
-            request.getContent(),
-            request.getType(),
+            request.chatRoomId(),
+            request.senderId(),
+            request.senderType(),
+            request.receiverId(),
+            request.receiverType(),
+            request.content(),
+            request.notificationType(),
             LocalDateTime.now()
         )
     );
