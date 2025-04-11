@@ -7,6 +7,7 @@ import lombok.Getter;
 @Builder
 public class UserReservationResponse {
 
+  private Long reservationId;
   private String reservationDate;
   private String accommodationName;
   private String roomName;
