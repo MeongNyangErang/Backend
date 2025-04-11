@@ -1,4 +1,4 @@
-package com.meongnyangerang.meongnyangerang.service;
+package com.meongnyangerang.meongnyangerang.service.notification;
 
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatRoom;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
@@ -6,7 +6,6 @@ import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.notification.Notification;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
-import com.meongnyangerang.meongnyangerang.dto.notification.NotificationAsyncSender;
 import com.meongnyangerang.meongnyangerang.dto.notification.NotificationReceiverInfo;
 import com.meongnyangerang.meongnyangerang.dto.notification.MessageNotificationRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
@@ -28,7 +27,7 @@ public class NotificationService {
   private final ChatRoomRepository chatRoomRepository;
   private final UserRepository userRepository;
   private final HostRepository hostRepository;
-  private final NotificationAsyncSender notificationAsyncSender;
+  private final NotificationAsyncService notificationAsyncSender;
 
   public void sendNotification(MessageNotificationRequest request, Long senderId) {
     ChatRoom chatRoom = findAndValidateChatRoom(

@@ -1,7 +1,8 @@
-package com.meongnyangerang.meongnyangerang.dto.notification;
+package com.meongnyangerang.meongnyangerang.service.notification;
 
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
+import com.meongnyangerang.meongnyangerang.dto.notification.NotificationPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class NotificationAsyncSender {
+public class NotificationAsyncService {
 
   private final SimpMessagingTemplate messagingTemplate;
 

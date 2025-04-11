@@ -26,6 +26,7 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
+import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;

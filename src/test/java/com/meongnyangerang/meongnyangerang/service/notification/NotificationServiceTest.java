@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,14 +14,12 @@ import com.meongnyangerang.meongnyangerang.domain.notification.Notification;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.notification.MessageNotificationRequest;
-import com.meongnyangerang.meongnyangerang.dto.notification.NotificationAsyncSender;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.NotificationRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
-import com.meongnyangerang.meongnyangerang.service.NotificationService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,7 +46,7 @@ class NotificationServiceTest {
   private HostRepository hostRepository;
 
   @Mock
-  private NotificationAsyncSender notificationAsyncSender;
+  private NotificationAsyncService notificationAsyncSender;
 
   @InjectMocks
   private NotificationService notificationService;
