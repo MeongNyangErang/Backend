@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTH_CODE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -80,19 +82,23 @@ class AuthServiceTest {
   }
 
   @Test
-  @DisplayName("인증 코드 검증 실패 테스트")
+  @DisplayName("인증 코드 검증 실패 - 코드 불일치")
   void verifyCode_Fail_InvalidCode() {
     // given
     String email = "test@example.com";
     String code = "123456";
-
-    when(authenticationCodeRepository.findByEmail(email)).thenReturn(Optional.of(AuthenticationCode.builder()
+    String wrongCode = "654321";
+    AuthenticationCode authCode = AuthenticationCode.builder()
         .email(email)
         .code(code)
         .createdAt(LocalDateTime.now())
-        .build()));
+        .build();
+
+    when(authenticationCodeRepository.findByEmail(email)).thenReturn(Optional.of(authCode));
 
     // when & then
-    assertThrows(MeongnyangerangException.class, () -> authService.verifyCode(email, "654321"));
+    MeongnyangerangException ex = assertThrows(MeongnyangerangException.class,
+        () -> authService.verifyCode(email, wrongCode));
+    assertEquals(INVALID_AUTH_CODE, ex.getErrorCode());
   }
 }
