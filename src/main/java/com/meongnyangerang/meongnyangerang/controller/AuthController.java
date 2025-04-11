@@ -1,11 +1,11 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.EmailRequest;
-import com.meongnyangerang.meongnyangerang.dto.NicknameRequest;
 import com.meongnyangerang.meongnyangerang.dto.VerifyCodeRequest;
 import com.meongnyangerang.meongnyangerang.service.AuthService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -54,8 +54,9 @@ public class AuthController {
 
   // 닉네임 중복 확인 API
   @GetMapping("/nickname/check")
-  public ResponseEntity<Void> checkNickname(@Valid @RequestBody NicknameRequest request) {
-    authService.checkNickname(request.getNickname());
+  public ResponseEntity<Void> checkNickname(
+      @RequestParam("nickname") @Size(min = 2, max = 20) String nickname) {
+    authService.checkNickname(nickname);
     return ResponseEntity.ok().build();
   }
 }
