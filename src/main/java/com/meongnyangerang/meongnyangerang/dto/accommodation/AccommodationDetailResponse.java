@@ -38,7 +38,7 @@ public class AccommodationDetailResponse {
   public static class RoomDetail {
     private Long roomId;
     private String roomName;
-    private List<String> roomImageUrl;
+    private String roomImageUrl;
     private Integer price;
     private Integer standardPeopleCount;
     private Integer maxPeopleCount;

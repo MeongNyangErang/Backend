@@ -196,7 +196,6 @@ public class AccommodationService {
         .build();
   }
 
-
   private String uploadImage(MultipartFile thumbnail, List<String> trackingList) {
     String thumbnailUrl = imageService.storeImage(thumbnail);
     trackingList.add(thumbnailUrl);
