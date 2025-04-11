@@ -47,8 +47,8 @@ public class AuthController {
 
   // 호스트 이메일 중복 확인 API
   @GetMapping("/email/check/host")
-  public ResponseEntity<Void> checkHostEmail(@Valid @RequestBody EmailRequest request) {
-    authService.checkHostEmail(request.getEmail());
+  public ResponseEntity<Void> checkHostEmail(@RequestParam("email") @Email String email) {
+    authService.checkHostEmail(email);
     return ResponseEntity.ok().build();
   }
 
