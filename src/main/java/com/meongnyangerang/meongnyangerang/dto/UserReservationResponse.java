@@ -14,6 +14,7 @@ public class UserReservationResponse {
   private String checkOutDate;
   private String checkInTime;
   private String checkOutTime;
+  private boolean reviewWritten;
   private int peopleCount;
   private int petCount;
   private long totalPrice;
