@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -46,9 +47,11 @@ public class NotificationService {
   /**
    * 사용자 알림 목록 조회
    */
+  @Transactional
   public PageResponse<NotificationResponse> getNotificationsAsUser(Long userId, Pageable pageable) {
     Page<Notification> notifications = notificationRepository.findAllByUser_IdOrderByCreatedAtDesc(
         userId, pageable);
+    notifications.forEach(Notification::makeAsRead); // 읽음상태를 모두 true로 변경
     Page<NotificationResponse> response = notifications.map(this::createNotificationResponse);
 
     return PageResponse.from(response);
@@ -57,9 +60,11 @@ public class NotificationService {
   /**
    * 호스트 알림 목록 조회
    */
+  @Transactional
   public PageResponse<NotificationResponse> getNotificationsAsHost(Long userId, Pageable pageable) {
     Page<Notification> notifications = notificationRepository.findAllByHost_IdOrderByCreatedAtDesc(
         userId, pageable);
+    notifications.forEach(Notification::makeAsRead); // 읽음여부를 모두 true로 변경
     Page<NotificationResponse> response = notifications.map(this::createNotificationResponse);
 
     return PageResponse.from(response);
@@ -70,7 +75,6 @@ public class NotificationService {
         notification.getId(),
         notification.getContent(),
         notification.getType(),
-        notification.getIsRead(),
         notification.getCreatedAt()
     );
   }
