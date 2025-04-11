@@ -55,4 +55,8 @@ public class ChatRoom {
   public Long getHostId() {
     return this.getHost().getId();
   }
+
+  public void updateLastActivity() {
+    this.updatedAt = LocalDateTime.now();
+  }
 }

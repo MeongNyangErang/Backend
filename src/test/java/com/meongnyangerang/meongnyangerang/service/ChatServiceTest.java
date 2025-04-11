@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,7 +21,6 @@ import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
-import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
@@ -45,6 +45,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
@@ -64,6 +65,12 @@ class ChatServiceTest {
   @Mock
   private UserRepository userRepository;
 
+  @Mock
+  private SimpMessagingTemplate messagingTemplate;
+
+  @Mock
+  private NotificationService notificationService;
+
   @InjectMocks
   private ChatService chatService;
 
@@ -75,8 +82,10 @@ class ChatServiceTest {
   private ChatMessage lastMessage1;
   private ChatMessage lastMessage2;
   private ChatReadStatus userReadStatus;
+  private ChatMessage chatMessage;
   private final LocalDateTime now = LocalDateTime.now();
 
+  private static final String CHAT_DESTINATION = "/subscribe/chat";
   private static final LocalDateTime DEFAULT_LAST_READ_TIME =
       LocalDateTime.of(2000, 1, 1, 0, 0);
 
@@ -137,10 +146,17 @@ class ChatServiceTest {
     // 읽은 상태 설정
     userReadStatus = ChatReadStatus.builder()
         .id(1L)
-        .chatRoomId(chatRoom1.getId())
+        .chatRoom(chatRoom1)
         .participantId(user.getId())
         .participantType(SenderType.USER)
         .lastReadTime(now.minusHours(1))
+        .build();
+
+    chatMessage = ChatMessage.builder()
+        .id(1L)
+        .chatRoom(chatRoom1)
+        .content("테스트 메시지")
+        .senderType(SenderType.USER)
         .build();
   }
 
@@ -403,7 +419,7 @@ class ChatServiceTest {
     Long cursorId = null;
     int size = 5;
     ChatReadStatus chatReadStatus = ChatReadStatus.builder()
-        .chatRoomId(chatRoomId)
+        .chatRoom(chatRoom1)
         .participantId(userId)
         .participantType(SenderType.USER)
         .build();
@@ -436,7 +452,6 @@ class ChatServiceTest {
         .findByChatRoomIdWithCursor(chatRoomId, cursorId, pageable);
     verify(chatReadStatusRepository, times(1))
         .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, userId, SenderType.USER);
-    verify(chatReadStatusRepository, times(1)).save(chatReadStatus);
   }
 
   @Test
@@ -481,6 +496,121 @@ class ChatServiceTest {
     verify(chatRoomRepository, times(1)).findById(chatRoomId);
   }
 
+  @Test
+  @DisplayName("메시지 전송 성공")
+  void sendMessage_Success() {
+    // given
+    Long chatRoomId = chatRoom1.getId();
+    String content = "안녕하세요";
+    Long senderId = user.getId();
+    SenderType senderType = SenderType.USER;
+    ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage);
+    when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, senderId, senderType)).thenReturn(Optional.of(userReadStatus));
+
+    // when
+    chatService.sendMessage(chatRoomId, content, senderId, senderType);
+
+    // then
+    verify(chatRoomRepository).findById(chatRoomId);
+    verify(chatMessageRepository).save(chatRoomArgumentCaptor.capture());
+    verify(chatReadStatusRepository).findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, senderId, senderType);
+    verify(messagingTemplate).convertAndSend(
+        CHAT_DESTINATION + chatRoomId, chatMessageResponse);
+    verify(notificationService).sendNotificationToMessagePartner(chatRoom1, senderId, senderType,
+        content);
+  }
+
+  @Test
+  @DisplayName("메시지 전송 성공 - 읽음 상태가 없으면 새로 생성")
+  void sendMessage_NotExistsReadStatusWhenCreateReadStatus_Success() {
+    // given
+    Long chatRoomId = chatRoom1.getId();
+    String content = "안녕하세요";
+    Long senderId = user.getId();
+    SenderType senderType = SenderType.USER;
+    ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+    ArgumentCaptor<ChatReadStatus> chatReadStatusArgumentCaptor =
+        ArgumentCaptor.forClass(ChatReadStatus.class);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage);
+    when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, senderId, senderType)).thenReturn(Optional.empty());
+    when(chatReadStatusRepository.save(chatReadStatusArgumentCaptor.capture()))
+        .thenReturn(userReadStatus);
+
+    // when
+    chatService.sendMessage(chatRoomId, content, senderId, senderType);
+
+    // then
+    verify(chatRoomRepository).findById(chatRoomId);
+    verify(chatMessageRepository).save(chatRoomArgumentCaptor.capture());
+    verify(chatReadStatusRepository).findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, senderId, senderType);
+    verify(chatReadStatusRepository).save(chatReadStatusArgumentCaptor.capture());
+    verify(messagingTemplate).convertAndSend(
+        CHAT_DESTINATION + chatRoomId, chatMessageResponse);
+    verify(notificationService).sendNotificationToMessagePartner(
+        chatRoom1, senderId, senderType, content);
+  }
+
+  @Test
+  @DisplayName("메시지 전송 실패 - 존재하지 않는 채팅방")
+  void sendMessage_NotExistsChatRoom_ThrowsException() {
+    // given
+    Long chatRoomId = 999L;
+    String content = "안녕하세요";
+    Long senderId = user.getId();
+    SenderType senderType = SenderType.USER;
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.sendMessage(chatRoomId, content, senderId, senderType))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
+
+    verify(chatRoomRepository).findById(chatRoomId);
+    verify(chatMessageRepository, never()).save(chatMessage);
+    verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
+    verify(notificationService, never()).sendNotificationToMessagePartner(
+        chatRoom1, senderId, senderType, content);
+  }
+
+  @Test
+  @DisplayName("메시지 전송 실패 - 권한 없음")
+  void sendMessage_NotUnauthorized_ThrowsException() {
+    // given
+    Long chatRoomId = chatRoom1.getId();
+    String content = "안녕하세요";
+    Long senderId = 3L; // 채팅방에 속하지 않은 사용자
+    SenderType senderType = SenderType.USER;
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.sendMessage(chatRoomId, content, senderId, senderType))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
+
+    verify(chatRoomRepository).findById(chatRoomId);
+    verify(chatMessageRepository, never()).save(chatMessage);
+    verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
+    verify(notificationService, never()).sendNotificationToMessagePartner(
+        chatRoom1, senderId, senderType, content);
+  }
+
   private List<ChatMessage> createTestMessageResponses(ChatRoom chatRoom, int size) {
     List<ChatMessage> messages = new ArrayList<>();
     for (int i = 0; i < size; i++) {
@@ -493,5 +623,14 @@ class ChatServiceTest {
       ));
     }
     return messages;
+  }
+
+  private static ChatMessageResponse createChatMessageResponse(ChatMessage chatMessage) {
+    return new ChatMessageResponse(
+        chatMessage.getId(),
+        chatMessage.getSenderType(),
+        chatMessage.getContent(),
+        chatMessage.getCreatedAt()
+    );
   }
 }
