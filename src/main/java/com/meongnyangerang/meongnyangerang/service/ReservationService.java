@@ -15,8 +15,8 @@ import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
-import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import jakarta.persistence.OptimisticLockException;
 import java.time.LocalDate;
@@ -39,9 +39,9 @@ public class ReservationService {
 
   private final ReservationRepository reservationRepository;
   private final ReservationSlotRepository reservationSlotRepository;
-  private final AccommodationRepository accommodationRepository;
   private final UserRepository userRepository;
   private final RoomRepository roomRepository;
+  private final ReviewRepository reviewRepository;
 
   /**
    * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드. 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
@@ -195,6 +195,7 @@ public class ReservationService {
   }
 
   private UserReservationResponse mapToUserReservationResponse(Reservation reservation) {
+    boolean reviewWritten = reviewRepository.existsByReservationId(reservation.getId());
     Room room = reservation.getRoom();
     Accommodation accommodation = room.getAccommodation();
 
@@ -202,6 +203,7 @@ public class ReservationService {
     DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
     return UserReservationResponse.builder()
+        .reservationId(reservation.getId())
         .reservationDate(reservation.getCreatedAt().format(dateFormatter))
         .accommodationName(accommodation.getName())
         .roomName(room.getName())
@@ -212,6 +214,7 @@ public class ReservationService {
         .peopleCount(reservation.getPeopleCount())
         .petCount(reservation.getPetCount())
         .totalPrice(reservation.getTotalPrice())
+        .reviewWritten(reviewWritten)
         .build();
   }
 
