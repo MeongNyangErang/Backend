@@ -11,7 +11,7 @@ public record NotificationRecord(
     Long receiverId,
     SenderType receiverType,
     String content,
-    NotificationType type,
+    NotificationType notificationType,
     LocalDateTime timestamp
 ) {
 
