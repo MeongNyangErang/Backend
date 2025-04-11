@@ -41,6 +41,13 @@ public class AuthController {
     return ResponseEntity.ok().build();
   }
 
+  // 호스트 이메일 중복 확인 API
+  @GetMapping("/email/check/host")
+  public ResponseEntity<Void> checkHostEmail(@Valid @RequestBody EmailRequest request) {
+    authService.checkHostEmail(request.getEmail());
+    return ResponseEntity.ok().build();
+  }
+
   // 닉네임 중복 확인 API
   @GetMapping("/nickname/check")
   public ResponseEntity<Void> checkNickname(@Valid @RequestBody NicknameRequest request) {
