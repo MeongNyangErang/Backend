@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationImage;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AllowPet;
@@ -11,11 +13,15 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.Accommo
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse.ReviewSummary;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse.RoomDetail;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
@@ -47,6 +53,7 @@ public class AccommodationService {
   private final ImageService imageService;
   private final RoomRepository roomRepository;
   private final AccommodationRoomSearchService searchService;
+  private final ReviewRepository reviewRepository;
 
   /**
    * 숙소 등록
@@ -73,7 +80,7 @@ public class AccommodationService {
     } catch (Exception e) {
       log.error("숙소 등록 에러 발생, S3에 업로드된 이미지 삭제, 원인: {}", e.getMessage());
       imageService.deleteImagesAsync(trackingList);
-      throw new MeongnyangerangException(ErrorCode.ACCOMMODATION_REGISTRATION_FAILED);
+      throw new MeongnyangerangException(ACCOMMODATION_REGISTRATION_FAILED);
     }
   }
 
@@ -133,9 +140,62 @@ public class AccommodationService {
     } catch (Exception e) {
       log.error("숙소 수정 에러 발생, S3에 업로드된 이미지 삭제 처리, 원인: {}", e.getMessage());
       imageService.deleteImagesAsync(trackingList);
-      throw new MeongnyangerangException(ErrorCode.ACCOMMODATION_REGISTRATION_FAILED);
+      throw new MeongnyangerangException(ACCOMMODATION_REGISTRATION_FAILED);
     }
   }
+
+  /**
+   * 숙소 상세 조회(비로그인 사용자, 일반 사용자, 호스트 모두 접근 가능한 API)
+   */
+  @Transactional(readOnly = true)
+  public AccommodationDetailResponse getAccommodationDetail(Long accommodationId) {
+    Accommodation accommodation = accommodationRepository.findById(accommodationId)
+        .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
+
+    // 숙소 이미지
+    List<String> imageUrls = accommodationImageRepository.findAllByAccommodationId(accommodationId)
+        .stream().map(AccommodationImage::getImageUrl).toList();
+
+    // 숙소 시설
+    List<String> facilityList = accommodationFacilityRepository.findAllByAccommodationId(accommodationId)
+        .stream().map(f -> f.getType().getValue()).toList();
+
+    // 반려동물 시설
+    List<String> petFacilityList = accommodationPetFacilityRepository.findAllByAccommodationId(accommodationId)
+        .stream().map(f -> f.getType().getValue()).toList();
+
+    // 허용 반려동물
+    List<String> allowedPets = allowPetRepository.findAllByAccommodationId(accommodationId)
+        .stream().map(a -> a.getPetType().getValue()).toList();
+
+    // 객실 목록 (가격 오름차순)
+    List<RoomDetail> roomDetails = roomRepository.findAllByAccommodationIdOrderByPriceAsc(accommodationId)
+        .stream().map(this::toRoomDetail).toList();
+
+    // 최신 리뷰 5개
+    List<ReviewSummary> reviewSummaries = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(accommodationId)
+        .stream().map(this::toReviewSummary).toList();
+
+    return AccommodationDetailResponse.builder()
+        .accommodationId(accommodation.getId())
+        .name(accommodation.getName())
+        .description(accommodation.getDescription())
+        .address(accommodation.getAddress())
+        .detailedAddress(accommodation.getDetailedAddress())
+        .type(accommodation.getType().name())
+        .thumbnailUrl(accommodation.getThumbnailUrl())
+        .accommodationImages(imageUrls)
+        .totalRating(accommodation.getTotalRating())
+        .accommodationFacility(facilityList)
+        .accommodationPetFacility(petFacilityList)
+        .allowPet(allowedPets)
+        .latitude(accommodation.getLatitude())
+        .longitude(accommodation.getLongitude())
+        .review(reviewSummaries)
+        .rooms(roomDetails)
+        .build();
+  }
+
 
   private String uploadImage(MultipartFile thumbnail, List<String> trackingList) {
     String thumbnailUrl = imageService.storeImage(thumbnail);
@@ -205,7 +265,7 @@ public class AccommodationService {
 
   private Accommodation findAccommodationByHostId(Long hostId) {
     return accommodationRepository.findByHostId(hostId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
+        .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
   }
 
   private void updateEntities(
@@ -321,12 +381,12 @@ public class AccommodationService {
 
   private void validateNotExistsAccommodation(Long hostId) {
     if (accommodationRepository.existsByHostId(hostId)) {
-      throw new MeongnyangerangException(ErrorCode.ACCOMMODATION_ALREADY_EXISTS);
+      throw new MeongnyangerangException(ACCOMMODATION_ALREADY_EXISTS);
     }
   }
 
   private Host getHost(Long hostId) {
     return hostRepository.findById(hostId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXISTS_HOST));
   }
 }
