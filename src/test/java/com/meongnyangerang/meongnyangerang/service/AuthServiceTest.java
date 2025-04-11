@@ -3,6 +3,8 @@ package com.meongnyangerang.meongnyangerang.service;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -12,6 +14,7 @@ import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
+import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -32,6 +35,9 @@ class AuthServiceTest {
   private UserRepository userRepository;
 
   @Mock
+  private HostRepository hostRepository;
+
+  @Mock
   private AuthenticationCodeRepository authenticationCodeRepository;
 
   @Mock
@@ -42,15 +48,14 @@ class AuthServiceTest {
   void sendVerificationCode_Success() {
     // given
     String email = "test@example.com";
-    when(userRepository.existsByEmail(email)).thenReturn(false);
 
     // when
     authService.sendVerificationCode(email);
 
     // then
-    verify(authenticationCodeRepository, times(1)).deleteAllByEmail(email);
-    verify(authenticationCodeRepository, times(1)).save(any(AuthenticationCode.class));
-    verify(mailComponent, times(1)).sendMail(eq(email), anyString(), anyString());
+    verify(authenticationCodeRepository).deleteAllByEmail(email);
+    verify(authenticationCodeRepository).save(argThat(saved -> saved.getEmail().equals(email)));
+    verify(mailComponent).sendMail(eq(email), eq("회원가입 인증코드"), contains("인증코드:"));
   }
 
   @Test
