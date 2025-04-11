@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.AUTH_CODE_NOT_FOUND;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EXPIRED_AUTH_CODE;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTH_CODE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -162,5 +163,19 @@ class AuthServiceTest {
     MeongnyangerangException ex = assertThrows(MeongnyangerangException.class,
         () -> authService.checkHostEmail(email));
     assertEquals(DUPLICATE_EMAIL, ex.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("닉네임 중복 - 사용자 or 호스트 존재")
+  void checkNickname_Duplicated() {
+    // given
+    String nickname = "tester";
+    when(userRepository.existsByNickname(nickname)).thenReturn(false);
+    when(hostRepository.existsByNickname(nickname)).thenReturn(true);
+
+    // when & then
+    MeongnyangerangException ex = assertThrows(MeongnyangerangException.class,
+        () -> authService.checkNickname(nickname));
+    assertEquals(DUPLICATE_NICKNAME, ex.getErrorCode());
   }
 }
