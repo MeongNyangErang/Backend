@@ -234,8 +234,20 @@ public class ReservationService {
       throw new MeongnyangerangException(ErrorCode.RESERVATION_ALREADY_CANCELED);
     }
 
+    updateReservationSlot(reservation);
+
     // 예약 상태 변경
     reservation.setStatus(ReservationStatus.CANCELED);
+  }
+
+  private void updateReservationSlot(Reservation reservation) {
+    List<ReservationSlot> slots = reservationSlotRepository.findByRoomAndReservedDateBetween(
+        reservation.getRoom(), reservation.getCheckInDate(),
+        reservation.getCheckOutDate().minusDays(1));
+
+    for (ReservationSlot slot : slots) {
+      slot.setIsReserved(false);
+    }
   }
 
   public CustomReservationResponse<HostReservationResponse> getHostReservation(Long hostId,
