@@ -18,18 +18,25 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.Accommo
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
+import com.meongnyangerang.meongnyangerang.domain.review.Review;
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +47,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
@@ -67,6 +75,12 @@ class AccommodationServiceTest {
 
   @Mock
   private ImageService imageService;
+
+  @Mock
+  private RoomRepository roomRepository;
+
+  @Mock
+  private ReviewRepository reviewRepository;
 
   @InjectMocks
   private AccommodationService accommodationService;
@@ -440,5 +454,83 @@ class AccommodationServiceTest {
         .updateAccommodation(host.getId(), updateRequest, thumbnail, additionalImages))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
+  }
+
+  @Test
+  @DisplayName("숙소 상세 조회 - 성공")
+  void getAccommodationDetail_Success() {
+    // given
+    Long accommodationId = 1L;
+
+    Accommodation accommodation = Accommodation.builder()
+        .id(accommodationId)
+        .name("가평 블루오션 호텔")
+        .address("경기도 가평군 128번지 10010")
+        .latitude(37.1234)
+        .longitude(127.1234)
+        .description("테스트 숙소입니다")
+        .type(AccommodationType.PENSION)
+        .thumbnailUrl("https://img")
+        .totalRating(4.8)
+        .build();
+
+    // 명시적 mock 데이터
+    List<AccommodationImage> images = List.of(
+        AccommodationImage.builder().imageUrl("https://img1").build(),
+        AccommodationImage.builder().imageUrl("https://img2").build()
+    );
+    List<AccommodationFacility> facilities = List.of(
+        AccommodationFacility.builder().type(AccommodationFacilityType.WIFI).build()
+    );
+    List<AccommodationPetFacility> petFacilities = List.of(
+        AccommodationPetFacility.builder().type(AccommodationPetFacilityType.SHOWER_ROOM).build()
+    );
+    List<AllowPet> allowPets = List.of(
+        AllowPet.builder().petType(PetType.SMALL_DOG).build()
+    );
+
+    Room room = Room.builder()
+        .id(100L)
+        .name("드럭스 트윈")
+        .price(78000L)
+        .standardPeopleCount(2)
+        .maxPeopleCount(4)
+        .standardPetCount(1)
+        .maxPetCount(3)
+        .extraFee(0L)
+        .extraPetFee(0L)
+        .extraPeopleFee(0L)
+        .checkInTime(LocalTime.of(15, 0))
+        .checkOutTime(LocalTime.of(11, 0))
+        .imageUrl("https://room.jpg")
+        .build();
+
+    Review review = Review.builder()
+        .userRating(5.0)
+        .petFriendlyRating(4.0)
+        .content("너무 좋았어요")
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    // when
+    Mockito.when(accommodationRepository.findById(1L)).thenReturn(Optional.of(accommodation));
+    Mockito.when(accommodationImageRepository.findAllByAccommodationId(1L)).thenReturn(images);
+    Mockito.when(accommodationFacilityRepository.findAllByAccommodationId(1L)).thenReturn(facilities);
+    Mockito.when(accommodationPetFacilityRepository.findAllByAccommodationId(1L)).thenReturn(petFacilities);
+    Mockito.when(allowPetRepository.findAllByAccommodationId(1L)).thenReturn(allowPets);
+    Mockito.when(roomRepository.findAllByAccommodationIdOrderByPriceAsc(1L)).thenReturn(List.of(room));
+    Mockito.when(reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(review));
+
+    // then
+    AccommodationDetailResponse response = accommodationService.getAccommodationDetail(1L);
+
+    assertThat(response.getAccommodationId()).isEqualTo(1L);
+    assertThat(response.getAccommodationImages()).hasSize(2);
+    assertThat(response.getAccommodationFacility()).contains("와이파이");
+    assertThat(response.getAccommodationPetFacility()).contains("샤워장");
+    assertThat(response.getAllowPet()).contains("소형견");
+    assertThat(response.getRooms()).hasSize(1);
+    assertThat(response.getReview()).hasSize(1);
+    assertThat(response.getReview().get(0).getReviewRating()).isEqualTo(4.5); // (5+4)/2
   }
 }
