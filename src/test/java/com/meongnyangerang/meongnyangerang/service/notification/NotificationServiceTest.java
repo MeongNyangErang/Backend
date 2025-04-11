@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.service.notification;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,13 +13,18 @@ import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.notification.Notification;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.notification.MessageNotificationRequest;
+import com.meongnyangerang.meongnyangerang.dto.notification.NotificationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.NotificationRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +34,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
@@ -176,5 +186,126 @@ class NotificationServiceTest {
         () -> notificationService.sendNotification(request, 999L, SenderType.HOST))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
+  }
+
+  @Test
+  @DisplayName("알림 목록 조회 성공 - 사용자")
+  void getNotificationsAsUser_Success() {
+    // given
+    final int SIZE = 20;
+    final String CONTENT = "호스트에게 알림";
+    Notification notification1 = createNotificationReceiveByUser(
+        1L, user, CONTENT + 1);
+    Notification notification2 = createNotificationReceiveByUser(
+        2L, user, CONTENT + 2);
+    List<Notification> notifications = Arrays.asList(notification1, notification2);
+
+    Pageable pageable = PageRequest.of(0, SIZE);
+    Page<Notification> notificationPage = new PageImpl<>(
+        notifications, pageable, notifications.size());
+
+    when(notificationRepository.findAllByUser_IdOrderByCreatedAtDesc(user.getId(), pageable))
+        .thenReturn(notificationPage);
+
+    // when
+    PageResponse<NotificationResponse> response = notificationService.getNotificationsAsUser(
+        user.getId(), pageable);
+
+    // then
+    assertTrue(notification1.getIsRead());
+    assertTrue(notification2.getIsRead());
+    assertEquals(0, response.page());
+    assertEquals(SIZE, response.size());
+    assertEquals(2, response.totalElements());
+    assertEquals(0, response.page());
+    assertTrue(response.first());
+    assertTrue(response.last());
+
+    List<NotificationResponse> contents = response.content();
+    assertEquals(2, contents.size());
+
+    NotificationResponse content1 = contents.get(0);
+    assertEquals(1L, content1.notificationId());
+    assertEquals(CONTENT + 1, content1.content());
+    assertEquals(NotificationType.MESSAGE, content1.notificationType());
+
+    NotificationResponse content2 = contents.get(1);
+    assertEquals(2L, content2.notificationId());
+    assertEquals(CONTENT + 2, content2.content());
+    assertEquals(NotificationType.MESSAGE, content2.notificationType());
+
+    verify(notificationRepository).findAllByUser_IdOrderByCreatedAtDesc(user.getId(), pageable);
+  }
+
+  @Test
+  @DisplayName("알림 목록 조회 성공 - 호스트")
+  void getNotificationsAsHost_Success() {
+    // given
+    final int SIZE = 20;
+    final String CONTENT = "사용자에게 알림";
+    Notification notification1 = createNotificationReceiveByHost(
+        1L, host, CONTENT + 1);
+    Notification notification2 = createNotificationReceiveByHost(
+        2L, host, CONTENT + 2);
+    List<Notification> notifications = Arrays.asList(notification1, notification2);
+
+    Pageable pageable = PageRequest.of(0, SIZE);
+    Page<Notification> notificationPage = new PageImpl<>(
+        notifications, pageable, notifications.size());
+
+    when(notificationRepository.findAllByHost_IdOrderByCreatedAtDesc(host.getId(), pageable))
+        .thenReturn(notificationPage);
+
+    // when
+    PageResponse<NotificationResponse> response = notificationService.getNotificationsAsHost(
+        host.getId(), pageable);
+
+    // then
+    assertTrue(notification1.getIsRead());
+    assertTrue(notification2.getIsRead());
+    assertEquals(0, response.page());
+    assertEquals(SIZE, response.size());
+    assertEquals(2, response.totalElements());
+    assertEquals(0, response.page());
+    assertTrue(response.first());
+    assertTrue(response.last());
+
+    List<NotificationResponse> contents = response.content();
+    assertEquals(2, contents.size());
+
+    NotificationResponse content1 = contents.get(0);
+    assertEquals(1L, content1.notificationId());
+    assertEquals(CONTENT + 1, content1.content());
+    assertEquals(NotificationType.MESSAGE, content1.notificationType());
+
+    NotificationResponse content2 = contents.get(1);
+    assertEquals(2L, content2.notificationId());
+    assertEquals(CONTENT + 2, content2.content());
+    assertEquals(NotificationType.MESSAGE, content2.notificationType());
+
+    verify(notificationRepository).findAllByHost_IdOrderByCreatedAtDesc(host.getId(), pageable);
+  }
+
+
+  private Notification createNotificationReceiveByHost(Long id, Host host, String content) {
+    return Notification.builder()
+        .id(id)
+        .host(host)
+        .content(content)
+        .type(NotificationType.MESSAGE)
+        .isRead(false)
+        .createdAt(LocalDateTime.now())
+        .build();
+  }
+
+  private Notification createNotificationReceiveByUser(Long id, User user, String content) {
+    return Notification.builder()
+        .id(id)
+        .user(user)
+        .content(content)
+        .type(NotificationType.MESSAGE)
+        .isRead(false)
+        .createdAt(LocalDateTime.now())
+        .build();
   }
 }
