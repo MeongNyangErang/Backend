@@ -183,7 +183,7 @@ public class AccommodationService {
         .description(accommodation.getDescription())
         .address(accommodation.getAddress())
         .detailedAddress(accommodation.getDetailedAddress())
-        .type(accommodation.getType().name())
+        .type(accommodation.getType().getValue())
         .thumbnailUrl(accommodation.getThumbnailUrl())
         .accommodationImages(imageUrls)
         .totalRating(accommodation.getTotalRating())
