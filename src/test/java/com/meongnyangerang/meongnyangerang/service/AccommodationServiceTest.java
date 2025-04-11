@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -532,5 +533,20 @@ class AccommodationServiceTest {
     assertThat(response.getRooms()).hasSize(1);
     assertThat(response.getReview()).hasSize(1);
     assertThat(response.getReview().get(0).getReviewRating()).isEqualTo(4.5); // (5+4)/2
+  }
+
+  @Test
+  @DisplayName("숙소 상세 조회 - 존재하지 않는 숙소 ID")
+  void getAccommodationDetail_NotFound() {
+    // given
+    Long accommodationId = 999L;
+    Mockito.when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.empty());
+
+    // when
+    Throwable thrown = catchThrowable(() -> accommodationService.getAccommodationDetail(accommodationId));
+
+    // then
+    assertThat(thrown).isInstanceOf(MeongnyangerangException.class);
+    assertThat(((MeongnyangerangException) thrown).getErrorCode()).isEqualTo(ErrorCode.ACCOMMODATION_NOT_FOUND);
   }
 }
