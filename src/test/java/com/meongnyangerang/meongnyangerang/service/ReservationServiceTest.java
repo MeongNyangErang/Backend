@@ -421,13 +421,27 @@ class ReservationServiceTest {
         .createdAt(LocalDateTime.now())
         .build();
 
+    ReservationSlot slot1 = new ReservationSlot(room, reservation.getCheckInDate(), true);
+    ReservationSlot slot2 = new ReservationSlot(room, reservation.getCheckInDate().plusDays(1),
+        true);
+
+    List<ReservationSlot> slots = new ArrayList<>();
+    slots.add(slot1);
+    slots.add(slot2);
+
     when(reservationRepository.findById(reservation.getId())).thenReturn(Optional.of(reservation));
+    when(reservationSlotRepository.findByRoomAndReservedDateBetween(reservation.getRoom(),
+        reservation.getCheckInDate(), reservation.getCheckOutDate().minusDays(1)))
+        .thenReturn(slots);
 
     // when
     reservationService.cancelReservation(user.getId(), reservation.getId());
 
     // then
     verify(reservationRepository, times(1)).findById(reservation.getId());
+    verify(reservationSlotRepository, times(1)).findByRoomAndReservedDateBetween(
+        reservation.getRoom(), reservation.getCheckInDate(),
+        reservation.getCheckOutDate().minusDays(1));
     assertEquals(ReservationStatus.CANCELED, reservation.getStatus());
   }
 
