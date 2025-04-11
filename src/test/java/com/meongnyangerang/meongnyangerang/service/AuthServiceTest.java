@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.AUTH_CODE_NOT_FOUND;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EXPIRED_AUTH_CODE;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTH_CODE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -114,5 +115,25 @@ class AuthServiceTest {
     MeongnyangerangException ex = assertThrows(MeongnyangerangException.class,
         () -> authService.verifyCode(email, "123456"));
     assertEquals(AUTH_CODE_NOT_FOUND, ex.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("인증 코드 검증 실패 - 3분 초과")
+  void verifyCode_Fail_ExpiredCode() {
+    // given
+    String email = "test@example.com";
+    String code = "123456";
+    AuthenticationCode authCode = AuthenticationCode.builder()
+        .email(email)
+        .code(code)
+        .createdAt(LocalDateTime.now().minusMinutes(4))
+        .build();
+
+    when(authenticationCodeRepository.findByEmail(email)).thenReturn(Optional.of(authCode));
+
+    // when & then
+    MeongnyangerangException ex = assertThrows(MeongnyangerangException.class,
+        () -> authService.verifyCode(email, code));
+    assertEquals(EXPIRED_AUTH_CODE, ex.getErrorCode());
   }
 }
