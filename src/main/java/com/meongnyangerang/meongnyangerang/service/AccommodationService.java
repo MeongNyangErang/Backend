@@ -196,6 +196,25 @@ public class AccommodationService {
         .build();
   }
 
+  private RoomDetail toRoomDetail(Room room) {
+
+    return RoomDetail.builder()
+        .roomId(room.getId())
+        .roomName(room.getName())
+        .roomImageUrl(room.getImageUrl())
+        .price(room.getPrice().intValue())
+        .standardPeopleCount(room.getStandardPeopleCount())
+        .maxPeopleCount(room.getMaxPeopleCount())
+        .standardPetCount(room.getStandardPetCount())
+        .maxPetCount(room.getMaxPetCount())
+        .extraPeopleFee(room.getExtraPeopleFee().intValue())
+        .extraPetFee(room.getExtraPetFee().intValue())
+        .extraFee(room.getExtraFee().intValue())
+        .checkInTime(room.getCheckInTime().toString())
+        .checkOutTime(room.getCheckOutTime().toString())
+        .build();
+  }
+
   private String uploadImage(MultipartFile thumbnail, List<String> trackingList) {
     String thumbnailUrl = imageService.storeImage(thumbnail);
     trackingList.add(thumbnailUrl);
