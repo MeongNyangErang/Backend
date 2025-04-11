@@ -46,6 +46,9 @@ public class Reservation {
   private Room room;
 
   @Column(nullable = false)
+  private String accommodationName;
+
+  @Column(nullable = false)
   private LocalDate checkInDate;
 
   @Column(nullable = false)
