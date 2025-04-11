@@ -11,6 +11,7 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.Accommo
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacility;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
+import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse;
@@ -214,6 +215,17 @@ public class AccommodationService {
         .checkOutTime(room.getCheckOutTime().toString())
         .build();
   }
+
+  private ReviewSummary toReviewSummary(Review review) {
+    double rounded = Math.round((review.getUserRating() + review.getPetFriendlyRating()) / 2.0 * 10) / 10.0; // 소수점 첫째자리까지 반올림
+
+    return ReviewSummary.builder()
+        .reviewRating(rounded)
+        .content(review.getContent())
+        .createdAt(review.getCreatedAt())
+        .build();
+  }
+
 
   private String uploadImage(MultipartFile thumbnail, List<String> trackingList) {
     String thumbnailUrl = imageService.storeImage(thumbnail);

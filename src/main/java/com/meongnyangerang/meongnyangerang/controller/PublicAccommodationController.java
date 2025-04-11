@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse;
 import com.meongnyangerang.meongnyangerang.service.AccommodationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
