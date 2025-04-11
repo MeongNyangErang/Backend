@@ -2,7 +2,9 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,6 +20,7 @@ import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
+import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
@@ -98,11 +101,13 @@ class ReservationServiceTest {
         roomId, checkOutDate.minusDays(1))).thenReturn(Optional.empty());
 
     // when
-    reservationService.createReservation(userId, request);
+    ReservationResponse response = reservationService.createReservation(userId, request);
 
     // then
     verify(reservationSlotRepository, times(1)).saveAll(any());
     verify(reservationRepository, times(1)).save(any());
+    assertNotNull(response.getOrderNumber());
+    assertTrue(response.getOrderNumber().matches("^[a-f0-9-]{36}$"));
   }
 
   @Test
