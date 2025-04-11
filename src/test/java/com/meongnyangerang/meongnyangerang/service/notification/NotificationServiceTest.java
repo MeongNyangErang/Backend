@@ -76,7 +76,6 @@ class NotificationServiceTest {
     // given
     MessageNotificationRequest request = new MessageNotificationRequest(
         chatRoom.getId(),
-        SenderType.USER,
         CONTENT
     );
     when(chatRoomRepository.findById(chatRoom.getId())).thenReturn(Optional.of(chatRoom));
@@ -86,12 +85,11 @@ class NotificationServiceTest {
         ArgumentCaptor.forClass(Notification.class);
 
     // when
-    notificationService.sendNotification(request, user.getId());
+    notificationService.sendNotification(request, user.getId(), SenderType.USER);
 
     // Then
     verify(notificationRepository).save(notificationArgumentCaptor.capture());
     Notification notification = notificationArgumentCaptor.getValue();
-    assertEquals(user, notification.getUser());
     assertEquals(host, notification.getHost());
     assertEquals(CONTENT, notification.getContent());
     assertEquals(NotificationType.MESSAGE, notification.getType());
@@ -114,7 +112,6 @@ class NotificationServiceTest {
     // given
     MessageNotificationRequest request = new MessageNotificationRequest(
         chatRoom.getId(),
-        SenderType.HOST,
         CONTENT
     );
     when(chatRoomRepository.findById(chatRoom.getId())).thenReturn(Optional.of(chatRoom));
@@ -124,12 +121,11 @@ class NotificationServiceTest {
         ArgumentCaptor.forClass(Notification.class);
 
     // when
-    notificationService.sendNotification(request, host.getId());
+    notificationService.sendNotification(request, host.getId(), SenderType.HOST);
 
     // Then
     verify(notificationRepository).save(notificationArgumentCaptor.capture());
     Notification notification = notificationArgumentCaptor.getValue();
-    assertEquals(host, notification.getHost());
     assertEquals(user, notification.getUser());
     assertEquals(CONTENT, notification.getContent());
     assertEquals(NotificationType.MESSAGE, notification.getType());
@@ -152,14 +148,14 @@ class NotificationServiceTest {
     // given
     MessageNotificationRequest request = new MessageNotificationRequest(
         chatRoom.getId(),
-        SenderType.HOST,
         CONTENT
     );
     when(chatRoomRepository.findById(chatRoom.getId())).thenReturn(Optional.empty());
 
     // when
     // then
-    assertThatThrownBy(() -> notificationService.sendNotification(request, user.getId()))
+    assertThatThrownBy(
+        () -> notificationService.sendNotification(request, user.getId(), SenderType.USER))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
   }
@@ -170,14 +166,14 @@ class NotificationServiceTest {
     // given
     MessageNotificationRequest request = new MessageNotificationRequest(
         chatRoom.getId(),
-        SenderType.HOST,
         CONTENT
     );
     when(chatRoomRepository.findById(chatRoom.getId())).thenReturn(Optional.of(chatRoom));
 
     // when
     // then
-    assertThatThrownBy(() -> notificationService.sendNotification(request, 999L))
+    assertThatThrownBy(
+        () -> notificationService.sendNotification(request, 999L, SenderType.HOST))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
   }
