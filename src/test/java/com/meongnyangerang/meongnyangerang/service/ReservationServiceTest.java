@@ -26,9 +26,9 @@ import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
-import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
-import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -58,7 +58,7 @@ class ReservationServiceTest {
   private ReservationSlotRepository reservationSlotRepository;
 
   @Mock
-  private AccommodationRepository accommodationRepository;
+  private ReviewRepository reviewRepository;
 
   @Mock
   private UserRepository userRepository;
@@ -308,7 +308,6 @@ class ReservationServiceTest {
   void getUserReservation_success() {
     Long userId = 1L;
     Long cursorId = 0L;
-    Long accommodationId = 1L;
     int size = 20;
     ReservationStatus status = ReservationStatus.RESERVED;
 
@@ -387,12 +386,10 @@ class ReservationServiceTest {
         .thenReturn(list.stream()
             .filter(reservation -> reservation.getStatus() == status &&
                 reservation.getUser().getId().equals(userId))
-            .collect(Collectors.toList()));
+            .toList());
 
-    when(roomRepository.findById(101L)).thenReturn(Optional.of(room1));
-    when(roomRepository.findById(102L)).thenReturn(Optional.of(room2));
-
-    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+    when(reviewRepository.existsByReservationId(r1.getId())).thenReturn(false);
+    when(reviewRepository.existsByReservationId(r2.getId())).thenReturn(true);
 
     CustomReservationResponse<UserReservationResponse> response = reservationService.getUserReservations(
         userId, cursorId, size,
@@ -400,6 +397,8 @@ class ReservationServiceTest {
 
     assertEquals(2, response.getContent().size());
     assertFalse(response.isHasNext());
+    assertEquals(false, response.getContent().get(0).isReviewWritten());
+    assertEquals(true, response.getContent().get(1).isReviewWritten());
   }
 
   @Test
