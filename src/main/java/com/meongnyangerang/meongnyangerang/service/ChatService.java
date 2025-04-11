@@ -117,8 +117,6 @@ public class ChatService {
       Long senderId,
       SenderType senderType
   ) {
-    log.info("메시지 전송 시작");
-
     ChatRoom chatRoom = findAndValidateChatRoom(chatRoomId, senderId, senderType);
     ChatMessage message = createChatMessage(content, senderType, chatRoom);
 
@@ -167,8 +165,6 @@ public class ChatService {
   private void sendWebSocketMessage(Long chatRoomId, ChatMessage savedMessage) {
     ChatMessageResponse response = ChatMessageResponse.from(savedMessage);
     messagingTemplate.convertAndSend(CHAT_DESTINATION + chatRoomId, response);
-    log.info("메시지 전송 성공 ChatRoom: {}, SenderType: {}, content: {}",
-        chatRoomId, response.senderType(), response.content());
   }
 
   private ChatRoom findAndValidateChatRoom(Long chatRoomId, Long senderId, SenderType senderType) {
