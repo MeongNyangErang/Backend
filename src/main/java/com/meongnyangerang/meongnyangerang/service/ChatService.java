@@ -162,8 +162,8 @@ public class ChatService {
 
   private void sendWebSocketMessage(Long chatRoomId, ChatMessage savedMessage) {
     ChatMessageResponse payload = ChatMessageResponse.from(savedMessage);
-    log.debug("메시지 전송: {}", CHAT_DESTINATION + chatRoomId);
     messagingTemplate.convertAndSend(CHAT_DESTINATION + chatRoomId, payload);
+    log.debug("메시지 전송 완료: {}", CHAT_DESTINATION + chatRoomId);
   }
 
   private ChatRoom findAndValidateChatRoom(Long chatRoomId, Long senderId, SenderType senderType) {

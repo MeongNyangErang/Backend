@@ -36,14 +36,12 @@ public class NotificationAsyncSender {
       );
       String receiverKey = receiverType.name() + "_" + receiverId;
 
-      log.info("알림 전송: {}", receiverKey + NOTIFICATION_DESTINATION);
-
       messagingTemplate.convertAndSendToUser(
           receiverKey,
           NOTIFICATION_DESTINATION,
           payload
       );
-      log.info("WebSocket 알림 전송 완료 - 수신자: {}", receiverKey);
+      log.debug("WebSocket 알림 전송 완료 - 수신자: {}", receiverKey);
     } catch (Exception e) {
       log.error("WebSocket 알림 전송 중 오류 발생", e);
     }
