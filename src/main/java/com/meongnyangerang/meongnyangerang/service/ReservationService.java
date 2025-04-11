@@ -9,19 +9,21 @@ import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
+import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
-import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import jakarta.persistence.OptimisticLockException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,7 +50,7 @@ public class ReservationService {
    * @param reservationRequest 예약 요청 정보
    */
   @Transactional
-  public void createReservation(Long userId, ReservationRequest reservationRequest) {
+  public ReservationResponse createReservation(Long userId, ReservationRequest reservationRequest) {
     // 사용자 검증
     User user = validateUser(userId);
 
@@ -65,6 +67,8 @@ public class ReservationService {
 
     // 예약 정보 생성 후 DB에 저장
     saveReservation(user, room, reservationRequest);
+
+    return new ReservationResponse(UUID.randomUUID().toString());
   }
 
   /**
