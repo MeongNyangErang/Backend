@@ -34,10 +34,10 @@ public class AuthController {
     return ResponseEntity.ok().build();
   }
 
-  // 이메일 중복 확인 API
-  @GetMapping("/email/check")
-  public ResponseEntity<Void> checkEmail(@Valid @RequestBody EmailRequest request) {
-    authService.checkEmail(request.getEmail());
+  // 사용자 이메일 중복 확인 API
+  @GetMapping("/email/check/user")
+  public ResponseEntity<Void> checkUserEmail(@Valid @RequestBody EmailRequest request) {
+    authService.checkUserEmail(request.getEmail());
     return ResponseEntity.ok().build();
   }
 
