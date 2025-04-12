@@ -147,11 +147,14 @@ public class RoomService {
   @Transactional
   public void deleteRoom(Long hostId, Long roomId) {
     Room room = getAuthorizedRoom(hostId, roomId);
+    Accommodation accommodation = room.getAccommodation();
+
     hashtagRepository.deleteAllByRoomId(roomId);
     roomPetFacilityRepository.deleteAllByRoomId(roomId);
     roomFacilityRepository.deleteAllByRoomId(roomId);
     roomRepository.delete(room);
     searchService.delete(room.getAccommodation().getId(), roomId); // Elasticsearch 색인 삭제
+    searchService.updateAccommodationDocument(accommodation);
   }
 
   private List<RoomFacility> updateFacilities(List<RoomFacilityType> newFacilityTypes, Room room) {
