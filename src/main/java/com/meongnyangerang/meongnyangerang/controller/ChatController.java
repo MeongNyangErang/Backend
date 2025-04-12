@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -73,10 +75,41 @@ public class ChatController {
       @RequestParam(defaultValue = "20") int size,
       @AuthenticationPrincipal UserDetailsImpl userDetails
   ) {
-    SenderType senderType =
-        userDetails.getRole() == Role.ROLE_USER ? SenderType.USER : SenderType.HOST;
+    Role viewerRole = userDetails.getRole();
 
-    return ResponseEntity.ok(
-        chatService.getChatMessages(userDetails.getId(), chatRoomId, cursorId, size, senderType));
+    if (viewerRole == Role.ROLE_USER) {
+      return ResponseEntity.ok(
+          chatService.getChatMessages(
+              userDetails.getId(), chatRoomId, cursorId, size, SenderType.USER));
+    } else if (viewerRole == Role.ROLE_HOST) {
+      return ResponseEntity.ok(
+          chatService.getChatMessages(
+              userDetails.getId(), chatRoomId, cursorId, size,
+              SenderType.HOST));
+    } else {
+      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
+  }
+
+  /**
+   * 사진 전송
+   */
+  @PostMapping("/send/image/{chatRoomId}")
+  public ResponseEntity<Void> sendImage(
+      @PathVariable Long chatRoomId,
+      @RequestPart MultipartFile imageFile,
+      @AuthenticationPrincipal UserDetailsImpl userDetails
+  ) {
+    Role viewerRole = userDetails.getRole();
+
+    if (viewerRole == Role.ROLE_USER) {
+      chatService.sendImage(chatRoomId, imageFile, userDetails.getId(), SenderType.USER);
+    } else if (viewerRole == Role.ROLE_HOST) {
+      chatService.sendImage(chatRoomId, imageFile, userDetails.getId(), SenderType.HOST);
+    } else {
+      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
+
+    return ResponseEntity.ok().build();
   }
 }
