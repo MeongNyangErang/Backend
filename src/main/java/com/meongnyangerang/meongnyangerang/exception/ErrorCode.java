@@ -85,6 +85,8 @@ public enum ErrorCode {
   ROOM_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "객실 수정 오류"),
   DEFAULT_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기본 추천 조회 중 오류가 발생했습니다."),
   WEBSOCKET_SERVER_ERROR(HttpStatus.FORBIDDEN, "WebSocket 에러"),
+  SEARCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 검색 중 오류가 발생했습니다."),
+  USER_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 맞춤 추천 조회 중 오류가 발생했습니다."),
   ;
 
   private final HttpStatus status;

@@ -20,4 +20,6 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
       @Param("cursorId") Long cursorId,
       Pageable pageable
   );
+
+  List<Room> findAllByAccommodationId(Long id);
 }

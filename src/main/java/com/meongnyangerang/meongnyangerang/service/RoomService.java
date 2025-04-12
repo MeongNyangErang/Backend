@@ -40,10 +40,12 @@ public class RoomService {
   private final RoomPetFacilityRepository roomPetFacilityRepository;
   private final HashtagRepository hashtagRepository;
   private final ImageService imageService;
+  private final AccommodationRoomSearchService searchService;
 
   /**
    * 객실 등록
    */
+  @Transactional
   public void createRoom(Long hostId, RoomCreateRequest request, MultipartFile thumbnail) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
     String thumbnailUrl = imageService.storeImage(thumbnail);
@@ -53,6 +55,7 @@ public class RoomService {
     saveRoomFacilities(request.facilityTypes(), room);
     saveRoomPetFacilities(request.petFacilityTypes(), room);
     saveHashtags(request.hashtagTypes(), room);
+    searchService.save(accommodation, room); // Elasticsearch 색인 저장
   }
 
   /**
@@ -107,6 +110,8 @@ public class RoomService {
           request.petFacilityTypes(), room);
       List<Hashtag> updatedHashtags = updateHashtags(request.hashtagTypes(), room);
 
+      searchService.save(room.getAccommodation(), updatedRoom); // Elasticsearch 색인 업데이트
+
       return RoomResponse.of(updatedRoom, updatedFacilities, updatedPetFacilities, updatedHashtags);
     } catch (Exception e) {
       log.error("객실 업데이트 실행: {}", e.getMessage(), e);
@@ -126,6 +131,7 @@ public class RoomService {
     roomPetFacilityRepository.deleteAllByRoomId(roomId);
     roomFacilityRepository.deleteAllByRoomId(roomId);
     roomRepository.delete(room);
+    searchService.delete(room.getAccommodation().getId(), roomId); // Elasticsearch 색인 삭제
   }
 
   private List<RoomFacility> updateFacilities(List<RoomFacilityType> newFacilityTypes, Room room) {

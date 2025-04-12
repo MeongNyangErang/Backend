@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.AUTH_CODE_NOT_FOUND;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_NICKNAME;
@@ -8,6 +9,7 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AU
 
 import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
@@ -30,9 +32,6 @@ public class AuthService {
   // 인증 코드 발송
   @Transactional
   public void sendVerificationCode(String email) {
-
-    // 이메일 중복 검증 메서드
-    checkEmail(email);
 
     // 6자리 랜덤 숫자 생성(Math.random()은 예측 가능한 난수 생성 → 보안 취약 → SecureRandom 사용)
     String code = String.format("%06d", new SecureRandom().nextInt(900_000));
@@ -71,11 +70,16 @@ public class AuthService {
     authenticationCodeRepository.delete(authCode);
   }
 
-  // 이메일 중복 확인
-  public void checkEmail(String email) {
+  // 사용자 이메일 중복 확인
+  public void checkUserEmail(String email) {
+    if (userRepository.existsByEmail(email)) {
+      throw new MeongnyangerangException(DUPLICATE_EMAIL);
+    }
+  }
 
-    // 사용자, 호스트 이메일 중복 동시 체크
-    if (userRepository.existsByEmail(email) || hostRepository.existsByEmail(email)) {
+  // 호스트 이메일 중복 확인
+  public void checkHostEmail(String email) {
+    if (hostRepository.existsByEmail(email)) {
       throw new MeongnyangerangException(DUPLICATE_EMAIL);
     }
   }
