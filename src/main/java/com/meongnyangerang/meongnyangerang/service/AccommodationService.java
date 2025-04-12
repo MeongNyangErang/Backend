@@ -158,11 +158,11 @@ public class AccommodationService {
         .stream().map(AccommodationImage::getImageUrl).toList();
 
     // 숙소 시설
-    List<String> facilityList = accommodationFacilityRepository.findAllByAccommodationId(accommodationId)
+    List<String> facilityLists = accommodationFacilityRepository.findAllByAccommodationId(accommodationId)
         .stream().map(f -> f.getType().getValue()).toList();
 
     // 반려동물 시설
-    List<String> petFacilityList = accommodationPetFacilityRepository.findAllByAccommodationId(accommodationId)
+    List<String> petFacilityLists = accommodationPetFacilityRepository.findAllByAccommodationId(accommodationId)
         .stream().map(f -> f.getType().getValue()).toList();
 
     // 허용 반려동물
@@ -185,15 +185,15 @@ public class AccommodationService {
         .detailedAddress(accommodation.getDetailedAddress())
         .type(accommodation.getType().getValue())
         .thumbnailUrl(accommodation.getThumbnailUrl())
-        .accommodationImages(imageUrls)
+        .accommodationImageUrls(imageUrls)
         .totalRating(accommodation.getTotalRating())
-        .accommodationFacility(facilityList)
-        .accommodationPetFacility(petFacilityList)
-        .allowPet(allowedPets)
+        .accommodationFacilities(facilityLists)
+        .accommodationPetFacilities(petFacilityLists)
+        .allowedPets(allowedPets)
         .latitude(accommodation.getLatitude())
         .longitude(accommodation.getLongitude())
-        .review(reviewSummaries)
-        .rooms(roomDetails)
+        .reviews(reviewSummaries)
+        .roomDetails(roomDetails)
         .build();
   }
 
