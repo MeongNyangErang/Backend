@@ -1,6 +1,9 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_ALREADY_EXISTS;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_NOT_FOUND;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_REGISTRATION_FAILED;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXISTS_HOST;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationImage;
@@ -15,11 +18,8 @@ import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse;
-import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse.ReviewSummary;
-import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse.RoomDetail;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
@@ -154,13 +154,16 @@ public class AccommodationService {
         .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
 
     // 숙소 이미지
-    List<AccommodationImage> images = accommodationImageRepository.findAllByAccommodationId(accommodationId);
+    List<AccommodationImage> images = accommodationImageRepository.findAllByAccommodationId(
+        accommodationId);
 
     // 숙소 시설
-    List<AccommodationFacility> facilities = accommodationFacilityRepository.findAllByAccommodationId(accommodationId);
+    List<AccommodationFacility> facilities = accommodationFacilityRepository.findAllByAccommodationId(
+        accommodationId);
 
     // 반려동물 시설
-    List<AccommodationPetFacility> petFacilities = accommodationPetFacilityRepository.findAllByAccommodationId(accommodationId);
+    List<AccommodationPetFacility> petFacilities = accommodationPetFacilityRepository.findAllByAccommodationId(
+        accommodationId);
 
     // 허용 반려동물
     List<AllowPet> allowPets = allowPetRepository.findAllByAccommodationId(accommodationId);
@@ -169,7 +172,8 @@ public class AccommodationService {
     List<Room> rooms = roomRepository.findAllByAccommodationIdOrderByPriceAsc(accommodationId);
 
     // 최신 리뷰 5개
-    List<Review> reviews = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(accommodationId);
+    List<Review> reviews = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(
+        accommodationId);
 
     return AccommodationDetailResponse.of(accommodation, images, facilities, petFacilities,
         allowPets, reviews, rooms);
