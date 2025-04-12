@@ -165,6 +165,7 @@ public class ChatService {
                 .chatRoom(chatRoom)
                 .participantId(participantId)
                 .participantType(senderType)
+                .lastReadTime(LocalDateTime.now())
                 .build())
         );
     chatReadStatus.updateLastReadTime(LocalDateTime.now());
