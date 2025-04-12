@@ -163,7 +163,7 @@ public class AccommodationRoomSearchService {
           AccommodationDocument.class
       );
     } catch (IOException e) {
-      throw new MeongnyangerangException(ErrorCode.ELASTICSEARCH_SAVE_FAILED);
+      throw new MeongnyangerangException(ErrorCode.DOCUMENT_UPDATE_FAILED);
     }
   }
 
