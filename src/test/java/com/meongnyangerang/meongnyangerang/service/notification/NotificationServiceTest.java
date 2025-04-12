@@ -286,6 +286,37 @@ class NotificationServiceTest {
     verify(notificationRepository).findAllByHost_IdOrderByCreatedAtDesc(host.getId(), pageable);
   }
 
+  @Test
+  @DisplayName("알림 삭제 - 사용자")
+  void deleteNotification_AsUser_Success() {
+    // given
+    Long userId = user.getId();
+    Long notificationId = 1L;
+    Notification notification = createNotificationReceiveByUser(
+        notificationId, user, "사용자 알림");
+
+    // when
+    notificationService.deleteNotificationAsUser(notification.getId(), userId);
+
+    // then
+    verify(notificationRepository).deleteByIdAndUser_Id(notificationId, userId);
+  }
+
+  @Test
+  @DisplayName("알림 삭제 - 호스트")
+  void deleteNotification_AsHost_Success() {
+    // given
+    Long hostId = host.getId();
+    Long notificationId = 1L;
+    Notification notification = createNotificationReceiveByHost(
+        notificationId, host, "호스트 알림");
+
+    // when
+    notificationService.deleteNotificationAsHost(notification.getId(), hostId);
+
+    // then
+    verify(notificationRepository).deleteByIdAndHost_Id(notificationId, hostId);
+  }
 
   private Notification createNotificationReceiveByHost(Long id, Host host, String content) {
     return Notification.builder()
