@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -482,6 +483,57 @@ class RoomServiceTest {
     assertThatThrownBy(() -> roomService.getRoom(hostId, roomId))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.INVALID_AUTHORIZED);
+  }
+
+  @Test
+  @DisplayName("객실 상세 조회(모든 사용자) - 성공")
+  void getRoomDetail_Success() {
+    // given
+    Long roomId = 1L;
+    Room room = Room.builder()
+        .id(roomId)
+        .name("펫룸")
+        .description("반려견 동반 가능")
+        .standardPeopleCount(2)
+        .maxPeopleCount(4)
+        .standardPetCount(1)
+        .maxPetCount(2)
+        .price(100_000L)
+        .extraFee(10_000L)
+        .extraPeopleFee(5_000L)
+        .extraPetFee(5_000L)
+        .checkInTime(LocalTime.of(15, 0))
+        .checkOutTime(LocalTime.of(11, 0))
+        .imageUrl("https://image.com/room.jpg")
+        .build();
+
+    List<RoomFacility> facilities = List.of(
+        RoomFacility.builder().type(RoomFacilityType.TV).build(),
+        RoomFacility.builder().type(RoomFacilityType.AIR_CONDITIONER).build()
+    );
+
+    List<RoomPetFacility> petFacilities = List.of(
+        RoomPetFacility.builder().type(RoomPetFacilityType.BED).build()
+    );
+
+    List<Hashtag> hashtags = List.of(
+        Hashtag.builder().type(HashtagType.SPA).build()
+    );
+
+    given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
+    given(facilityRepository.findAllByRoomId(roomId)).willReturn(facilities);
+    given(petFacilityRepository.findAllByRoomId(roomId)).willReturn(petFacilities);
+    given(hashtagRepository.findAllByRoomId(roomId)).willReturn(hashtags);
+
+    // when
+    RoomResponse result = roomService.getRoomDetail(roomId);
+
+    // then
+    assertThat(result.name()).isEqualTo("펫룸");
+    assertThat(result.standardPeopleCount()).isEqualTo(2);
+    assertThat(result.facilityTypes()).containsExactly("TV", "에어컨");
+    assertThat(result.petFacilityTypes()).contains("침대");
+    assertThat(result.hashtagTypes()).contains("스파");
   }
 
   @Test
