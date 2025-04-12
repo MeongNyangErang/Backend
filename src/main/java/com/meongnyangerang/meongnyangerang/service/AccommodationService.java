@@ -154,20 +154,16 @@ public class AccommodationService {
         .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
 
     // 숙소 이미지
-    List<String> imageUrls = accommodationImageRepository.findAllByAccommodationId(accommodationId)
-        .stream().map(AccommodationImage::getImageUrl).toList();
+    List<AccommodationImage> images = accommodationImageRepository.findAllByAccommodationId(accommodationId);
 
     // 숙소 시설
-    List<String> facilities = accommodationFacilityRepository.findAllByAccommodationId(accommodationId)
-        .stream().map(f -> f.getType().getValue()).toList();
+    List<AccommodationFacility> facilities = accommodationFacilityRepository.findAllByAccommodationId(accommodationId);
 
     // 반려동물 시설
-    List<String> petFacilities = accommodationPetFacilityRepository.findAllByAccommodationId(accommodationId)
-        .stream().map(f -> f.getType().getValue()).toList();
+    List<AccommodationPetFacility> petFacilities = accommodationPetFacilityRepository.findAllByAccommodationId(accommodationId);
 
     // 허용 반려동물
-    List<String> allowedPets = allowPetRepository.findAllByAccommodationId(accommodationId)
-        .stream().map(a -> a.getPetType().getValue()).toList();
+    List<AllowPet> allowPets = allowPetRepository.findAllByAccommodationId(accommodationId);
 
     // 객실 목록 (가격 오름차순)
     List<Room> rooms = roomRepository.findAllByAccommodationIdOrderByPriceAsc(accommodationId);
@@ -175,24 +171,8 @@ public class AccommodationService {
     // 최신 리뷰 5개
     List<Review> reviews = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(accommodationId);
 
-    return AccommodationDetailResponse.builder()
-        .accommodationId(accommodation.getId())
-        .name(accommodation.getName())
-        .description(accommodation.getDescription())
-        .address(accommodation.getAddress())
-        .detailedAddress(accommodation.getDetailedAddress())
-        .type(accommodation.getType().getValue())
-        .thumbnailUrl(accommodation.getThumbnailUrl())
-        .accommodationImageUrls(imageUrls)
-        .totalRating(accommodation.getTotalRating())
-        .accommodationFacilities(facilities)
-        .accommodationPetFacilities(petFacilities)
-        .allowedPets(allowedPets)
-        .latitude(accommodation.getLatitude())
-        .longitude(accommodation.getLongitude())
-        .reviews(reviewSummaries)
-        .roomDetails(roomDetails)
-        .build();
+    return AccommodationDetailResponse.of(accommodation, images, facilities, petFacilities,
+        allowPets, reviews, rooms);
   }
 
   private String uploadImage(MultipartFile thumbnail, List<String> trackingList) {
