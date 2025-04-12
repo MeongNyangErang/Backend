@@ -405,7 +405,7 @@ class RoomServiceTest {
   }
 
   @Test
-  @DisplayName("객실 상세 조회 성공")
+  @DisplayName("객실 상세 조회 성공(호스트 전용)")
   void getRoom_Success() {
     // given
     Long hostId = host.getId();
@@ -446,7 +446,7 @@ class RoomServiceTest {
 
 
   @Test
-  @DisplayName("객실이 존재하지 않을 때 예외 발생")
+  @DisplayName("객실 상세 조회(호스트 전용) - 객실이 존재하지 않을 때 예외 발생")
   void getRoom_RoomNotFound() {
     // given
     Long hostId = host.getId();
@@ -463,7 +463,7 @@ class RoomServiceTest {
   }
 
   @Test
-  @DisplayName("권한이 없을 때 예외 발생")
+  @DisplayName("객실 상세 조회(호스트 전용) - 권한이 없을 때 예외 발생")
   void getRoom_InvalidAuthorized() {
     // given
     Long hostId = host.getId();
