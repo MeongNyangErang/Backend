@@ -18,6 +18,9 @@ public class ReservationRequest {
   @NotNull
   private Long roomId;
 
+  @NotBlank
+  private String accommodationName;
+
   @NotNull
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
   private LocalDate checkInDate;
@@ -48,6 +51,7 @@ public class ReservationRequest {
     return Reservation.builder()
         .user(user)
         .room(room)
+        .accommodationName(accommodationName)
         .checkInDate(checkInDate)
         .checkOutDate(checkOutDate)
         .peopleCount(peopleCount)

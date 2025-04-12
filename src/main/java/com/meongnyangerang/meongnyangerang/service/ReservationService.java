@@ -9,19 +9,21 @@ import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
+import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
-import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
-import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import jakarta.persistence.OptimisticLockException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,9 +39,9 @@ public class ReservationService {
 
   private final ReservationRepository reservationRepository;
   private final ReservationSlotRepository reservationSlotRepository;
-  private final AccommodationRepository accommodationRepository;
   private final UserRepository userRepository;
   private final RoomRepository roomRepository;
+  private final ReviewRepository reviewRepository;
 
   /**
    * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드. 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
@@ -48,7 +50,7 @@ public class ReservationService {
    * @param reservationRequest 예약 요청 정보
    */
   @Transactional
-  public void createReservation(Long userId, ReservationRequest reservationRequest) {
+  public ReservationResponse createReservation(Long userId, ReservationRequest reservationRequest) {
     // 사용자 검증
     User user = validateUser(userId);
 
@@ -65,6 +67,8 @@ public class ReservationService {
 
     // 예약 정보 생성 후 DB에 저장
     saveReservation(user, room, reservationRequest);
+
+    return new ReservationResponse(UUID.randomUUID().toString());
   }
 
   /**
@@ -191,6 +195,7 @@ public class ReservationService {
   }
 
   private UserReservationResponse mapToUserReservationResponse(Reservation reservation) {
+    boolean reviewWritten = reviewRepository.existsByReservationId(reservation.getId());
     Room room = reservation.getRoom();
     Accommodation accommodation = room.getAccommodation();
 
@@ -198,6 +203,7 @@ public class ReservationService {
     DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
     return UserReservationResponse.builder()
+        .reservationId(reservation.getId())
         .reservationDate(reservation.getCreatedAt().format(dateFormatter))
         .accommodationName(accommodation.getName())
         .roomName(room.getName())
@@ -208,6 +214,7 @@ public class ReservationService {
         .peopleCount(reservation.getPeopleCount())
         .petCount(reservation.getPetCount())
         .totalPrice(reservation.getTotalPrice())
+        .reviewWritten(reviewWritten)
         .build();
   }
 
@@ -227,8 +234,20 @@ public class ReservationService {
       throw new MeongnyangerangException(ErrorCode.RESERVATION_ALREADY_CANCELED);
     }
 
+    updateReservationSlot(reservation);
+
     // 예약 상태 변경
     reservation.setStatus(ReservationStatus.CANCELED);
+  }
+
+  private void updateReservationSlot(Reservation reservation) {
+    List<ReservationSlot> slots = reservationSlotRepository.findByRoomAndReservedDateBetween(
+        reservation.getRoom(), reservation.getCheckInDate(),
+        reservation.getCheckOutDate().minusDays(1));
+
+    for (ReservationSlot slot : slots) {
+      slot.setIsReserved(false);
+    }
   }
 
   public CustomReservationResponse<HostReservationResponse> getHostReservation(Long hostId,

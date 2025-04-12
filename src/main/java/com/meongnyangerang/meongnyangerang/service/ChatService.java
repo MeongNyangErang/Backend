@@ -39,10 +39,9 @@ public class ChatService {
   private final ChatMessageRepository chatMessageRepository;
   private final UserRepository userRepository;
   private final AccommodationRepository accommodationRepository;
-  private final NotificationService notificationService;
   private final SimpMessagingTemplate messagingTemplate;
 
-  private static final String CHAT_DESTINATION = "/subscribe/chat";
+  private static final String CHAT_DESTINATION = "/subscribe/chats/";
   private static final LocalDateTime DEFAULT_LAST_READ_TIME =
       LocalDateTime.of(2000, 1, 1, 0, 0);
 
@@ -125,7 +124,6 @@ public class ChatService {
     updateReadStatus(chatRoom, senderId, senderType);
 
     sendWebSocketMessage(chatRoomId, savedMessage);
-    notificationService.sendNotificationToMessagePartner(chatRoom, senderId, senderType, content);
   }
 
   private void updateReadStatus(ChatRoom chatRoom, Long participantId, SenderType senderType) {
@@ -163,8 +161,9 @@ public class ChatService {
   }
 
   private void sendWebSocketMessage(Long chatRoomId, ChatMessage savedMessage) {
-    ChatMessageResponse response = ChatMessageResponse.from(savedMessage);
-    messagingTemplate.convertAndSend(CHAT_DESTINATION + chatRoomId, response);
+    ChatMessageResponse payload = ChatMessageResponse.from(savedMessage);
+    messagingTemplate.convertAndSend(CHAT_DESTINATION + chatRoomId, payload);
+    log.debug("메시지 전송 완료: {}", CHAT_DESTINATION + chatRoomId);
   }
 
   private ChatRoom findAndValidateChatRoom(Long chatRoomId, Long senderId, SenderType senderType) {
