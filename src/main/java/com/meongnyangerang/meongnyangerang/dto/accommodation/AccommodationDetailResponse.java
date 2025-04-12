@@ -15,15 +15,15 @@ public class AccommodationDetailResponse {
   private String detailedAddress;
   private String type;
   private String thumbnailUrl;
-  private List<String> accommodationImages;
+  private List<String> accommodationImageUrls;
   private Double totalRating;
-  private List<String> accommodationFacility;
-  private List<String> accommodationPetFacility;
-  private List<String> allowPet;
+  private List<String> accommodationFacilities;
+  private List<String> accommodationPetFacilities;
+  private List<String> allowedPets;
   private Double latitude;
   private Double longitude;
-  private List<ReviewSummary> review;
-  private List<RoomDetail> rooms;
+  private List<ReviewSummary> reviews;
+  private List<RoomDetail> roomDetails;
 
   @Builder
   @Getter
