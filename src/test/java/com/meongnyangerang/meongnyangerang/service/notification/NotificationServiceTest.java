@@ -95,7 +95,7 @@ class NotificationServiceTest {
         ArgumentCaptor.forClass(Notification.class);
 
     // when
-    notificationService.sendNotification(request, user.getId(), SenderType.USER);
+    notificationService.sendMessageNotification(request, user.getId(), SenderType.USER);
 
     // Then
     verify(notificationRepository).save(notificationArgumentCaptor.capture());
@@ -105,7 +105,7 @@ class NotificationServiceTest {
     assertEquals(NotificationType.MESSAGE, notification.getType());
     assertFalse(notification.getIsRead());
 
-    verify(notificationAsyncSender).sendWebSocketNotification(
+    verify(notificationAsyncSender).sendMessageNotification(
         chatRoom.getId(),
         user.getId(),
         SenderType.USER,
@@ -131,7 +131,7 @@ class NotificationServiceTest {
         ArgumentCaptor.forClass(Notification.class);
 
     // when
-    notificationService.sendNotification(request, host.getId(), SenderType.HOST);
+    notificationService.sendMessageNotification(request, host.getId(), SenderType.HOST);
 
     // Then
     verify(notificationRepository).save(notificationArgumentCaptor.capture());
@@ -141,7 +141,7 @@ class NotificationServiceTest {
     assertEquals(NotificationType.MESSAGE, notification.getType());
     assertFalse(notification.getIsRead());
 
-    verify(notificationAsyncSender).sendWebSocketNotification(
+    verify(notificationAsyncSender).sendMessageNotification(
         chatRoom.getId(),
         host.getId(),
         SenderType.HOST,
@@ -165,7 +165,7 @@ class NotificationServiceTest {
     // when
     // then
     assertThatThrownBy(
-        () -> notificationService.sendNotification(request, user.getId(), SenderType.USER))
+        () -> notificationService.sendMessageNotification(request, user.getId(), SenderType.USER))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
   }
@@ -183,7 +183,7 @@ class NotificationServiceTest {
     // when
     // then
     assertThatThrownBy(
-        () -> notificationService.sendNotification(request, 999L, SenderType.HOST))
+        () -> notificationService.sendMessageNotification(request, 999L, SenderType.HOST))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
   }
