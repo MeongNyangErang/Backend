@@ -1,6 +1,9 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_ALREADY_EXISTS;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_NOT_FOUND;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_REGISTRATION_FAILED;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXISTS_HOST;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationImage;
@@ -15,11 +18,8 @@ import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse;
-import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse.ReviewSummary;
-import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse.RoomDetail;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
@@ -154,79 +154,30 @@ public class AccommodationService {
         .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
 
     // 숙소 이미지
-    List<String> imageUrls = accommodationImageRepository.findAllByAccommodationId(accommodationId)
-        .stream().map(AccommodationImage::getImageUrl).toList();
+    List<AccommodationImage> images = accommodationImageRepository.findAllByAccommodationId(
+        accommodationId);
 
     // 숙소 시설
-    List<String> facilities = accommodationFacilityRepository.findAllByAccommodationId(accommodationId)
-        .stream().map(f -> f.getType().getValue()).toList();
+    List<AccommodationFacility> facilities = accommodationFacilityRepository.findAllByAccommodationId(
+        accommodationId);
 
     // 반려동물 시설
-    List<String> petFacilities = accommodationPetFacilityRepository.findAllByAccommodationId(accommodationId)
-        .stream().map(f -> f.getType().getValue()).toList();
+    List<AccommodationPetFacility> petFacilities = accommodationPetFacilityRepository.findAllByAccommodationId(
+        accommodationId);
 
     // 허용 반려동물
-    List<String> allowedPets = allowPetRepository.findAllByAccommodationId(accommodationId)
-        .stream().map(a -> a.getPetType().getValue()).toList();
+    List<AllowPet> allowPets = allowPetRepository.findAllByAccommodationId(accommodationId);
 
     // 객실 목록 (가격 오름차순)
-    List<RoomDetail> roomDetails = roomRepository.findAllByAccommodationIdOrderByPriceAsc(accommodationId)
-        .stream().map(this::toRoomDetail).toList();
+    List<Room> rooms = roomRepository.findAllByAccommodationIdOrderByPriceAsc(accommodationId);
 
     // 최신 리뷰 5개
-    List<ReviewSummary> reviewSummaries = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(accommodationId)
-        .stream().map(this::toReviewSummary).toList();
+    List<Review> reviews = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(
+        accommodationId);
 
-    return AccommodationDetailResponse.builder()
-        .accommodationId(accommodation.getId())
-        .name(accommodation.getName())
-        .description(accommodation.getDescription())
-        .address(accommodation.getAddress())
-        .detailedAddress(accommodation.getDetailedAddress())
-        .type(accommodation.getType().getValue())
-        .thumbnailUrl(accommodation.getThumbnailUrl())
-        .accommodationImageUrls(imageUrls)
-        .totalRating(accommodation.getTotalRating())
-        .accommodationFacilities(facilities)
-        .accommodationPetFacilities(petFacilities)
-        .allowedPets(allowedPets)
-        .latitude(accommodation.getLatitude())
-        .longitude(accommodation.getLongitude())
-        .reviews(reviewSummaries)
-        .roomDetails(roomDetails)
-        .build();
+    return AccommodationDetailResponse.of(accommodation, images, facilities, petFacilities,
+        allowPets, reviews, rooms);
   }
-
-  private RoomDetail toRoomDetail(Room room) {
-
-    return RoomDetail.builder()
-        .roomId(room.getId())
-        .roomName(room.getName())
-        .roomImageUrl(room.getImageUrl())
-        .price(room.getPrice().intValue())
-        .standardPeopleCount(room.getStandardPeopleCount())
-        .maxPeopleCount(room.getMaxPeopleCount())
-        .standardPetCount(room.getStandardPetCount())
-        .maxPetCount(room.getMaxPetCount())
-        .extraPeopleFee(room.getExtraPeopleFee().intValue())
-        .extraPetFee(room.getExtraPetFee().intValue())
-        .extraFee(room.getExtraFee().intValue())
-        .checkInTime(room.getCheckInTime().toString())
-        .checkOutTime(room.getCheckOutTime().toString())
-        .build();
-  }
-
-  private ReviewSummary toReviewSummary(Review review) {
-    double rounded = Math.round((review.getUserRating() + review.getPetFriendlyRating()) / 2.0 * 10) / 10.0; // 소수점 첫째자리까지 반올림
-
-    return ReviewSummary.builder()
-        .reviewId(review.getId())
-        .reviewRating(rounded)
-        .content(review.getContent())
-        .createdAt(review.getCreatedAt())
-        .build();
-  }
-
 
   private String uploadImage(MultipartFile thumbnail, List<String> trackingList) {
     String thumbnailUrl = imageService.storeImage(thumbnail);
