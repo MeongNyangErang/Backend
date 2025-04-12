@@ -225,6 +225,7 @@ public class ReviewService {
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     return MyReviewResponse.builder()
+        .reviewId(review.getId())
         .accommodationName(review.getAccommodation().getName())
         .reviewImages(reviewImageResponses)
         .totalRating(totalRating)

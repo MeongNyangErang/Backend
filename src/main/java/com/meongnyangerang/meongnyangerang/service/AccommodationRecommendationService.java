@@ -116,7 +116,7 @@ public class AccommodationRecommendationService {
               doc)) // 점수와 문서를 함께 보관
           .sorted((a, b) -> Integer.compare(b.getKey(), a.getKey())) // 점수 기준 내림차순 정렬
           .map(entry -> mapToResponse(entry.getValue())) // 최종 응답 객체로 매핑
-          .collect(Collectors.toList());
+          .toList();
 
     } catch (IOException e) {
       throw new MeongnyangerangException(ErrorCode.USER_RECOMMENDATION_FAILED);

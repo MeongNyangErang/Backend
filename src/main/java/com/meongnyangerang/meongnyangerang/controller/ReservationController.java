@@ -4,6 +4,7 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
+import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReservationService;
@@ -29,13 +30,14 @@ public class ReservationController {
   private final ReservationService reservationService;
 
   @PostMapping("/users/reservations")
-  public ResponseEntity<Void> createReservation(
+  public ResponseEntity<ReservationResponse> createReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
       @Valid @RequestBody ReservationRequest reservationRequest) {
 
-    reservationService.createReservation(userDetails.getId(), reservationRequest);
+    ReservationResponse response = reservationService.createReservation(userDetails.getId(),
+        reservationRequest);
 
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(response);
   }
 
   @GetMapping("/users/reservations")
