@@ -8,6 +8,7 @@ import lombok.Getter;
 @Builder
 public class MyReviewResponse {
 
+  private Long reviewId;
   private String accommodationName;
   private Double totalRating;
   private String content;
