@@ -87,6 +87,8 @@ public enum ErrorCode {
   WEBSOCKET_SERVER_ERROR(HttpStatus.FORBIDDEN, "WebSocket 에러"),
   SEARCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 검색 중 오류가 발생했습니다."),
   USER_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 맞춤 추천 조회 중 오류가 발생했습니다."),
+  ELASTICSEARCH_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "인덱스에 문서를 저장하는 도중 오류가 발생했습니다."),
+  DOCUMENT_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "해당 문서를 업데이트 하는 도중 오류가 발생했습니다.")
   ;
 
   private final HttpStatus status;
