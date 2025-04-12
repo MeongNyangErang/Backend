@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.dto.accommodation;
 
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
@@ -50,6 +51,24 @@ public class AccommodationDetailResponse {
     private Integer extraFee;
     private String checkInTime;
     private String checkOutTime;
+
+    public static RoomDetail of(Room room) {
+      return RoomDetail.builder()
+          .roomId(room.getId())
+          .roomName(room.getName())
+          .roomImageUrl(room.getImageUrl())
+          .price(room.getPrice().intValue())
+          .standardPeopleCount(room.getStandardPeopleCount())
+          .maxPeopleCount(room.getMaxPeopleCount())
+          .standardPetCount(room.getStandardPetCount())
+          .maxPetCount(room.getMaxPetCount())
+          .extraPeopleFee(room.getExtraPeopleFee().intValue())
+          .extraPetFee(room.getExtraPetFee().intValue())
+          .extraFee(room.getExtraFee().intValue())
+          .checkInTime(room.getCheckInTime().toString())
+          .checkOutTime(room.getCheckOutTime().toString())
+          .build();
+    }
   }
 }
 

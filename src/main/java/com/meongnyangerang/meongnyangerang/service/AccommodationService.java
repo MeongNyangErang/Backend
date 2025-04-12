@@ -170,8 +170,7 @@ public class AccommodationService {
         .stream().map(a -> a.getPetType().getValue()).toList();
 
     // 객실 목록 (가격 오름차순)
-    List<RoomDetail> roomDetails = roomRepository.findAllByAccommodationIdOrderByPriceAsc(accommodationId)
-        .stream().map(this::toRoomDetail).toList();
+    List<Room> rooms = roomRepository.findAllByAccommodationIdOrderByPriceAsc(accommodationId);
 
     // 최신 리뷰 5개
     List<ReviewSummary> reviewSummaries = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(accommodationId)
@@ -194,25 +193,6 @@ public class AccommodationService {
         .longitude(accommodation.getLongitude())
         .reviews(reviewSummaries)
         .roomDetails(roomDetails)
-        .build();
-  }
-
-  private RoomDetail toRoomDetail(Room room) {
-
-    return RoomDetail.builder()
-        .roomId(room.getId())
-        .roomName(room.getName())
-        .roomImageUrl(room.getImageUrl())
-        .price(room.getPrice().intValue())
-        .standardPeopleCount(room.getStandardPeopleCount())
-        .maxPeopleCount(room.getMaxPeopleCount())
-        .standardPetCount(room.getStandardPetCount())
-        .maxPetCount(room.getMaxPetCount())
-        .extraPeopleFee(room.getExtraPeopleFee().intValue())
-        .extraPetFee(room.getExtraPetFee().intValue())
-        .extraFee(room.getExtraFee().intValue())
-        .checkInTime(room.getCheckInTime().toString())
-        .checkOutTime(room.getCheckOutTime().toString())
         .build();
   }
 
