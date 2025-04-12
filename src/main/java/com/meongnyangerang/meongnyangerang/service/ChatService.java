@@ -18,6 +18,7 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
+import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -40,6 +42,7 @@ public class ChatService {
   private final UserRepository userRepository;
   private final AccommodationRepository accommodationRepository;
   private final SimpMessagingTemplate messagingTemplate;
+  private final ImageService imageService;
 
   private static final String CHAT_DESTINATION = "/subscribe/chats/";
   private static final LocalDateTime DEFAULT_LAST_READ_TIME =
@@ -117,13 +120,40 @@ public class ChatService {
       SenderType senderType
   ) {
     ChatRoom chatRoom = findAndValidateChatRoom(chatRoomId, senderId, senderType);
-    ChatMessage message = createChatMessage(content, senderType, chatRoom);
+    ChatMessage savedMessage = saveMessageAndUpdateChat(content, senderId, senderType, chatRoom);
 
+    sendWebSocketMessage(chatRoomId, savedMessage);
+  }
+
+  /**
+   * 사진 전송 및 저장
+   */
+  @Transactional
+  public void sendImage(
+      Long chatRoomId,
+      MultipartFile imageFile,
+      Long senderId,
+      SenderType senderType
+  ) {
+    ChatRoom chatRoom = findAndValidateChatRoom(chatRoomId, senderId, senderType);
+    String imageUrl = imageService.storeImage(imageFile);
+    ChatMessage savedMessage = saveMessageAndUpdateChat(imageUrl, senderId, senderType, chatRoom);
+
+    sendWebSocketMessage(chatRoomId, savedMessage);
+  }
+
+  private ChatMessage saveMessageAndUpdateChat(
+      String content,
+      Long senderId,
+      SenderType senderType,
+      ChatRoom chatRoom
+  ) {
+    ChatMessage message = createChatMessage(content, senderType, chatRoom);
     ChatMessage savedMessage = chatMessageRepository.save(message);
     chatRoom.updateLastActivity(); // 채팅방 업데이트 시간 갱신
     updateReadStatus(chatRoom, senderId, senderType);
 
-    sendWebSocketMessage(chatRoomId, savedMessage);
+    return savedMessage;
   }
 
   private void updateReadStatus(ChatRoom chatRoom, Long participantId, SenderType senderType) {
@@ -135,6 +165,7 @@ public class ChatService {
                 .chatRoom(chatRoom)
                 .participantId(participantId)
                 .participantType(senderType)
+                .lastReadTime(LocalDateTime.now())
                 .build())
         );
     chatReadStatus.updateLastReadTime(LocalDateTime.now());

@@ -24,7 +24,7 @@ public class WebSocketChatController {
    * 메시지 전송
    */
   @MessageMapping("/chats/send/{chatRoomId}")
-  public void handleMessage(
+  public void sendMessage(
       @DestinationVariable Long chatRoomId,
       @Payload SendMessageRequest request,
       Principal principal

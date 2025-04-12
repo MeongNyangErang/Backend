@@ -26,7 +26,7 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
-import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
+import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +47,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
@@ -70,7 +72,7 @@ class ChatServiceTest {
   private SimpMessagingTemplate messagingTemplate;
 
   @Mock
-  private NotificationService notificationService;
+  private ImageService imageService;
 
   @InjectMocks
   private ChatService chatService;
@@ -84,6 +86,7 @@ class ChatServiceTest {
   private ChatMessage lastMessage2;
   private ChatReadStatus userReadStatus;
   private ChatMessage chatMessage;
+  private MultipartFile imageFile;
   private final LocalDateTime now = LocalDateTime.now();
 
   private static final String CHAT_DESTINATION = "/subscribe/chats/";
@@ -159,6 +162,13 @@ class ChatServiceTest {
         .content("테스트 메시지")
         .senderType(SenderType.USER)
         .build();
+
+    imageFile = new MockMultipartFile(
+        "test-image",
+        "test.jpg",
+        "image/jpg",
+        "test content".getBytes()
+    );
   }
 
   @Test
@@ -600,6 +610,115 @@ class ChatServiceTest {
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
 
     verify(chatRoomRepository).findById(chatRoomId);
+    verify(chatMessageRepository, never()).save(chatMessage);
+    verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
+  }
+
+
+  @Test
+  @DisplayName("이미지 전송 성공")
+  void sendImage_Success() {
+    // given
+    Long chatRoomId = chatRoom1.getId();
+
+    Long senderId = user.getId();
+    SenderType senderType = SenderType.USER;
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+    ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage);
+    when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, senderId, senderType)).thenReturn(Optional.of(userReadStatus));
+
+    // when
+    chatService.sendImage(chatRoomId, imageFile, senderId, senderType);
+
+    // then
+    verify(chatRoomRepository).findById(chatRoomId);
+    verify(imageService).storeImage(imageFile);
+    verify(chatMessageRepository).save(chatRoomArgumentCaptor.capture());
+    verify(chatReadStatusRepository).findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, senderId, senderType);
+    verify(messagingTemplate).convertAndSend(
+        CHAT_DESTINATION + chatRoomId, chatMessageResponse);
+  }
+
+  @Test
+  @DisplayName("이미지 전송 성공 - 읽음 상태가 없으면 새로 생성")
+  void sendImage_NotExistsReadStatusWhenCreateReadStatus_Success() {
+    // given
+    Long chatRoomId = chatRoom1.getId();
+    Long senderId = user.getId();
+    SenderType senderType = SenderType.USER;
+    ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+    ArgumentCaptor<ChatReadStatus> chatReadStatusArgumentCaptor =
+        ArgumentCaptor.forClass(ChatReadStatus.class);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage);
+    when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, senderId, senderType)).thenReturn(Optional.empty());
+    when(chatReadStatusRepository.save(chatReadStatusArgumentCaptor.capture()))
+        .thenReturn(userReadStatus);
+
+    // when
+    chatService.sendImage(chatRoomId, imageFile, senderId, senderType);
+
+    // then
+    verify(chatRoomRepository).findById(chatRoomId);
+    verify(imageService).storeImage(imageFile);
+    verify(chatMessageRepository).save(chatRoomArgumentCaptor.capture());
+    verify(chatReadStatusRepository).findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, senderId, senderType);
+    verify(chatReadStatusRepository).save(chatReadStatusArgumentCaptor.capture());
+    verify(messagingTemplate).convertAndSend(
+        CHAT_DESTINATION + chatRoomId, chatMessageResponse);
+  }
+
+  @Test
+  @DisplayName("이미지 전송 실패 - 존재하지 않는 채팅방")
+  void sendImage_NotExistsChatRoom_ThrowsException() {
+    // given
+    Long chatRoomId = 999L;
+    Long senderId = user.getId();
+    SenderType senderType = SenderType.USER;
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.sendImage(chatRoomId, imageFile, senderId, senderType))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
+
+    verify(chatRoomRepository).findById(chatRoomId);
+    verify(imageService, never()).storeImage(imageFile);
+    verify(chatMessageRepository, never()).save(chatMessage);
+    verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
+  }
+
+  @Test
+  @DisplayName("이미지 전송 실패 - 권한 없음")
+  void sendImage_NotUnauthorized_ThrowsException() {
+    // given
+    Long chatRoomId = chatRoom1.getId();
+    Long senderId = 3L; // 채팅방에 속하지 않은 사용자
+    SenderType senderType = SenderType.USER;
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.sendImage(chatRoomId, imageFile, senderId, senderType))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
+
+    verify(chatRoomRepository).findById(chatRoomId);
+    verify(imageService, never()).storeImage(imageFile);
     verify(chatMessageRepository, never()).save(chatMessage);
     verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
   }
