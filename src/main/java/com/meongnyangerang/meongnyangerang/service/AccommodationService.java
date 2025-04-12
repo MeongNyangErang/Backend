@@ -220,6 +220,7 @@ public class AccommodationService {
     double rounded = Math.round((review.getUserRating() + review.getPetFriendlyRating()) / 2.0 * 10) / 10.0; // 소수점 첫째자리까지 반올림
 
     return ReviewSummary.builder()
+        .reviewId(review.getId())
         .reviewRating(rounded)
         .content(review.getContent())
         .createdAt(review.getCreatedAt())

@@ -526,13 +526,13 @@ class AccommodationServiceTest {
     AccommodationDetailResponse response = accommodationService.getAccommodationDetail(1L);
 
     assertThat(response.getAccommodationId()).isEqualTo(1L);
-    assertThat(response.getAccommodationImages()).hasSize(2);
-    assertThat(response.getAccommodationFacility()).contains("와이파이");
-    assertThat(response.getAccommodationPetFacility()).contains("샤워장");
-    assertThat(response.getAllowPet()).contains("소형견");
-    assertThat(response.getRooms()).hasSize(1);
-    assertThat(response.getReview()).hasSize(1);
-    assertThat(response.getReview().get(0).getReviewRating()).isEqualTo(4.5); // (5+4)/2
+    assertThat(response.getAccommodationImageUrls()).hasSize(2);
+    assertThat(response.getAccommodationFacilities()).contains("와이파이");
+    assertThat(response.getAccommodationPetFacilities()).contains("샤워장");
+    assertThat(response.getAllowedPets()).contains("소형견");
+    assertThat(response.getRoomDetails()).hasSize(1);
+    assertThat(response.getReviews()).hasSize(1);
+    assertThat(response.getReviews().get(0).getReviewRating()).isEqualTo(4.5); // (5+4)/2
   }
 
   @Test

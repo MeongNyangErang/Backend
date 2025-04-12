@@ -28,6 +28,7 @@ public class AccommodationDetailResponse {
   @Builder
   @Getter
   public static class ReviewSummary {
+    private Long reviewId;
     private Double reviewRating;
     private String content;
     private LocalDateTime createdAt;

@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ROOM_NOT_FOUND;
+
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.Hashtag;
@@ -80,10 +82,21 @@ public class RoomService {
   }
 
   /**
-   * 객실 상세 조회
+   * 객실 상세 조회(호스트 전용)
    */
   public RoomResponse getRoom(Long hostId, Long roomId) {
     Room room = getAuthorizedRoom(hostId, roomId);
+    return createRoomResponse(room);
+  }
+
+  /**
+   * 객실 상세 조회(모든 사용자가 사용)
+   */
+  @Transactional(readOnly = true)
+  public RoomResponse getRoomDetail(Long roomId) {
+    Room room = roomRepository.findById(roomId)
+        .orElseThrow(() -> new MeongnyangerangException(ROOM_NOT_FOUND));
+
     return createRoomResponse(room);
   }
 
@@ -216,7 +229,7 @@ public class RoomService {
 
   private Room findRoomById(Long roomId) {
     return roomRepository.findById(roomId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ROOM_NOT_FOUND));
+        .orElseThrow(() -> new MeongnyangerangException(ROOM_NOT_FOUND));
   }
 
   private void validateRoomAuthorization(Accommodation accommodation, Room room) {
