@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.service.notification;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.dto.notification.NotificationPayload;
+import com.meongnyangerang.meongnyangerang.dto.notification.ReservationPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -19,7 +20,7 @@ public class NotificationAsyncService {
   private static final String NOTIFICATION_DESTINATION = "/subscribe/notifications";
 
   @Async
-  public void sendWebSocketNotification(
+  public void sendMessageNotification(
       Long chatRoomId,
       Long senderId,
       SenderType senderType,
@@ -42,9 +43,36 @@ public class NotificationAsyncService {
           NOTIFICATION_DESTINATION,
           payload
       );
-      log.debug("WebSocket 알림 전송 완료 - 수신자: {}", receiverKey);
+      log.debug("WebSocket 비동기 메시지 알림 전송 완료 - 수신자: {}", receiverKey);
     } catch (Exception e) {
-      log.error("WebSocket 알림 전송 중 오류 발생", e);
+      log.error("WebSocket 비동기 메시지 알림 전송 중 오류 발생", e);
+    }
+  }
+
+  @Async
+  public void sendReservationNotification(
+      Long reservationId,
+      String content,
+      Long receiverId,
+      SenderType receiverType,
+      NotificationType notificationType
+  ) {
+    try {
+      ReservationPayload payload = ReservationPayload.from(
+          reservationId, content,
+          receiverId, receiverType,
+          notificationType
+      );
+      String receiverKey = receiverType.name() + "_" + receiverId;
+
+      messagingTemplate.convertAndSendToUser(
+          receiverKey,
+          NOTIFICATION_DESTINATION,
+          payload
+      );
+      log.debug("WebSocket 비동기 예약 알림 전송 완료 - 수신자: {}", receiverKey);
+    } catch (Exception e) {
+      log.error("WebSocket 비동기 예약 알림 전송 중 오류 발생", e);
     }
   }
 }
