@@ -86,7 +86,7 @@ public class AccommodationRoomSearchService {
     } catch (IOException e) {
       log.error("Elasticsearch 색인 실패: 숙소 {}, 객실 {}, 에러: {}", accommodation.getId(), room.getId(),
           e.getMessage());
-      throw new RuntimeException("Elasticsearch 색인 실패", e);
+      throw new MeongnyangerangException(ErrorCode.ELASTICSEARCH_SAVE_FAILED);
     }
   }
 
