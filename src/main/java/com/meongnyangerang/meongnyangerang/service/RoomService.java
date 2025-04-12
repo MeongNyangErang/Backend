@@ -97,11 +97,7 @@ public class RoomService {
     Room room = roomRepository.findById(roomId)
         .orElseThrow(() -> new MeongnyangerangException(ROOM_NOT_FOUND));
 
-    List<RoomFacility> facilities = roomFacilityRepository.findAllByRoomId(roomId);
-    List<RoomPetFacility> petFacilities = roomPetFacilityRepository.findAllByRoomId(roomId);
-    List<Hashtag> hashtags = hashtagRepository.findAllByRoomId(roomId);
-
-    return RoomResponse.of(room, facilities, petFacilities, hashtags);
+    return createRoomResponse(room);
   }
 
   /**
