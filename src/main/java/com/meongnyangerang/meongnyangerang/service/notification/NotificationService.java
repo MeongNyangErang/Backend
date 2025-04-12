@@ -34,14 +34,29 @@ public class NotificationService {
   private final HostRepository hostRepository;
   private final NotificationAsyncService notificationAsyncSender;
 
+  private static final String RESERVATION_CONFIRMED_CONTENT = "숙소에 예약이 확정되었습니다.";
+  private static final String RESERVATION_REGISTERED_CONTENT = "님이 예약하였습니다.";
+
   /**
-   * 상대방에게 알림 전송
+   * 상대방에게 메시지 알림 전송
    */
-  public void sendNotification(
+  public void sendMessageNotification(
       MessageNotificationRequest request, Long senderId, SenderType senderType
   ) {
     ChatRoom chatRoom = findAndValidateChatRoom(request.chatRoomId(), senderId, senderType);
     sendNotificationToMessagePartner(chatRoom, senderId, senderType, request.content());
+  }
+
+  /**
+   * 예약 알림 전송
+   */
+  public void sendReservationNotification(
+      Long reservationId, String accommodationName, User user, Host host
+  ) {
+    // 사용자에게 예약 확정 알림 전송 및 저장
+    sendReservationNotificationToUser(reservationId, accommodationName, user);
+    // 호스트에게 예약 등록 알림 전송 및 저장
+    sendReservationNotificationToHost(reservationId, user.getNickname(), host);
   }
 
   /**
@@ -86,6 +101,37 @@ public class NotificationService {
     notificationRepository.deleteByIdAndHost_Id(notificationId, hostId);
   }
 
+  private void sendReservationNotificationToUser(
+      Long reservationId, String accommodationName, User user
+  ) {
+    String reservationConfirmedContent = accommodationName + RESERVATION_CONFIRMED_CONTENT;
+    saveNotificationAsUser(
+        user, reservationConfirmedContent, NotificationType.RESERVATION_CONFIRMED);
+
+    notificationAsyncSender.sendReservationNotification(
+        reservationId,
+        reservationConfirmedContent,
+        user.getId(),
+        SenderType.USER,
+        NotificationType.RESERVATION_CONFIRMED
+    );
+  }
+
+  private void sendReservationNotificationToHost(
+      Long reservationId, String userNickName, Host host
+  ) {
+    String reservationRegisteredContent = userNickName + RESERVATION_REGISTERED_CONTENT;
+    saveNotificationAsHost(
+        host, reservationRegisteredContent, NotificationType.RESERVATION_REGISTERED);
+
+    notificationAsyncSender.sendReservationNotification(
+        reservationId,
+        reservationRegisteredContent,
+        host.getId(),
+        SenderType.HOST,
+        NotificationType.RESERVATION_REGISTERED
+    );
+  }
 
   private NotificationResponse createNotificationResponse(Notification notification) {
     return new NotificationResponse(
@@ -106,7 +152,7 @@ public class NotificationService {
       NotificationReceiverInfo receiverInfo = determineReceiverInfoAndSave(
           chatRoom, senderId, senderType, content);
 
-      notificationAsyncSender.sendWebSocketNotification(
+      notificationAsyncSender.sendMessageNotification(
           chatRoom.getId(),
           senderId,
           senderType,

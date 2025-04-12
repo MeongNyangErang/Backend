@@ -43,9 +43,9 @@ public class NotificationController {
     Role role = userDetail.getRole();
 
     if (role == Role.ROLE_USER) {
-      notificationService.sendNotification(request, userDetail.getId(), SenderType.USER);
+      notificationService.sendMessageNotification(request, userDetail.getId(), SenderType.USER);
     } else if (role == Role.ROLE_HOST) {
-      notificationService.sendNotification(request, userDetail.getId(), SenderType.HOST);
+      notificationService.sendMessageNotification(request, userDetail.getId(), SenderType.HOST);
     } else {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }
