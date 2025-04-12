@@ -1,5 +1,10 @@
 package com.meongnyangerang.meongnyangerang.dto.accommodation;
 
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationImage;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.AllowPet;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationFacility;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacility;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import java.time.LocalDateTime;
@@ -26,6 +31,35 @@ public class AccommodationDetailResponse {
   private Double longitude;
   private List<ReviewSummary> reviews;
   private List<RoomDetail> roomDetails;
+
+  public static AccommodationDetailResponse of(
+      Accommodation accommodation,
+      List<AccommodationImage> images,
+      List<AccommodationFacility> facilities,
+      List<AccommodationPetFacility> petFacilities,
+      List<AllowPet> allowPets,
+      List<Review> reviews,
+      List<Room> rooms
+  ) {
+    return AccommodationDetailResponse.builder()
+        .accommodationId(accommodation.getId())
+        .name(accommodation.getName())
+        .description(accommodation.getDescription())
+        .address(accommodation.getAddress())
+        .detailedAddress(accommodation.getDetailedAddress())
+        .type(accommodation.getType().getValue())
+        .thumbnailUrl(accommodation.getThumbnailUrl())
+        .accommodationImageUrls(images.stream().map(AccommodationImage::getImageUrl).toList())
+        .totalRating(accommodation.getTotalRating())
+        .accommodationFacilities(facilities.stream().map(f -> f.getType().getValue()).toList())
+        .accommodationPetFacilities(petFacilities.stream().map(p -> p.getType().getValue()).toList())
+        .allowedPets(allowPets.stream().map(p -> p.getPetType().getValue()).toList())
+        .reviews(reviews.stream().map(ReviewSummary::of).toList())
+        .roomDetails(rooms.stream().map(RoomDetail::of).toList())
+        .latitude(accommodation.getLatitude())
+        .longitude(accommodation.getLongitude())
+        .build();
+  }
 
   @Builder
   @Getter
