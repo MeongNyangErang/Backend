@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -534,6 +535,22 @@ class RoomServiceTest {
     assertThat(result.facilityTypes()).containsExactly("TV", "에어컨");
     assertThat(result.petFacilityTypes()).contains("침대");
     assertThat(result.hashtagTypes()).contains("스파");
+  }
+
+  @Test
+  @DisplayName("객실 상세 조회(모든 사용자) - 실패(존재하지 않는 roomId)")
+  void getRoomDetail_Fail_NotFound() {
+    // given
+    Long invalidRoomId = 999L;
+    given(roomRepository.findById(invalidRoomId)).willReturn(Optional.empty());
+
+    // when
+    Throwable throwable = catchThrowable(() -> roomService.getRoomDetail(invalidRoomId));
+
+    // then
+    assertThat(throwable).isInstanceOf(MeongnyangerangException.class);
+    MeongnyangerangException ex = (MeongnyangerangException) throwable;
+    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ROOM_NOT_FOUND);
   }
 
   @Test
