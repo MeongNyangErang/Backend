@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.repository;
 
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -52,4 +53,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
   int countByAccommodationId(Long accommodationId);
 
   boolean existsByReservationId(Long reservationId);
+
+  List<Review> findTop5ByAccommodationIdOrderByCreatedAtDesc(Long accommodationId);
 }

@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.repository.room;
 
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,4 +23,6 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
   );
 
   List<Room> findAllByAccommodationId(Long id);
+
+  List<Room> findAllByAccommodationIdOrderByPriceAsc(Long accommodationId);
 }
