@@ -58,6 +58,12 @@ public class RoomService {
     saveRoomPetFacilities(request.petFacilityTypes(), room);
     saveHashtags(request.hashtagTypes(), room);
     searchService.save(accommodation, room); // Elasticsearch 색인 저장
+
+    if (roomRepository.findAllByAccommodationId(accommodation.getId()).size() > 1) {
+      searchService.updateAccommodationDocument(accommodation);
+    } else {
+      searchService.indexAccommodationDocument(accommodation, room);
+    }
   }
 
   /**
@@ -124,6 +130,7 @@ public class RoomService {
       List<Hashtag> updatedHashtags = updateHashtags(request.hashtagTypes(), room);
 
       searchService.save(room.getAccommodation(), updatedRoom); // Elasticsearch 색인 업데이트
+      searchService.updateAccommodationDocument(room.getAccommodation());
 
       return RoomResponse.of(updatedRoom, updatedFacilities, updatedPetFacilities, updatedHashtags);
     } catch (Exception e) {

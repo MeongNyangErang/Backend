@@ -135,6 +135,7 @@ public class AccommodationService {
       // 색인 갱신 - 객실이 있을 경우에만
       List<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId());
       searchService.updateAllRooms(accommodation, rooms);
+      searchService.updateAccommodationDocument(accommodation);
 
       log.info("숙소 수정 성공, 숙소 ID : {}", accommodation.getId());
       return createAccommodationResponse(accommodation);
