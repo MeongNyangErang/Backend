@@ -70,6 +70,23 @@ public class NotificationService {
     return PageResponse.from(response);
   }
 
+  /**
+   * 일반회원 알림 삭제
+   */
+  @Transactional
+  public void deleteNotificationAsUser(Long notificationId, Long userId) {
+    notificationRepository.deleteByIdAndUser_Id(notificationId, userId);
+  }
+
+  /**
+   * 호스트 알림 삭제
+   */
+  @Transactional
+  public void deleteNotificationAsHost(Long notificationId, Long hostId) {
+    notificationRepository.deleteByIdAndHost_Id(notificationId, hostId);
+  }
+
+
   private NotificationResponse createNotificationResponse(Notification notification) {
     return new NotificationResponse(
         notification.getId(),

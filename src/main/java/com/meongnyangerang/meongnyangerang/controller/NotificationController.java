@@ -16,7 +16,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -70,5 +72,25 @@ public class NotificationController {
     } else {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }
+  }
+
+  /**
+   * 알림 삭제
+   */
+  @DeleteMapping("/{notificationId}")
+  public ResponseEntity<Void> deleteNotification(
+      @PathVariable Long notificationId,
+      @AuthenticationPrincipal UserDetailsImpl userDetails
+  ) {
+    Role viewerRole = userDetails.getRole();
+
+    if (viewerRole == Role.ROLE_USER) {
+      notificationService.deleteNotificationAsUser(notificationId, userDetails.getId());
+    } else if (viewerRole == Role.ROLE_HOST) {
+      notificationService.deleteNotificationAsHost(notificationId, userDetails.getId());
+    } else {
+      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
+    return ResponseEntity.ok().build();
   }
 }

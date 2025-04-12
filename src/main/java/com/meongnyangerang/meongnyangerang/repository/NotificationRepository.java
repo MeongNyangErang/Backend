@@ -10,4 +10,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
   Page<Notification> findAllByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
   Page<Notification> findAllByHost_IdOrderByCreatedAtDesc(Long hostId, Pageable pageable);
+
+  void deleteByIdAndUser_Id(Long notificationId, Long userId);
+
+  void deleteByIdAndHost_Id(Long notificationId, Long hostId);
 }
