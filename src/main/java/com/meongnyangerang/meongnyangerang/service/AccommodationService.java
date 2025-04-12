@@ -173,8 +173,7 @@ public class AccommodationService {
     List<Room> rooms = roomRepository.findAllByAccommodationIdOrderByPriceAsc(accommodationId);
 
     // 최신 리뷰 5개
-    List<ReviewSummary> reviewSummaries = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(accommodationId)
-        .stream().map(this::toReviewSummary).toList();
+    List<Review> reviews = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(accommodationId);
 
     return AccommodationDetailResponse.builder()
         .accommodationId(accommodation.getId())
@@ -195,18 +194,6 @@ public class AccommodationService {
         .roomDetails(roomDetails)
         .build();
   }
-
-  private ReviewSummary toReviewSummary(Review review) {
-    double rounded = Math.round((review.getUserRating() + review.getPetFriendlyRating()) / 2.0 * 10) / 10.0; // 소수점 첫째자리까지 반올림
-
-    return ReviewSummary.builder()
-        .reviewId(review.getId())
-        .reviewRating(rounded)
-        .content(review.getContent())
-        .createdAt(review.getCreatedAt())
-        .build();
-  }
-
 
   private String uploadImage(MultipartFile thumbnail, List<String> trackingList) {
     String thumbnailUrl = imageService.storeImage(thumbnail);

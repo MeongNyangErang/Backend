@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.dto.accommodation;
 
+import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +34,16 @@ public class AccommodationDetailResponse {
     private Double reviewRating;
     private String content;
     private LocalDateTime createdAt;
+
+    public static ReviewSummary of(Review review) {
+      double rounded = Math.round((review.getUserRating() + review.getPetFriendlyRating()) / 2.0 * 10) / 10.0;
+      return ReviewSummary.builder()
+          .reviewId(review.getId())
+          .reviewRating(rounded)
+          .content(review.getContent())
+          .createdAt(review.getCreatedAt())
+          .build();
+    }
   }
 
   @Builder
