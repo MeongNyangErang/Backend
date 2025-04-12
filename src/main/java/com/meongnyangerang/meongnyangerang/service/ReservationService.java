@@ -18,6 +18,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
+import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import jakarta.persistence.OptimisticLockException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -42,6 +43,7 @@ public class ReservationService {
   private final UserRepository userRepository;
   private final RoomRepository roomRepository;
   private final ReviewRepository reviewRepository;
+  private final NotificationService notificationService;
 
   /**
    * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드. 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
@@ -66,7 +68,15 @@ public class ReservationService {
         reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
 
     // 예약 정보 생성 후 DB에 저장
-    saveReservation(user, room, reservationRequest);
+    Reservation savedReservation = saveReservation(user, room, reservationRequest);
+
+    // 예약 알림 저장 및 전송 (사용자와 호스트에게 전송)
+    notificationService.sendReservationNotification(
+        savedReservation.getId(),
+        savedReservation.getAccommodationName(),
+        user,
+        room.getAccommodation().getHost()
+    );
 
     return new ReservationResponse(UUID.randomUUID().toString());
   }
@@ -161,9 +171,9 @@ public class ReservationService {
    * @param room               예약된 객실
    * @param reservationRequest 예약 요청 정보
    */
-  private void saveReservation(User user, Room room, ReservationRequest reservationRequest) {
+  private Reservation saveReservation(User user, Room room, ReservationRequest reservationRequest) {
     Reservation reservation = reservationRequest.toEntity(user, room);
-    reservationRepository.save(reservation);
+    return reservationRepository.save(reservation);
   }
 
   /**

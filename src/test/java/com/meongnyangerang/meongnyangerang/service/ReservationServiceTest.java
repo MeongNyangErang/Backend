@@ -29,6 +29,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
+import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -66,6 +68,9 @@ class ReservationServiceTest {
   @Mock
   private RoomRepository roomRepository;
 
+  @Mock
+  private NotificationService notificationService;
+
   @InjectMocks
   private ReservationService reservationService;
 
@@ -75,6 +80,7 @@ class ReservationServiceTest {
     // given
     Long userId = 1L;
     Long roomId = 101L;
+    final String TEST_ACCOMMODATION_NAME = "테스트 숙소 이름";
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
     ReservationRequest request = ReservationRequest.builder()
@@ -87,18 +93,43 @@ class ReservationServiceTest {
         .id(userId)
         .build();
 
+    Host host = Host.builder()
+        .id(1L)
+        .build();
+
+    Accommodation accommodation = Accommodation.builder()
+        .id(1L)
+        .host(host)
+        .name(TEST_ACCOMMODATION_NAME)
+        .build();
+
     Room room = Room.builder()
         .id(roomId)
+        .accommodation(accommodation)
+        .build();
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .user(user)
+        .room(room)
+        .accommodationName(TEST_ACCOMMODATION_NAME)
+        .checkInDate(request.getCheckInDate())
+        .checkOutDate(request.getCheckOutDate())
         .build();
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
     when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(
-        roomId, checkInDate, checkOutDate.minusDays(1), true)).thenReturn(false);
+        roomId, checkInDate, checkOutDate.minusDays(1), true))
+        .thenReturn(false);
     when(reservationSlotRepository.findByRoomIdAndReservedDate(
         roomId, checkInDate)).thenReturn(Optional.empty());
     when(reservationSlotRepository.findByRoomIdAndReservedDate(
         roomId, checkOutDate.minusDays(1))).thenReturn(Optional.empty());
+
+    ArgumentCaptor<Reservation> reservationArgumentCaptor = ArgumentCaptor.forClass(
+        Reservation.class);
+    when(reservationRepository.save(reservationArgumentCaptor.capture())).thenReturn(reservation);
 
     // when
     ReservationResponse response = reservationService.createReservation(userId, request);
@@ -108,6 +139,9 @@ class ReservationServiceTest {
     verify(reservationRepository, times(1)).save(any());
     assertNotNull(response.getOrderNumber());
     assertTrue(response.getOrderNumber().matches("^[a-f0-9-]{36}$"));
+
+    verify(notificationService).sendReservationNotification(
+        reservation.getId(), accommodation.getName(), user, host);
   }
 
   @Test
