@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.controller;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
@@ -104,5 +105,12 @@ public class ReviewController {
       @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size
   ) {
     return ResponseEntity.ok(reviewService.getHostReviews(userDetails.getId(), cursorId, size));
+  }
+
+  // 최신 리뷰 10개 조회
+  @GetMapping("users/latest-reviews")
+  public ResponseEntity<List<LatestReviewResponse>> getLatestReviews() {
+
+    return ResponseEntity.ok(reviewService.getLatestReviews());
   }
 }
