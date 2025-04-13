@@ -115,4 +115,13 @@ public class HostService {
     host.setStatus(HostStatus.DELETED);
     host.setDeletedAt(LocalDateTime.now());
   }
+
+  // 호스트 프로필 조회
+  @Transactional(readOnly = true)
+  public HostProfileResponse getHostProfile(Long hostId) {
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    return HostProfileResponse.of(host);
+  }
 }
