@@ -7,21 +7,27 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
+import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
 import com.meongnyangerang.meongnyangerang.dto.ReviewImageResponse;
@@ -37,6 +43,7 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -1004,6 +1011,115 @@ class ReviewServiceTest {
     assertThatThrownBy(() -> reviewService.getHostReviews(nonExistentHostId, cursorId, pageSize))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
+  }
+
+  @Test
+  @DisplayName("로그인한 유저는 최신 리뷰를 조회할 수 있다. (10개)")
+  void getLatestReviews_success() {
+    // given
+    List<Review> dummyReviews = createDummyReviews(10);
+
+    when(reviewRepository.findTop10ByOrderByCreatedAtDesc()).thenReturn(dummyReviews);
+
+    for (Review review : dummyReviews) {
+      ReviewImage reviewImage = ReviewImage.builder()
+          .id(1L)
+          .review(review)
+          .imageUrl("http://example.com/review" + review.getId() + ".jpg")
+          .createdAt(LocalDateTime.now())
+          .build();
+
+      when(reviewImageRepository.findFirstByReviewIdOrderByIdAsc(review.getId()))
+          .thenReturn(reviewImage);
+    }
+
+    // when
+    List<LatestReviewResponse> result = reviewService.getLatestReviews();
+
+    // then
+    assertEquals(10, result.size());
+    assertEquals("Review content 0", result.get(0).getContent());
+    assertEquals("http://example.com/review1.jpg", result.get(0).getImageUrl());
+  }
+
+  public List<Review> createDummyReviews(int count) {
+    List<Review> reviews = new ArrayList<>();
+
+    for (int i = 0; i < count; i++) {
+      User user = User.builder()
+          .id((long) i + 1)
+          .email("user" + i + "@test.com")
+          .nickname("user" + i)
+          .password("pass" + i)
+          .status(UserStatus.ACTIVE)
+          .role(Role.ROLE_USER)
+          .createdAt(LocalDateTime.now())
+          .updatedAt(LocalDateTime.now())
+          .build();
+
+      Accommodation accommodation = Accommodation.builder()
+          .id((long) i + 1)
+          .name("Test Accommodation " + i)
+          .address("Seoul")
+          .latitude(37.0)
+          .longitude(127.0)
+          .type(AccommodationType.PENSION)
+          .thumbnailUrl("http://example.com/image" + i + ".jpg")
+          .createdAt(LocalDateTime.now())
+          .updatedAt(LocalDateTime.now())
+          .host(null)
+          .build();
+
+      Reservation reservation = Reservation.builder()
+          .id((long) i + 1)
+          .user(user)
+          .room(Room.builder()
+              .id((long) i + 1)
+              .name("Room " + i)
+              .accommodation(accommodation)
+              .standardPeopleCount(2)
+              .maxPeopleCount(4)
+              .standardPetCount(1)
+              .maxPetCount(2)
+              .imageUrl("http://example.com/room" + i + ".jpg")
+              .price(10000L)
+              .extraFee(0L)
+              .checkInTime(LocalTime.of(15, 0))
+              .checkOutTime(LocalTime.of(11, 0))
+              .createdAt(LocalDateTime.now())
+              .updatedAt(LocalDateTime.now())
+              .build())
+          .accommodationName(accommodation.getName())
+          .checkInDate(LocalDate.now())
+          .checkOutDate(LocalDate.now().plusDays(1))
+          .peopleCount(2)
+          .petCount(1)
+          .reserverName("Reserver " + i)
+          .reserverPhoneNumber("0101234567" + i)
+          .hasVehicle(true)
+          .totalPrice(120000L)
+          .status(ReservationStatus.COMPLETED)
+          .createdAt(LocalDateTime.now())
+          .updatedAt(LocalDateTime.now())
+          .build();
+
+      Review review = Review.builder()
+          .id((long) i + 1)
+          .user(user)
+          .accommodation(accommodation)
+          .reservation(reservation)
+          .userRating(4.0 + (i % 2))
+          .petFriendlyRating(4.5)
+          .content("Review content " + i)
+          .reportCount(0)
+          .createdAt(LocalDateTime.now().minusDays(i))
+          .updatedAt(LocalDateTime.now().minusDays(i))
+          .build();
+
+      reviews.add(review);
+    }
+
+    return reviews;
   }
 
   private void settingTestReview() {
