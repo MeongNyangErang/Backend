@@ -8,6 +8,7 @@ import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
 import com.meongnyangerang.meongnyangerang.dto.ReviewImageResponse;
@@ -173,6 +174,25 @@ public class ReviewService {
     List<ReviewContent> reviewContents = getReviewContents(reviews, reviewImagesMap);
 
     return new HostReviewResponse(reviewContents, nextCursorId, hasNext);
+  }
+
+  public List<LatestReviewResponse> getLatestReviews() {
+    return mapToLatestReviewResponses(reviewRepository.findTop10ByOrderByCreatedAtDesc());
+  }
+
+  private List<LatestReviewResponse> mapToLatestReviewResponses(List<Review> reviews) {
+    return reviews.stream().map(r -> LatestReviewResponse.builder()
+        .accommodationId(r.getAccommodation().getId())
+        .accommodationName(r.getAccommodation().getName())
+        .nickname(r.getUser().getNickname())
+        .content(r.getContent())
+        .totalRating(calculateReviewRating(r.getUserRating(), r.getPetFriendlyRating()))
+        .imageUrl(getImageUrl(r.getId()))
+        .build()).toList();
+  }
+
+  private String getImageUrl(Long reviewId) {
+    return reviewImageRepository.findFirstByReviewIdOrderByIdAsc(reviewId).getImageUrl();
   }
 
   // 최대 이미지 개수(3장)를 초과하는지 검증
