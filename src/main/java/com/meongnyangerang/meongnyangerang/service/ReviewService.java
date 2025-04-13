@@ -22,6 +22,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -226,8 +227,8 @@ public class ReviewService {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }
 
-    // 예약 생성 후 7일이 지나거나, 예약 상태가 COMPLETED 가 아닌 경우 예외 발생
-    if (reservation.getCreatedAt().plusDays(7).isBefore(LocalDateTime.now()) ||
+    // 체크아웃 후 7일이 지났거나, 예약 상태가 COMPLETED 가 아닌 경우 예외 발생
+    if (reservation.getCheckOutDate().plusDays(7).isBefore(LocalDate.now()) ||
         reservation.getStatus() != ReservationStatus.COMPLETED) {
       throw new MeongnyangerangException(ErrorCode.REVIEW_CREATION_NOT_ALLOWED);
     }
