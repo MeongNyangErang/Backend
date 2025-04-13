@@ -260,7 +260,7 @@ public class ReviewService {
 
   // entity -> dto 변환
   private AccommodationReviewResponse mapToAccommodationReviewResponse(Review review) {
-    ReviewImage reviewImage = reviewImageRepository.findByReviewId(review.getId());
+    List<ReviewImage> reviewImages = reviewImageRepository.findAllByReviewId(review.getId());
 
     // 소숫점 한자리까지만 필요
     double totalRating =
@@ -271,7 +271,7 @@ public class ReviewService {
     return AccommodationReviewResponse.builder()
         .roomName(review.getReservation().getRoom().getName())
         .profileImageUrl(review.getUser().getProfileImage())
-        .reviewImageUrl(reviewImage.getImageUrl())
+        .reviewImageUrl(reviewImages.stream().map(ReviewImage::getImageUrl).toList())
         .totalRating(totalRating)
         .content(review.getContent())
         .createdAt(review.getCreatedAt().format(dateFormatter))

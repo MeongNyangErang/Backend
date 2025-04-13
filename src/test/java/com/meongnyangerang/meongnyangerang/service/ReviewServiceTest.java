@@ -543,13 +543,15 @@ class ReviewServiceTest {
     ReviewImage reviewImage2 = ReviewImage.builder().id(1L).review(review2)
         .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
 
+    List<ReviewImage> reviewImages = List.of(reviewImage1, reviewImage2);
+
     double totalRating =
         Math.round(((review1.getUserRating() + review1.getPetFriendlyRating()) / 2) * 10) / 10.0;
 
     AccommodationReviewResponse expectedResponse = AccommodationReviewResponse.builder()
         .roomName(review1.getReservation().getRoom().getName())
         .profileImageUrl(review1.getUser().getProfileImage())
-        .reviewImageUrl(reviewImage1.getImageUrl())
+        .reviewImageUrl(reviewImages.stream().map(ReviewImage::getImageUrl).toList())
         .totalRating(totalRating)
         .content(review1.getContent())
         .createdAt(review1.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
@@ -560,8 +562,7 @@ class ReviewServiceTest {
             .filter(review -> review.getReportCount() < 20)
             .toList()
     );
-    when(reviewImageRepository.findByReviewId(review1.getId())).thenReturn(reviewImage1);
-    when(reviewImageRepository.findByReviewId(review2.getId())).thenReturn(reviewImage2);
+    when(reviewImageRepository.findAllByReviewId(review1.getId())).thenReturn(reviewImages);
 
     // when
     CustomReviewResponse<AccommodationReviewResponse> customResponse = reviewService.getAccommodationReviews(
