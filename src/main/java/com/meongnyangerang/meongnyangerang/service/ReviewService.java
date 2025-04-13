@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -192,7 +193,9 @@ public class ReviewService {
   }
 
   private String getImageUrl(Long reviewId) {
-    return reviewImageRepository.findFirstByReviewIdOrderByIdAsc(reviewId).getImageUrl();
+    return Optional.ofNullable(reviewImageRepository.findFirstByReviewIdOrderByIdAsc(reviewId))
+        .map(ReviewImage::getImageUrl)
+        .orElse(null);
   }
 
   // 최대 이미지 개수(3장)를 초과하는지 검증
