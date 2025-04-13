@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -17,6 +18,7 @@ import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.dto.UserProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
@@ -170,5 +172,19 @@ class UserServiceTest {
     // then
     assertThat(response.getNickname()).isEqualTo("멍냥이");
     assertThat(response.getProfileImageUrl()).isEqualTo("https://profile.jpg");
+  }
+
+  @Test
+  @DisplayName("사용자 프로필 조회 - 실패 (존재하지 않는 사용자)")
+  void getUserProfile_Fail_UserNotFound() {
+    // given
+    Long invalidUserId = 999L;
+    given(userRepository.findById(invalidUserId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> userService.getMyProfile(invalidUserId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.NOT_EXIST_ACCOUNT);
   }
 }
