@@ -699,7 +699,7 @@ class ReviewServiceTest {
 
     UpdateReviewRequest request = UpdateReviewRequest.builder()
         .content("after")
-        .petRating(3.0)
+        .petFriendlyRating(3.0)
         .userRating(4.0)
         .deletedImageId(List.of(2L))
         .build();
@@ -758,7 +758,7 @@ class ReviewServiceTest {
 
     UpdateReviewRequest request = UpdateReviewRequest.builder()
         .content("after")
-        .petRating(3.0)
+        .petFriendlyRating(3.0)
         .userRating(4.0)
         .deletedImageId(List.of(2L))
         .build();
@@ -808,7 +808,7 @@ class ReviewServiceTest {
 
     UpdateReviewRequest request = UpdateReviewRequest.builder()
         .content("after")
-        .petRating(3.0)
+        .petFriendlyRating(3.0)
         .userRating(4.0)
         .deletedImageId(List.of(2L))
         .build();
@@ -868,7 +868,7 @@ class ReviewServiceTest {
 
     UpdateReviewRequest request = UpdateReviewRequest.builder()
         .content("after")
-        .petRating(3.0)
+        .petFriendlyRating(3.0)
         .userRating(4.0)
         .deletedImageId(List.of())
         .build();

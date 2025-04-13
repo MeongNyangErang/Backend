@@ -145,7 +145,7 @@ public class ReviewService {
 
     // 숙소 총 평점 업데이트
     updateAccommodationRating(review.getAccommodation(), oldRating, request.getUserRating(),
-        request.getPetRating());
+        request.getPetFriendlyRating());
   }
 
   /**
@@ -324,7 +324,7 @@ public class ReviewService {
   private void updateReviewDetails(Review review, UpdateReviewRequest request) {
     review.setContent(request.getContent());
     review.setUserRating(request.getUserRating());
-    review.setPetFriendlyRating(request.getPetRating());
+    review.setPetFriendlyRating(request.getPetFriendlyRating());
   }
 
   private Accommodation findAccommodationByHostId(Long hostId) {
