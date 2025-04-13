@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -7,12 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
+import com.meongnyangerang.meongnyangerang.dto.UserProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -146,5 +149,26 @@ class UserServiceTest {
 
     // when & then
     assertThrows(MeongnyangerangException.class, () -> userService.deleteUser(userId));
+  }
+
+  @Test
+  @DisplayName("사용자 프로필 조회 - 성공")
+  void getUserProfile_Success() {
+    // given
+    Long userId = 1L;
+    User user = User.builder()
+        .id(userId)
+        .nickname("멍냥이")
+        .profileImage("https://profile.jpg")
+        .build();
+
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+    // when
+    UserProfileResponse response = userService.getMyProfile(userId);
+
+    // then
+    assertThat(response.getNickname()).isEqualTo("멍냥이");
+    assertThat(response.getProfileImageUrl()).isEqualTo("https://profile.jpg");
   }
 }
