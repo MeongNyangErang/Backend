@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,6 +20,7 @@ import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -164,4 +167,16 @@ class HostServiceTest {
     assertThat(response.getProfileImageUrl()).isEqualTo("https://example.com/image.jpg");
   }
 
+  @Test
+  @DisplayName("호스트 프로필 조회 - 실패 (존재하지 않는 계정)")
+  void getHostProfile_Fail_NotFound() {
+    // given
+    Long hostId = 999L;
+    Mockito.when(hostRepository.findById(hostId)).thenReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.getHostProfile(hostId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("errorCode", NOT_EXIST_ACCOUNT);
+  }
 }
