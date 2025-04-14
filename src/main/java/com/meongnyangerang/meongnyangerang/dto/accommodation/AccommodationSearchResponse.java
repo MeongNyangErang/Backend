@@ -17,6 +17,8 @@ public class AccommodationSearchResponse {
   private String thumbnailUrl;
   private Double totalRating;
   private Long price;
+  private Integer standardPeopleCount;
+  private Integer standardPetCount;
   private AccommodationType accommodationType;
 
   public static AccommodationSearchResponse fromDocument(AccommodationRoomDocument doc) {
@@ -27,6 +29,8 @@ public class AccommodationSearchResponse {
         .thumbnailUrl(doc.getThumbnailUrl())
         .totalRating(doc.getTotalRating())
         .price(doc.getPrice())
+        .standardPeopleCount(doc.getStandardPeopleCount())
+        .standardPetCount(doc.getStandardPetCount())
         .accommodationType(doc.getAccommodationType())
         .build();
   }
