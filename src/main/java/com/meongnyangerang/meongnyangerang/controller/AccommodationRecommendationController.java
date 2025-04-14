@@ -34,11 +34,11 @@ public class AccommodationRecommendationController {
     return ResponseEntity.ok(recommendationService.getUserPetRecommendations(userDetails.getId()));
   }
 
-  // 조회수 기반 인기 숙소 추천
-  @GetMapping("/popular")
+  // 많은 사람들이 관심을 가진 숙소 추천
+  @GetMapping("/most-viewed")
   public ResponseEntity<List<RecommendationResponse>> getPopularRecommendations() {
 
-    return ResponseEntity.ok(recommendationService.getPopularRecommendations());
+    return ResponseEntity.ok(recommendationService.getMostViewedRecommendations());
   }
 
 }

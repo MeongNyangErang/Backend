@@ -68,9 +68,9 @@ public class AccommodationRecommendationService {
     return result;
   }
 
-  // 조회수 기반 인기 숙소 추천
-  public List<RecommendationResponse> getPopularRecommendations() {
-    List<Accommodation> accommodations = accommodationRepository.findTop10ByOrderByViewCountDesc();
+  // 많은 사람들이 관심을 가진 숙소 추천
+  public List<RecommendationResponse> getMostViewedRecommendations() {
+    List<Accommodation> accommodations = accommodationRepository.findTop10ByOrderByViewCountDescTotalRatingDesc();
 
     return accommodations.stream()
         .map(accommodation -> {

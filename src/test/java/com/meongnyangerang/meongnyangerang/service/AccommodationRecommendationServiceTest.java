@@ -232,7 +232,7 @@ class AccommodationRecommendationServiceTest {
 
   @Test
   @DisplayName("조회수가 가장 높은 숙소 10개를 추천 - 성공")
-  void getPopularRecommendations_success() {
+  void getMostViewedRecommendations_success() {
     // given
     List<Accommodation> accommodations = new ArrayList<>();
     for (int i = 1; i <= 11; i++) {
@@ -250,7 +250,7 @@ class AccommodationRecommendationServiceTest {
         .limit(10)
         .toList();
 
-    when(accommodationRepository.findTop10ByOrderByViewCountDesc())
+    when(accommodationRepository.findTop10ByOrderByViewCountDescTotalRatingDesc())
         .thenReturn(top10);
 
     for (Accommodation a : top10) {
@@ -265,7 +265,7 @@ class AccommodationRecommendationServiceTest {
     }
 
     // when
-    List<RecommendationResponse> result = recommendationService.getPopularRecommendations();
+    List<RecommendationResponse> result = recommendationService.getMostViewedRecommendations();
 
     // then
     assertEquals(10, result.size());
@@ -280,7 +280,7 @@ class AccommodationRecommendationServiceTest {
       assertEquals(expected.getThumbnailUrl(), res.getThumbnailUrl());
       assertEquals(expected.getTotalRating(), res.getTotalRating());
 
-      verify(accommodationRepository, times(1)).findTop10ByOrderByViewCountDesc();
+      verify(accommodationRepository, times(1)).findTop10ByOrderByViewCountDescTotalRatingDesc();
       for (Accommodation a : top10) {
         verify(roomRepository).findFirstByAccommodationOrderByPriceAsc(a);
       }
