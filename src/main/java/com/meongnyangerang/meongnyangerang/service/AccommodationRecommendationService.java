@@ -7,10 +7,12 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationDocument;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.recommendation.PetFacilityScoreMap;
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.user.ActivityLevel;
 import com.meongnyangerang.meongnyangerang.domain.user.Personality;
@@ -19,6 +21,8 @@ import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationRespo
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -37,6 +41,8 @@ public class AccommodationRecommendationService {
 
   private final ElasticsearchClient elasticsearchClient;
   private final UserPetRepository userPetRepository;
+  private final AccommodationRepository accommodationRepository;
+  private final RoomRepository roomRepository;
 
   private static final String INDEX_NAME = "accommodations";
   private static final int SIZE = 6;
@@ -60,6 +66,26 @@ public class AccommodationRecommendationService {
       result.put(pet.getName(), searchByUserPet(pet));
     }
     return result;
+  }
+
+  // 조회수 기반 인기 숙소 추천
+  public List<RecommendationResponse> getPopularRecommendations() {
+    List<Accommodation> accommodations = accommodationRepository.findTop10ByOrderByViewCountDesc();
+
+    return accommodations.stream()
+        .map(accommodation -> {
+          Room room = roomRepository
+              .findFirstByAccommodationOrderByPriceAsc(accommodation);
+
+          return RecommendationResponse.builder()
+              .id(accommodation.getId())
+              .name(accommodation.getName())
+              .price(room.getPrice())
+              .totalRating(accommodation.getTotalRating())
+              .thumbnailUrl(accommodation.getThumbnailUrl())
+              .build();
+        })
+        .toList();
   }
 
   // PetType에 기반한 추천 숙소 검색 (비로그인 사용자용)

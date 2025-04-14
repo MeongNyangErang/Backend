@@ -1,8 +1,10 @@
 package com.meongnyangerang.meongnyangerang.repository.room;
 
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +29,6 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
   List<Room> findAllByAccommodationIdOrderByPriceAsc(Long accommodationId);
 
   boolean existsByAccommodationId(Long accommodationId);
+
+  Room findFirstByAccommodationOrderByPriceAsc(Accommodation accommodation);
 }
