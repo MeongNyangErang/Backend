@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.dto.HostPhoneUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
