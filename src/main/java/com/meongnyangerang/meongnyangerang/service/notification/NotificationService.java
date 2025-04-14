@@ -109,10 +109,8 @@ public class NotificationService {
   @Transactional
   public void sendReservationReminderNotification(Reservation reservation) {
     User user = reservation.getUser();
-    String accommodationName = reservation.getAccommodationName();
-
     String content = String.format(RESERVATION_REMIND_CONTENT,
-        accommodationName, reservation.getCheckInDate());
+        reservation.getAccommodationName(), reservation.getCheckInDate());
 
     saveNotificationAsUser(user, content, NotificationType.RESERVATION_REMINDER);
     notificationAsyncSender.sendReservationNotification(
