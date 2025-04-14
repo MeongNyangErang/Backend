@@ -72,9 +72,9 @@ public class RoomController {
   public ResponseEntity<RoomResponse> updateRoom(
       @AuthenticationPrincipal UserDetailsImpl userDetail,
       @Valid @RequestPart RoomUpdateRequest request,
-      @RequestPart(required = false) MultipartFile newThumbnail
+      @RequestPart(required = false) MultipartFile thumbnail
   ) {
-    return ResponseEntity.ok(roomService.updateRoom(userDetail.getId(), request, newThumbnail));
+    return ResponseEntity.ok(roomService.updateRoom(userDetail.getId(), request, thumbnail));
   }
 
   /**
