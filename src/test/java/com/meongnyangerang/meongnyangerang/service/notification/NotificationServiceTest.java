@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +13,8 @@ import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.notification.Notification;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
+import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
+import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.notification.MessageNotificationRequest;
@@ -22,6 +25,7 @@ import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.NotificationRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -316,6 +320,39 @@ class NotificationServiceTest {
 
     // then
     verify(notificationRepository).deleteByIdAndHost_Id(notificationId, hostId);
+  }
+
+  @Test
+  @DisplayName("예약 리마인드 알림 발송 성공")
+  void sendReservationReminderNotification_Success() {
+    // given
+    LocalDate tomorrow = LocalDate.now().plusDays(1);
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .user(user)
+        .accommodationName("테스트 숙소 이름")
+        .checkInDate(tomorrow)
+        .checkInDate(tomorrow.plusDays(1))
+        .status(ReservationStatus.RESERVED)
+        .build();
+    String content = String.format("%s 숙소 체크인이 내일입니다. 체크인 시간은 %s입니다.",
+        reservation.getAccommodationName(), reservation.getCheckInDate());
+
+    // when
+    notificationService.sendReservationReminderNotification(reservation);
+
+    // then
+    ArgumentCaptor<Notification> notificationArgumentCaptor = ArgumentCaptor.forClass(
+        Notification.class);
+    verify(notificationRepository, times(1))
+        .save(notificationArgumentCaptor.capture());
+    verify(notificationAsyncSender, times(1))
+        .sendReservationNotification(
+            reservation.getId(),
+            content,
+            user.getId(),
+            SenderType.USER,
+            NotificationType.RESERVATION_REMINDER);
   }
 
   private Notification createNotificationReceiveByHost(Long id, Host host, String content) {
