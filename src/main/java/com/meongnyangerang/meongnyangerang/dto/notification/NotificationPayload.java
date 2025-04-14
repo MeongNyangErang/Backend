@@ -5,32 +5,26 @@ import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import java.time.LocalDateTime;
 
 public record NotificationPayload(
-    Long chatRoomId,
-    Long senderId,
-    SenderType senderType,
+    Long id,
+    String content,
     Long receiverId,
     SenderType receiverType,
-    String content,
     NotificationType notificationType,
     LocalDateTime createdAt
 ) {
 
   public static NotificationPayload from(
-      Long chatRoomId,
-      Long senderId,
-      SenderType senderType,
+      Long id,
+      String content,
       Long receiverId,
       SenderType receiverType,
-      String content,
       NotificationType notificationType
   ) {
     return new NotificationPayload(
-        chatRoomId,
-        senderId,
-        senderType,
+        id,
+        content,
         receiverId,
         receiverType,
-        content,
         notificationType,
         LocalDateTime.now()
     );
