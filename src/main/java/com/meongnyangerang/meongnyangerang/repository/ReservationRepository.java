@@ -49,4 +49,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
   boolean existsByHostIdAndStatus(Long hostId, ReservationStatus status);
 
   List<Reservation> findByCheckOutDate(LocalDate checkOutDate);
+
+  List<Reservation> findByCheckInDateAndStatus(
+      LocalDate date, ReservationStatus reservationStatus);
 }
