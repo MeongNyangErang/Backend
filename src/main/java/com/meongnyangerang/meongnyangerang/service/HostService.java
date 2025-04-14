@@ -145,7 +145,6 @@ public class HostService {
     if (hostRepository.existByPhoneNumberAndIdNot(newPhoneNumber, hostId)) {
       throw new MeongnyangerangException(DUPLICATE_PHONE_NUMBER);
     }
-
-
+    host.updatePhoneNumber(newPhoneNumber);
   }
 }
