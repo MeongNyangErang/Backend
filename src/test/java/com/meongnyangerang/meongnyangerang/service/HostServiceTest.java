@@ -220,5 +220,26 @@ class HostServiceTest {
         .isEqualTo(NOT_EXIST_ACCOUNT);
   }
 
+  @Test
+  @DisplayName("호스트 전화번호 변경 - 실패 (기존 전화번호와 동일)")
+  void updatePhoneNumber_Fail_SamePhone() {
+    // given
+    Long hostId = 1L;
+    String phone = "010-1234-5678";
+
+    Host host = Host.builder()
+        .id(hostId)
+        .phoneNumber(phone)
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePhoneNumber(hostId, phone))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.ALREADY_REGISTERED_PHONE_NUMBER);
+  }
+
 
 }
