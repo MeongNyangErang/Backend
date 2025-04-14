@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -12,14 +14,19 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationDocument;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.ActivityLevel;
 import com.meongnyangerang.meongnyangerang.domain.user.Personality;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +46,12 @@ class AccommodationRecommendationServiceTest {
 
   @Mock
   private UserPetRepository userPetRepository;
+
+  @Mock
+  private AccommodationRepository accommodationRepository;
+
+  @Mock
+  private RoomRepository roomRepository;
 
   @InjectMocks
   private AccommodationRecommendationService recommendationService;
@@ -215,6 +228,63 @@ class AccommodationRecommendationServiceTest {
     assertEquals("test1 숙소", chocoList.get(0).getName());
     assertEquals("test4 숙소", chocoList.get(1).getName());
     assertEquals("test3 숙소", nabiList.get(0).getName());
+  }
+
+  @Test
+  @DisplayName("조회수가 가장 높은 숙소 10개를 추천 - 성공")
+  void getPopularRecommendations_success() {
+    // given
+    List<Accommodation> accommodations = new ArrayList<>();
+    for (int i = 1; i <= 11; i++) {
+      accommodations.add(Accommodation.builder()
+          .id((long) i)
+          .name("숙소" + i)
+          .thumbnailUrl("thumb" + i + ".jpg")
+          .totalRating(4.0 + (i % 5))
+          .viewCount((long) (100 + i)) // 101 ~ 111
+          .build());
+    }
+
+    List<Accommodation> top10 = accommodations.stream()
+        .sorted((a1, a2) -> Long.compare(a2.getViewCount(), a1.getViewCount()))
+        .limit(10)
+        .toList();
+
+    when(accommodationRepository.findTop10ByOrderByViewCountDesc())
+        .thenReturn(top10);
+
+    for (Accommodation a : top10) {
+      Room room = Room.builder()
+          .id(a.getId() + 100)
+          .price(40000L + a.getId() * 1000)
+          .accommodation(a)
+          .build();
+
+      when(roomRepository.findFirstByAccommodationOrderByPriceAsc(a))
+          .thenReturn(room);
+    }
+
+    // when
+    List<RecommendationResponse> result = recommendationService.getPopularRecommendations();
+
+    // then
+    assertEquals(10, result.size());
+    assertEquals(top10.get(0).getName(), result.get(0).getName());
+
+    for (int i = 0; i < result.size(); i++) {
+      RecommendationResponse res = result.get(i);
+      Accommodation expected = top10.get(i);
+
+      assertEquals(expected.getId(), res.getId());
+      assertEquals(expected.getName(), res.getName());
+      assertEquals(expected.getThumbnailUrl(), res.getThumbnailUrl());
+      assertEquals(expected.getTotalRating(), res.getTotalRating());
+
+      verify(accommodationRepository, times(1)).findTop10ByOrderByViewCountDesc();
+      for (Accommodation a : top10) {
+        verify(roomRepository).findFirstByAccommodationOrderByPriceAsc(a);
+      }
+    }
   }
 
   private RecommendationResponse convertToRecommendationResponse(
