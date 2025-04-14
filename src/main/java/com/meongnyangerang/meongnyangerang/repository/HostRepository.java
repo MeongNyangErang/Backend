@@ -31,5 +31,5 @@ public interface HostRepository extends JpaRepository<Host, Long> {
 
   Optional<Host> findByIdAndStatus(Long id, HostStatus status);
 
-  boolean existByPhoneNumberAndIdNot(String phoneNumber, Long hostId);
+  boolean existsByPhoneNumberAndIdNot(String phoneNumber, Long hostId);
 }

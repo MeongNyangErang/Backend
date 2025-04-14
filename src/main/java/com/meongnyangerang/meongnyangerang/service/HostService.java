@@ -142,7 +142,7 @@ public class HostService {
     }
 
     // 다른 호스트가 이미 해당 전화번호를 사용중일 시 예외처리
-    if (hostRepository.existByPhoneNumberAndIdNot(newPhoneNumber, hostId)) {
+    if (hostRepository.existsByPhoneNumberAndIdNot(newPhoneNumber, hostId)) {
       throw new MeongnyangerangException(DUPLICATE_PHONE_NUMBER);
     }
     host.updatePhoneNumber(newPhoneNumber);
