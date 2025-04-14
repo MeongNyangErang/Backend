@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -179,4 +180,28 @@ class HostServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("errorCode", NOT_EXIST_ACCOUNT);
   }
+
+  @Test
+  @DisplayName("호스트 전화번호 변경 - 성공")
+  void updatePhoneNumber_Success() {
+    // given
+    Long hostId = 1L;
+    String originalPhone = "010-1234-5678";
+    String newPhone = "010-9999-8888";
+
+    Host host = Host.builder()
+        .id(hostId)
+        .phoneNumber(originalPhone)
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    given(hostRepository.existByPhoneNumberAndIdNot(newPhone, hostId)).willReturn(false);
+
+    // when
+    hostService.updatePhoneNumber(hostId, newPhone);
+
+    // then
+    assertThat(host.getPhoneNumber()).isEqualTo(newPhone);
+  }
+
 }
