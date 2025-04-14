@@ -8,6 +8,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 public record RoomResponse(
+    Long roomId,
     String name,
     String description,
     Integer standardPeopleCount,
@@ -45,6 +46,7 @@ public record RoomResponse(
         .toList();
 
     return new RoomResponse(
+        room.getId(),
         room.getName(), room.getDescription(),
         room.getStandardPeopleCount(), room.getMaxPeopleCount(),
         room.getStandardPetCount(), room.getMaxPetCount(),

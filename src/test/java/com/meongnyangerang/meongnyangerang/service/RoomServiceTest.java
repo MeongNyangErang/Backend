@@ -73,6 +73,9 @@ class RoomServiceTest {
   @Mock
   private ImageService imageService;
 
+  @Mock
+  private AccommodationRoomSearchService searchService;
+
   @InjectMocks
   private RoomService roomService;
 
@@ -101,7 +104,7 @@ class RoomServiceTest {
         "image",
         imageUrl,
         "image/jpeg",
-        "test image content".getBytes()
+        "test image content" .getBytes()
     );
 
     imageUrl = "https://example.com/images/test-image.jpg";
@@ -561,7 +564,7 @@ class RoomServiceTest {
         "image",
         imageUrl,
         "image/jpeg",
-        "test image content".getBytes()
+        "test image content" .getBytes()
     );
 
     when(accommodationRepository.findByHostId(host.getId()))
@@ -572,6 +575,7 @@ class RoomServiceTest {
     RoomResponse response = roomService.updateRoom(host.getId(), roomUpdateRequest, newImage);
 
     // then
+    assertThat(response.roomId()).isEqualTo(room.getId());
     assertThat(response.name()).isEqualTo(roomUpdateRequest.name());
     assertThat(response.description()).isEqualTo(roomUpdateRequest.description());
     assertThat(response.standardPeopleCount()).isEqualTo(roomUpdateRequest.standardPeopleCount());

@@ -110,35 +110,32 @@ public class RoomService {
    * 객실 수정
    */
   @Transactional
-  public RoomResponse updateRoom(Long hostId, RoomUpdateRequest request, MultipartFile newThumbnail) {
+  public RoomResponse updateRoom(
+      Long hostId,
+      RoomUpdateRequest request,
+      MultipartFile newThumbnail
+  ) {
     Room room = getAuthorizedRoom(hostId, request.roomId());
     String newThumbnailUrl = null;
 
-    try {
-      if (newThumbnail != null && !newThumbnail.isEmpty()) {
-        newThumbnailUrl = imageService.storeImage(newThumbnail);
-        imageService.deleteImageAsync(room.getImageUrl());
-      }
-
-      Room updatedRoom = room.updateRoom(
-          request,
-          newThumbnailUrl != null ? newThumbnailUrl : room.getImageUrl()
-      );
-      List<RoomFacility> updatedFacilities = updateFacilities(request.facilityTypes(), room);
-      List<RoomPetFacility> updatedPetFacilities = updatePetFacilities(
-          request.petFacilityTypes(), room);
-      List<Hashtag> updatedHashtags = updateHashtags(request.hashtagTypes(), room);
-
-      searchService.save(room.getAccommodation(), updatedRoom); // Elasticsearch 색인 업데이트
-      searchService.updateAccommodationDocument(room.getAccommodation());
-
-      return RoomResponse.of(updatedRoom, updatedFacilities, updatedPetFacilities, updatedHashtags);
-    } catch (Exception e) {
-      log.error("객실 업데이트 실행: {}", e.getMessage(), e);
-      rollbackProcess(newThumbnailUrl);
-
-      throw new MeongnyangerangException(ErrorCode.ROOM_UPDATE_FAILED);
+    if (newThumbnail != null && !newThumbnail.isEmpty()) {
+      newThumbnailUrl = imageService.storeImage(newThumbnail);
+      imageService.deleteImageAsync(room.getImageUrl());
     }
+
+    Room updatedRoom = room.updateRoom(
+        request,
+        newThumbnailUrl != null ? newThumbnailUrl : room.getImageUrl()
+    );
+    List<RoomFacility> updatedFacilities = updateFacilities(request.facilityTypes(), room);
+    List<RoomPetFacility> updatedPetFacilities = updatePetFacilities(
+        request.petFacilityTypes(), room);
+    List<Hashtag> updatedHashtags = updateHashtags(request.hashtagTypes(), room);
+
+    searchService.save(room.getAccommodation(), updatedRoom); // Elasticsearch 색인 업데이트
+    searchService.updateAccommodationDocument(room.getAccommodation());
+
+    return RoomResponse.of(updatedRoom, updatedFacilities, updatedPetFacilities, updatedHashtags);
   }
 
   /**
@@ -216,13 +213,6 @@ public class RoomService {
     List<Hashtag> hashtags = hashtagRepository.findAllByRoomId(roomId);
 
     return RoomResponse.of(room, facilities, petFacilities, hashtags);
-  }
-
-  private void rollbackProcess(String newImageUrl) {
-    if (newImageUrl != null) {
-      imageService.deleteImageAsync(newImageUrl); // 새로 업로드한 이미지 삭제
-      log.info("새로운 이미지 저장 롤백 -> S3에서 제거: {}", newImageUrl);
-    }
   }
 
   private Room getAuthorizedRoom(Long hostId, Long roomId) {
