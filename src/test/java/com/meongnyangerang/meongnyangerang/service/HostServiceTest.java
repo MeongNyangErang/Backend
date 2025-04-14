@@ -241,5 +241,28 @@ class HostServiceTest {
         .isEqualTo(ErrorCode.ALREADY_REGISTERED_PHONE_NUMBER);
   }
 
+  @Test
+  @DisplayName("호스트 전화번호 변경 - 실패 (중복된 전화번호)")
+  void updatePhoneNumber_Fail_DuplicatePhone() {
+    // given
+    Long hostId = 1L;
+    String oldPhone = "010-1234-5678";
+    String newPhone = "010-8888-9999";
+
+    Host host = Host.builder()
+        .id(hostId)
+        .phoneNumber(oldPhone)
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    given(hostRepository.existByPhoneNumberAndIdNot(newPhone, hostId)).willReturn(true);
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePhoneNumber(hostId, newPhone))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.DUPLICATE_PHONE_NUMBER);
+  }
+
 
 }
