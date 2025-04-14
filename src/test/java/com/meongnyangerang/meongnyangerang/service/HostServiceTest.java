@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -179,4 +180,89 @@ class HostServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("errorCode", NOT_EXIST_ACCOUNT);
   }
+
+  @Test
+  @DisplayName("호스트 전화번호 변경 - 성공")
+  void updatePhoneNumber_Success() {
+    // given
+    Long hostId = 1L;
+    String originalPhone = "010-1234-5678";
+    String newPhone = "010-9999-8888";
+
+    Host host = Host.builder()
+        .id(hostId)
+        .phoneNumber(originalPhone)
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    given(hostRepository.existByPhoneNumberAndIdNot(newPhone, hostId)).willReturn(false);
+
+    // when
+    hostService.updatePhoneNumber(hostId, newPhone);
+
+    // then
+    assertThat(host.getPhoneNumber()).isEqualTo(newPhone);
+  }
+
+  @Test
+  @DisplayName("호스트 전화번호 변경 - 실패 (존재하지 않는 호스트)")
+  void updatePhoneNumber_Fail_NotExist() {
+    // given
+    Long hostId = 1L;
+    String phone = "010-1234-5678";
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePhoneNumber(hostId, phone))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
+
+  @Test
+  @DisplayName("호스트 전화번호 변경 - 실패 (기존 전화번호와 동일)")
+  void updatePhoneNumber_Fail_SamePhone() {
+    // given
+    Long hostId = 1L;
+    String phone = "010-1234-5678";
+
+    Host host = Host.builder()
+        .id(hostId)
+        .phoneNumber(phone)
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePhoneNumber(hostId, phone))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.ALREADY_REGISTERED_PHONE_NUMBER);
+  }
+
+  @Test
+  @DisplayName("호스트 전화번호 변경 - 실패 (중복된 전화번호)")
+  void updatePhoneNumber_Fail_DuplicatePhone() {
+    // given
+    Long hostId = 1L;
+    String oldPhone = "010-1234-5678";
+    String newPhone = "010-8888-9999";
+
+    Host host = Host.builder()
+        .id(hostId)
+        .phoneNumber(oldPhone)
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    given(hostRepository.existByPhoneNumberAndIdNot(newPhone, hostId)).willReturn(true);
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePhoneNumber(hostId, newPhone))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.DUPLICATE_PHONE_NUMBER);
+  }
+
+
 }

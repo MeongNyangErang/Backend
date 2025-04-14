@@ -5,7 +5,9 @@ import static com.meongnyangerang.meongnyangerang.domain.reservation.Reservation
 import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_HOST;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_PENDING;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_PHONE_NUMBER;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_PHONE_NUMBER;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.FILE_IS_EMPTY;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
@@ -23,6 +25,8 @@ import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -124,5 +128,23 @@ public class HostService {
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 
     return HostProfileResponse.of(host);
+  }
+
+  // 호스트 전화번호 변경
+  @Transactional
+  public void updatePhoneNumber(Long hostId, String newPhoneNumber) {
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    // 바꾸려는 전화번호가 기존의 전화번호와 같을 시 예외처리
+    if (host.getPhoneNumber().equals(newPhoneNumber)) {
+      throw new MeongnyangerangException(ALREADY_REGISTERED_PHONE_NUMBER);
+    }
+
+    // 다른 호스트가 이미 해당 전화번호를 사용중일 시 예외처리
+    if (hostRepository.existsByPhoneNumberAndIdNot(newPhoneNumber, hostId)) {
+      throw new MeongnyangerangException(DUPLICATE_PHONE_NUMBER);
+    }
+    host.updatePhoneNumber(newPhoneNumber);
   }
 }

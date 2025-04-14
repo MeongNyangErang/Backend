@@ -72,4 +72,8 @@ public class Host {
   private LocalDateTime updatedAt;
 
   private LocalDateTime deletedAt;
+
+  public void updatePhoneNumber(String newPhoneNumber) {
+    this.phoneNumber = newPhoneNumber;
+  }
 }
