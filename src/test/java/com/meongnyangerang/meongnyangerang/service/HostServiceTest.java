@@ -204,4 +204,21 @@ class HostServiceTest {
     assertThat(host.getPhoneNumber()).isEqualTo(newPhone);
   }
 
+  @Test
+  @DisplayName("호스트 전화번호 변경 - 실패 (존재하지 않는 호스트)")
+  void updatePhoneNumber_Fail_NotExist() {
+    // given
+    Long hostId = 1L;
+    String phone = "010-1234-5678";
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePhoneNumber(hostId, phone))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
+
+
 }
