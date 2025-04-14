@@ -15,7 +15,7 @@ public class UpdateReviewRequest {
   private Double userRating;
 
   @NotNull
-  private Double petRating;
+  private Double petFriendlyRating;
 
   private String content;
 

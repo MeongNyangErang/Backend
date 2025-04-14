@@ -8,6 +8,7 @@ import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
 import com.meongnyangerang.meongnyangerang.dto.ReviewImageResponse;
@@ -21,6 +22,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -142,7 +145,7 @@ public class ReviewService {
 
     // 숙소 총 평점 업데이트
     updateAccommodationRating(review.getAccommodation(), oldRating, request.getUserRating(),
-        request.getPetRating());
+        request.getPetFriendlyRating());
   }
 
   /**
@@ -175,6 +178,27 @@ public class ReviewService {
     return new HostReviewResponse(reviewContents, nextCursorId, hasNext);
   }
 
+  public List<LatestReviewResponse> getLatestReviews() {
+    return mapToLatestReviewResponses(reviewRepository.findTop10ByOrderByCreatedAtDesc());
+  }
+
+  private List<LatestReviewResponse> mapToLatestReviewResponses(List<Review> reviews) {
+    return reviews.stream().map(r -> LatestReviewResponse.builder()
+        .accommodationId(r.getAccommodation().getId())
+        .accommodationName(r.getAccommodation().getName())
+        .nickname(r.getUser().getNickname())
+        .content(r.getContent())
+        .totalRating(calculateReviewRating(r.getUserRating(), r.getPetFriendlyRating()))
+        .imageUrl(getImageUrl(r.getId()))
+        .build()).toList();
+  }
+
+  private String getImageUrl(Long reviewId) {
+    return Optional.ofNullable(reviewImageRepository.findFirstByReviewIdOrderByIdAsc(reviewId))
+        .map(ReviewImage::getImageUrl)
+        .orElse(null);
+  }
+
   // 최대 이미지 개수(3장)를 초과하는지 검증
   private void validateImageSize(List<MultipartFile> images) {
     if (images.size() > 3) {
@@ -203,8 +227,8 @@ public class ReviewService {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }
 
-    // 예약 생성 후 7일이 지나거나, 예약 상태가 COMPLETED 가 아닌 경우 예외 발생
-    if (reservation.getCreatedAt().plusDays(7).isBefore(LocalDateTime.now()) ||
+    // 체크아웃 후 7일이 지났거나, 예약 상태가 COMPLETED 가 아닌 경우 예외 발생
+    if (reservation.getCheckOutDate().plusDays(7).isBefore(LocalDate.now()) ||
         reservation.getStatus() != ReservationStatus.COMPLETED) {
       throw new MeongnyangerangException(ErrorCode.REVIEW_CREATION_NOT_ALLOWED);
     }
@@ -236,7 +260,7 @@ public class ReviewService {
 
   // entity -> dto 변환
   private AccommodationReviewResponse mapToAccommodationReviewResponse(Review review) {
-    ReviewImage reviewImage = reviewImageRepository.findByReviewId(review.getId());
+    List<ReviewImage> reviewImages = reviewImageRepository.findAllByReviewId(review.getId());
 
     // 소숫점 한자리까지만 필요
     double totalRating =
@@ -247,7 +271,7 @@ public class ReviewService {
     return AccommodationReviewResponse.builder()
         .roomName(review.getReservation().getRoom().getName())
         .profileImageUrl(review.getUser().getProfileImage())
-        .reviewImageUrl(reviewImage.getImageUrl())
+        .reviewImageUrl(reviewImages.stream().map(ReviewImage::getImageUrl).toList())
         .totalRating(totalRating)
         .content(review.getContent())
         .createdAt(review.getCreatedAt().format(dateFormatter))
@@ -300,7 +324,7 @@ public class ReviewService {
   private void updateReviewDetails(Review review, UpdateReviewRequest request) {
     review.setContent(request.getContent());
     review.setUserRating(request.getUserRating());
-    review.setPetFriendlyRating(request.getPetRating());
+    review.setPetFriendlyRating(request.getPetFriendlyRating());
   }
 
   private Accommodation findAccommodationByHostId(Long hostId) {

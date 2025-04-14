@@ -55,4 +55,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
   boolean existsByReservationId(Long reservationId);
 
   List<Review> findTop5ByAccommodationIdOrderByCreatedAtDesc(Long accommodationId);
+
+  List<Review> findTop10ByOrderByCreatedAtDesc();
 }
