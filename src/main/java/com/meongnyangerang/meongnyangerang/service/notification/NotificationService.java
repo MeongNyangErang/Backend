@@ -5,6 +5,7 @@ import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.notification.Notification;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
+import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.notification.NotificationReceiverInfo;
@@ -34,8 +35,9 @@ public class NotificationService {
   private final HostRepository hostRepository;
   private final NotificationAsyncService notificationAsyncSender;
 
-  private static final String RESERVATION_CONFIRMED_CONTENT = "숙소에 예약이 확정되었습니다.";
-  private static final String RESERVATION_REGISTERED_CONTENT = "님이 예약하였습니다.";
+  private static final String RESERVATION_CONFIRMED_CONTENT = "%s 숙소에 예약이 확정되었습니다.";
+  private static final String RESERVATION_REGISTERED_CONTENT = "%s 님이 예약하였습니다.";
+  private static final String RESERVATION_REMIND_CONTENT = "%s 숙소 체크인이 내일입니다. 체크인 시간은 %s입니다.";
 
   /**
    * 상대방에게 메시지 알림 전송
@@ -101,10 +103,32 @@ public class NotificationService {
     notificationRepository.deleteByIdAndHost_Id(notificationId, hostId);
   }
 
+  /**
+   * 예약 리마인드 알림 발송
+   */
+  @Transactional
+  public void sendReservationReminderNotification(Reservation reservation) {
+    User user = reservation.getUser();
+    String accommodationName = reservation.getAccommodationName();
+
+    String content = String.format(RESERVATION_REMIND_CONTENT,
+        accommodationName, reservation.getCheckInDate());
+
+    saveNotificationAsUser(user, content, NotificationType.RESERVATION_REMINDER);
+    notificationAsyncSender.sendReservationNotification(
+        reservation.getId(),
+        content,
+        user.getId(),
+        SenderType.USER,
+        NotificationType.RESERVATION_REMINDER
+    );
+  }
+
   private void sendReservationNotificationToUser(
       Long reservationId, String accommodationName, User user
   ) {
-    String reservationConfirmedContent = accommodationName + RESERVATION_CONFIRMED_CONTENT;
+    String reservationConfirmedContent = String.format(
+        RESERVATION_CONFIRMED_CONTENT, accommodationName);
     saveNotificationAsUser(
         user, reservationConfirmedContent, NotificationType.RESERVATION_CONFIRMED);
 
@@ -120,7 +144,8 @@ public class NotificationService {
   private void sendReservationNotificationToHost(
       Long reservationId, String userNickName, Host host
   ) {
-    String reservationRegisteredContent = userNickName + RESERVATION_REGISTERED_CONTENT;
+    String reservationRegisteredContent = String.format(
+        RESERVATION_REGISTERED_CONTENT, userNickName);
     saveNotificationAsHost(
         host, reservationRegisteredContent, NotificationType.RESERVATION_REGISTERED);
 
