@@ -149,6 +149,7 @@ public class AccommodationService {
   /**
    * 숙소 상세 조회(비로그인 사용자, 일반 사용자, 호스트 모두 접근 가능한 API)
    */
+  @Transactional
   public AccommodationDetailResponse getAccommodationDetail(Long accommodationId) {
     Accommodation accommodation = accommodationRepository.findById(accommodationId)
         .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
@@ -175,15 +176,10 @@ public class AccommodationService {
     List<Review> reviews = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(
         accommodationId);
 
-    updateViewCount(accommodation);
+    accommodationRepository.incrementViewCount(accommodationId);
 
     return AccommodationDetailResponse.of(accommodation, images, facilities, petFacilities,
         allowPets, reviews, rooms);
-  }
-
-  public void updateViewCount(Accommodation accommodation) {
-    accommodation.setViewCount(accommodation.getViewCount() + 1);
-    accommodationRepository.save(accommodation);
   }
 
   private String uploadImage(MultipartFile thumbnail, List<String> trackingList) {
