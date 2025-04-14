@@ -15,7 +15,7 @@ public interface AccommodationRepository extends JpaRepository<Accommodation, Lo
 
   Optional<Accommodation> findByHostId(Long hostId);
 
-  List<Accommodation> findTop10ByOrderByViewCountDesc();
+  List<Accommodation> findTop10ByOrderByViewCountDescTotalRatingDesc();
 
   @Modifying
   @Query("UPDATE Accommodation a SET a.viewCount = 0")
