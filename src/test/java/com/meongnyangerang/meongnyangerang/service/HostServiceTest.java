@@ -1,5 +1,8 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -15,7 +18,9 @@ import static org.mockito.Mockito.when;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
+import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -27,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -133,5 +139,44 @@ class HostServiceTest {
 
     // when & then
     assertThrows(MeongnyangerangException.class, () -> hostService.deleteHost(hostId));
+  }
+
+  @Test
+  @DisplayName("호스트 프로필 조회 - 성공")
+  void getHostProfile_Success() {
+    // given
+    Long hostId = 1L;
+
+    Host host = Host.builder()
+        .id(hostId)
+        .name("홍길동")
+        .nickname("길동이")
+        .phoneNumber("010-1234-5678")
+        .profileImageUrl("https://example.com/image.jpg")
+        .build();
+
+    Mockito.when(hostRepository.findById(hostId)).thenReturn(Optional.of(host));
+
+    // when
+    HostProfileResponse response = hostService.getHostProfile(hostId);
+
+    // then
+    assertThat(response.getName()).isEqualTo("홍길동");
+    assertThat(response.getNickname()).isEqualTo("길동이");
+    assertThat(response.getPhone()).isEqualTo("010-1234-5678");
+    assertThat(response.getProfileImageUrl()).isEqualTo("https://example.com/image.jpg");
+  }
+
+  @Test
+  @DisplayName("호스트 프로필 조회 - 실패 (존재하지 않는 계정)")
+  void getHostProfile_Fail_NotFound() {
+    // given
+    Long hostId = 999L;
+    Mockito.when(hostRepository.findById(hostId)).thenReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.getHostProfile(hostId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("errorCode", NOT_EXIST_ACCOUNT);
   }
 }

@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
@@ -11,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,5 +50,12 @@ public class HostController {
   public ResponseEntity<Void> deleteHost(@AuthenticationPrincipal UserDetailsImpl userDetails) {
     hostService.deleteHost(userDetails.getId());
     return ResponseEntity.ok().build();
+  }
+
+  // 호스트 프로필 조회 API
+  @GetMapping("/me")
+  public ResponseEntity<HostProfileResponse> getHostProfile(
+      @AuthenticationPrincipal UserDetailsImpl userDetails) {
+    return ResponseEntity.ok(hostService.getHostProfile(userDetails.getId()));
   }
 }
