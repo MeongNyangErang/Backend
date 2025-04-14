@@ -12,6 +12,7 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_R
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
+import com.meongnyangerang.meongnyangerang.dto.UserProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
@@ -95,5 +96,14 @@ public class UserService {
 
     user.setStatus(DELETED);
     user.setDeletedAt(LocalDateTime.now());
+  }
+
+  // 사용자 프로필 조회
+  @Transactional(readOnly = true)
+  public UserProfileResponse getMyProfile(Long userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    return UserProfileResponse.of(user);
   }
 }
