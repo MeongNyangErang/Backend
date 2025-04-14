@@ -146,5 +146,6 @@ public class HostService {
       throw new MeongnyangerangException(DUPLICATE_PHONE_NUMBER);
     }
 
+
   }
 }
