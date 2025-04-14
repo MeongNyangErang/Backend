@@ -2,8 +2,8 @@ package com.meongnyangerang.meongnyangerang.service.notification;
 
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
+import com.meongnyangerang.meongnyangerang.dto.notification.MessageNotificationPayload;
 import com.meongnyangerang.meongnyangerang.dto.notification.NotificationPayload;
-import com.meongnyangerang.meongnyangerang.dto.notification.ReservationPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -30,7 +30,7 @@ public class NotificationAsyncService {
       NotificationType notificationType
   ) {
     try {
-      NotificationPayload payload = NotificationPayload.from(
+      MessageNotificationPayload payload = MessageNotificationPayload.from(
           chatRoomId, senderId,
           senderType, receiverId,
           receiverType, content,
@@ -50,16 +50,16 @@ public class NotificationAsyncService {
   }
 
   @Async
-  public void sendReservationNotification(
-      Long reservationId,
+  public void sendNotification(
+      Long id,
       String content,
       Long receiverId,
       SenderType receiverType,
       NotificationType notificationType
   ) {
     try {
-      ReservationPayload payload = ReservationPayload.from(
-          reservationId, content,
+      NotificationPayload payload = NotificationPayload.from(
+          id, content,
           receiverId, receiverType,
           notificationType
       );

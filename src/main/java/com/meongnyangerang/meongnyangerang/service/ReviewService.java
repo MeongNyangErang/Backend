@@ -22,6 +22,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -47,6 +48,7 @@ public class ReviewService {
   private final ReservationRepository reservationRepository;
   private final ReviewImageRepository reviewImageRepository;
   private final AccommodationRepository accommodationRepository;
+  private final NotificationService notificationService;
 
   @Transactional
   public void createReview(Long userId, ReviewRequest reviewRequest, List<MultipartFile> images) {
@@ -59,7 +61,7 @@ public class ReviewService {
 
     Review review = reviewRequest.toEntity(reservation.getUser(),
         reservation.getRoom().getAccommodation(), reservation);
-    reviewRepository.save(review);
+    Review savedReview = reviewRepository.save(review);
 
     // 이미지 등록
     validateImageSize(images);
@@ -68,6 +70,8 @@ public class ReviewService {
     // 숙소 총 평점 업데이트
     updateAccommodationRating(reservation.getRoom().getAccommodation(), 0, review.getUserRating(),
         review.getPetFriendlyRating());
+
+    notificationService.sendReviewNotification(savedReview); // 알림 발송
   }
 
   public CustomReviewResponse<MyReviewResponse> getUsersReviews(Long userId, Long cursorId,

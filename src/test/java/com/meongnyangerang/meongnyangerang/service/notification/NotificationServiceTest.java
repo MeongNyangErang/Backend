@@ -347,7 +347,7 @@ class NotificationServiceTest {
     verify(notificationRepository, times(1))
         .save(notificationArgumentCaptor.capture());
     verify(notificationAsyncSender, times(1))
-        .sendReservationNotification(
+        .sendNotification(
             reservation.getId(),
             content,
             user.getId(),

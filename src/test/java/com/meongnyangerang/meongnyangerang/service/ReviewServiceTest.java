@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,7 +14,6 @@ import static org.mockito.Mockito.when;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
-import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
@@ -41,6 +39,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -78,6 +77,9 @@ class ReviewServiceTest {
 
   @Mock
   private ImageService imageService;
+
+  @Mock
+  private NotificationService notificationService;
 
   @InjectMocks
   private ReviewService reviewService;
@@ -130,6 +132,10 @@ class ReviewServiceTest {
 
     double previousTotalRating = accommodation.getTotalRating();
 
+    ArgumentCaptor<Review> savedReviewCaptor = ArgumentCaptor.forClass(Review.class);
+    Review savedReview = createReview(request, user, reservation);
+    when(reviewRepository.save(savedReviewCaptor.capture())).thenReturn(savedReview);
+
     // when
     reviewService.createReview(user.getId(), request, images);
 
@@ -154,6 +160,17 @@ class ReviewServiceTest {
     assertEquals("반려동물이 즐거워해요", capturedReview.getContent());
 
     assertNotEquals(previousTotalRating, accommodation.getTotalRating());
+
+    verify(notificationService, times(1)).sendReviewNotification(
+        savedReview);
+
+    // notificationService의 인자로 넘어간 review 검증
+    assertEquals(1L, savedReview.getId());
+    assertEquals(user, savedReview.getUser());
+    assertEquals(reservation, savedReview.getReservation());
+    assertEquals(3.0, savedReview.getUserRating());
+    assertEquals(4.0, savedReview.getPetFriendlyRating());
+    assertEquals("반려동물이 즐거워해요", savedReview.getContent());
   }
 
   @Test
@@ -1193,5 +1210,17 @@ class ReviewServiceTest {
         return imageUrl;
       }
     };
+  }
+
+  private static Review createReview(ReviewRequest request, User user, Reservation reservation) {
+    return Review.builder()
+        .id(1L)
+        .user(user)
+        .reservation(reservation)
+        .userRating(request.getUserRating())
+        .petFriendlyRating(request.getPetFriendlyRating())
+        .content(request.getContent())
+        .createdAt(LocalDateTime.now().minusDays(1))
+        .build();
   }
 }
