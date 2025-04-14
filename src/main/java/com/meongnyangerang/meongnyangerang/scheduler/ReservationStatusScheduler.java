@@ -1,4 +1,4 @@
-package com.meongnyangerang.meongnyangerang.component;
+package com.meongnyangerang.meongnyangerang.scheduler;
 
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
@@ -17,6 +17,7 @@ public class ReservationStatusScheduler {
 
   // 매일 새벽 2시에 실행
   @Scheduled(cron = "0 0 2 * * ?")
+//  @Scheduled(cron = "*/10 * * * * *")
   public void updateReservationStatus() {
     LocalDate today = LocalDate.now();
 

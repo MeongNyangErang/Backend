@@ -149,7 +149,7 @@ public class AccommodationService {
   /**
    * 숙소 상세 조회(비로그인 사용자, 일반 사용자, 호스트 모두 접근 가능한 API)
    */
-  @Transactional(readOnly = true)
+  @Transactional
   public AccommodationDetailResponse getAccommodationDetail(Long accommodationId) {
     Accommodation accommodation = accommodationRepository.findById(accommodationId)
         .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
@@ -175,6 +175,8 @@ public class AccommodationService {
     // 최신 리뷰 5개
     List<Review> reviews = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(
         accommodationId);
+
+    accommodationRepository.incrementViewCount(accommodationId);
 
     return AccommodationDetailResponse.of(accommodation, images, facilities, petFacilities,
         allowPets, reviews, rooms);

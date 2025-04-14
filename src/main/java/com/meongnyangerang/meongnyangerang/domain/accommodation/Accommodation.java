@@ -64,7 +64,10 @@ public class Accommodation {
   private String thumbnailUrl;
 
   @Column(nullable = false)
-  private Double totalRating = 0.0;
+  private Double totalRating;
+
+  @Column(nullable = false)
+  private Long viewCount;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
