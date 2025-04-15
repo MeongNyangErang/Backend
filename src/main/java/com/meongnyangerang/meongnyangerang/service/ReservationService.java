@@ -48,27 +48,26 @@ public class ReservationService {
   /**
    * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드. 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
    *
-   * @param userId             사용자 ID
-   * @param reservationRequest 예약 요청 정보
+   * @param userId  사용자 ID
+   * @param request 예약 요청 정보
    */
   @Transactional
-  public ReservationResponse createReservation(Long userId, ReservationRequest reservationRequest) {
+  public ReservationResponse createReservation(Long userId, ReservationRequest request) {
     // 사용자 검증
     User user = validateUser(userId);
 
     // 객실 검증
-    Room room = validateRoom(reservationRequest.getRoomId());
+    Room room = validateRoom(request.getRoomId());
 
     // 객실 예약 가능 여부 확인
-    checkRoomAvailability(room, reservationRequest.getCheckInDate(),
-        reservationRequest.getCheckOutDate());
+    checkRoomAvailability(room, request.getCheckInDate(),
+        request.getCheckOutDate());
 
     // 예약 날짜에 대해 객실 예약 처리
-    List<ReservationSlot> reservations = bookRoomForDates(room,
-        reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
+    bookRoomForDates(room, request.getCheckInDate(), request.getCheckOutDate());
 
     // 예약 정보 생성 후 DB에 저장
-    Reservation savedReservation = saveReservation(user, room, reservationRequest);
+    Reservation savedReservation = saveReservation(user, room, request);
 
     // 예약 알림 저장 및 전송 (사용자와 호스트에게 전송)
     notificationService.sendReservationNotification(
@@ -79,6 +78,76 @@ public class ReservationService {
     );
 
     return new ReservationResponse(UUID.randomUUID().toString());
+  }
+
+  /**
+   * 사용자가 예약 상태(RESERVED, COMPLETED, CANCELED)에 따라 예약 목록을 조회합니다.
+   *
+   * @param userId
+   * @param cursorId
+   * @param size
+   * @param status
+   */
+  public CustomReservationResponse<UserReservationResponse> getUserReservations(Long userId,
+      Long cursorId, int size,
+      ReservationStatus status) {
+    // 해당 유저의 예약 내역만 조회
+    List<Reservation> reservationList = reservationRepository.findByUserIdAndStatus(userId,
+        cursorId, size + 1, status.name());
+
+    // 예약 정보 -> DTO 변환
+    List<UserReservationResponse> content = reservationList.stream()
+        .limit(size)
+        .map(this::mapToUserReservationResponse)
+        .toList();
+
+    // 다음 데이터 존재 여부 확인
+    boolean hasNext = reservationList.size() > size;
+    Long cursor = hasNext ? reservationList.get(size).getId() : null;
+
+    return new CustomReservationResponse<>(content, cursor, hasNext);
+  }
+
+  @Transactional
+  public void cancelReservation(Long userId, Long reservationId) {
+    // 예약 정보 가져오기
+    Reservation reservation = reservationRepository.findById(reservationId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.RESERVATION_NOT_FOUND));
+
+    // 사용자가 예약한 내역인지 확인
+    if (!reservation.getUser().getId().equals(userId)) {
+      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
+
+    // 이미 취소된 예약인지 확인
+    if (reservation.getStatus() == ReservationStatus.CANCELED) {
+      throw new MeongnyangerangException(ErrorCode.RESERVATION_ALREADY_CANCELED);
+    }
+
+    updateReservationSlot(reservation);
+
+    // 예약 상태 변경
+    reservation.setStatus(ReservationStatus.CANCELED);
+  }
+
+  public CustomReservationResponse<HostReservationResponse> getHostReservation(Long hostId,
+      Long cursorId, int size,
+      ReservationStatus status) {
+    // 자신의 숙소 예약 내역만 조회
+    List<Reservation> reservationList = reservationRepository.findByHostIdAndStatus(hostId,
+        cursorId, size + 1, status.name());
+
+    // 예약 정보 -> DTO 변환
+    List<HostReservationResponse> content = reservationList.stream()
+        .limit(size)
+        .map(this::mapToHostReservationResponse)
+        .toList();
+
+    // 다음 데이터 존재 여부 확인
+    boolean hasNext = reservationList.size() > size;
+    Long cursor = hasNext ? reservationList.get(size).getId() : null;
+
+    return new CustomReservationResponse<>(content, cursor, hasNext);
   }
 
   /**
@@ -132,7 +201,7 @@ public class ReservationService {
    * @return 예약된 슬롯 목록
    * @throws MeongnyangerangException 이미 예약된 슬롯이 있을 경우 예외 발생
    */
-  private List<ReservationSlot> bookRoomForDates(Room room, LocalDate checkInDate,
+  private void bookRoomForDates(Room room, LocalDate checkInDate,
       LocalDate checkOutDate) {
     List<ReservationSlot> reservations = new ArrayList<>();
 
@@ -160,48 +229,28 @@ public class ReservationService {
     } catch (OptimisticLockException e) {
       throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
     }
-
-    return reservations;
   }
 
   /**
    * 사용자와 객실 정보 및 예약 요청 정보를 바탕으로 예약 정보를 DB에 저장합니다.
    *
-   * @param user               예약한 사용자
-   * @param room               예약된 객실
-   * @param reservationRequest 예약 요청 정보
+   * @param user    예약한 사용자
+   * @param room    예약된 객실
+   * @param request 예약 요청 정보
    */
-  private Reservation saveReservation(User user, Room room, ReservationRequest reservationRequest) {
-    Reservation reservation = reservationRequest.toEntity(user, room);
+  private Reservation saveReservation(User user, Room room, ReservationRequest request) {
+    Reservation reservation = request.toEntity(user, room);
     return reservationRepository.save(reservation);
   }
 
-  /**
-   * 사용자가 예약 상태(RESERVED, COMPLETED, CANCELED)에 따라 예약 목록을 조회합니다.
-   *
-   * @param userId
-   * @param cursorId
-   * @param size
-   * @param status
-   */
-  public CustomReservationResponse<UserReservationResponse> getUserReservations(Long userId,
-      Long cursorId, int size,
-      ReservationStatus status) {
-    // 해당 유저의 예약 내역만 조회
-    List<Reservation> reservationList = reservationRepository.findByUserIdAndStatus(userId,
-        cursorId, size + 1, status.name());
+  private void updateReservationSlot(Reservation reservation) {
+    List<ReservationSlot> slots = reservationSlotRepository.findByRoomAndReservedDateBetween(
+        reservation.getRoom(), reservation.getCheckInDate(),
+        reservation.getCheckOutDate().minusDays(1));
 
-    // 예약 정보 -> DTO 변환
-    List<UserReservationResponse> content = reservationList.stream()
-        .limit(size)
-        .map(this::mapToUserReservationResponse)
-        .toList();
-
-    // 다음 데이터 존재 여부 확인
-    boolean hasNext = reservationList.size() > size;
-    Long cursor = hasNext ? reservationList.get(size).getId() : null;
-
-    return new CustomReservationResponse<>(content, cursor, hasNext);
+    for (ReservationSlot slot : slots) {
+      slot.setIsReserved(false);
+    }
   }
 
   private UserReservationResponse mapToUserReservationResponse(Reservation reservation) {
@@ -226,58 +275,6 @@ public class ReservationService {
         .totalPrice(reservation.getTotalPrice())
         .reviewWritten(reviewWritten)
         .build();
-  }
-
-  @Transactional
-  public void cancelReservation(Long userId, Long reservationId) {
-    // 예약 정보 가져오기
-    Reservation reservation = reservationRepository.findById(reservationId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.RESERVATION_NOT_FOUND));
-
-    // 사용자가 예약한 내역인지 확인
-    if (!reservation.getUser().getId().equals(userId)) {
-      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
-    }
-
-    // 이미 취소된 예약인지 확인
-    if (reservation.getStatus() == ReservationStatus.CANCELED) {
-      throw new MeongnyangerangException(ErrorCode.RESERVATION_ALREADY_CANCELED);
-    }
-
-    updateReservationSlot(reservation);
-
-    // 예약 상태 변경
-    reservation.setStatus(ReservationStatus.CANCELED);
-  }
-
-  private void updateReservationSlot(Reservation reservation) {
-    List<ReservationSlot> slots = reservationSlotRepository.findByRoomAndReservedDateBetween(
-        reservation.getRoom(), reservation.getCheckInDate(),
-        reservation.getCheckOutDate().minusDays(1));
-
-    for (ReservationSlot slot : slots) {
-      slot.setIsReserved(false);
-    }
-  }
-
-  public CustomReservationResponse<HostReservationResponse> getHostReservation(Long hostId,
-      Long cursorId, int size,
-      ReservationStatus status) {
-    // 자신의 숙소 예약 내역만 조회
-    List<Reservation> reservationList = reservationRepository.findByHostIdAndStatus(hostId,
-        cursorId, size + 1, status.name());
-
-    // 예약 정보 -> DTO 변환
-    List<HostReservationResponse> content = reservationList.stream()
-        .limit(size)
-        .map(this::mapToHostReservationResponse)
-        .toList();
-
-    // 다음 데이터 존재 여부 확인
-    boolean hasNext = reservationList.size() > size;
-    Long cursor = hasNext ? reservationList.get(size).getId() : null;
-
-    return new CustomReservationResponse<>(content, cursor, hasNext);
   }
 
   private HostReservationResponse mapToHostReservationResponse(Reservation reservation) {

@@ -32,10 +32,10 @@ public class ReservationController {
   @PostMapping("/users/reservations")
   public ResponseEntity<ReservationResponse> createReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
-      @Valid @RequestBody ReservationRequest reservationRequest) {
+      @Valid @RequestBody ReservationRequest request) {
 
     ReservationResponse response = reservationService.createReservation(userDetails.getId(),
-        reservationRequest);
+        request);
 
     return ResponseEntity.ok(response);
   }
