@@ -70,4 +70,14 @@ public class HostController {
     hostService.updatePhoneNumber(userDetails.getId(), request.phoneNumber());
     return ResponseEntity.ok().build();
   }
+
+  // 호스트 이름 변경 API
+  @PatchMapping("/me/name")
+  public ResponseEntity<Void> updateName(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @Valid @RequestBody HostNameUpdateRequest request
+  ) {
+    hostService.updateName(userDetails.getId(), request.name());
+    return ResponseEntity.ok().build();
+  }
 }
