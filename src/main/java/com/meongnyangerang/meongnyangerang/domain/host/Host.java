@@ -76,4 +76,8 @@ public class Host {
   public void updatePhoneNumber(String newPhoneNumber) {
     this.phoneNumber = newPhoneNumber;
   }
+
+  public void updateName(String newName) {
+    this.name = newName;
+  }
 }

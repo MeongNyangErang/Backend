@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.dto.HostNameUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.HostPhoneUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
@@ -68,6 +69,16 @@ public class HostController {
       @Valid @RequestBody HostPhoneUpdateRequest request
   ) {
     hostService.updatePhoneNumber(userDetails.getId(), request.phoneNumber());
+    return ResponseEntity.ok().build();
+  }
+
+  // 호스트 이름 변경 API
+  @PatchMapping("/me/name")
+  public ResponseEntity<Void> updateName(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @Valid @RequestBody HostNameUpdateRequest request
+  ) {
+    hostService.updateName(userDetails.getId(), request.name());
     return ResponseEntity.ok().build();
   }
 }

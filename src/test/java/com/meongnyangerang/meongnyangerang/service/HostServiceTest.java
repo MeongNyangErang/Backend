@@ -264,5 +264,56 @@ class HostServiceTest {
         .isEqualTo(ErrorCode.DUPLICATE_PHONE_NUMBER);
   }
 
+  @DisplayName("호스트 이름 변경 - 성공")
+  @Test
+  void updateName_success() {
+    // given
+    Long hostId = 1L;
+    Host host = Host.builder()
+        .id(hostId)
+        .name("기존이름")
+        .build();
 
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+
+    // when
+    hostService.updateName(hostId, "새이름");
+
+    // then
+    assertThat(host.getName()).isEqualTo("새이름");
+  }
+
+  @DisplayName("호스트 이름 변경 - 실패 (동일한 이름)")
+  @Test
+  void updateName_fail_sameName() {
+    // given
+    Long hostId = 1L;
+    String sameName = "동일이름";
+    Host host = Host.builder()
+        .id(hostId)
+        .name(sameName)
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updateName(hostId, sameName))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ALREADY_REGISTERED_NAME);
+  }
+
+  @DisplayName("호스트 이름 변경 - 실패 (존재하지 않는 호스트)")
+  @Test
+  void updateName_fail_hostNotFound() {
+    // given
+    Long hostId = 1L;
+    given(hostRepository.findById(hostId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updateName(hostId, "아무이름"))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
 }

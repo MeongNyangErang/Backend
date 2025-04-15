@@ -5,6 +5,7 @@ import static com.meongnyangerang.meongnyangerang.domain.reservation.Reservation
 import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_HOST;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_PENDING;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_PHONE_NUMBER;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_PHONE_NUMBER;
@@ -27,6 +28,7 @@ import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -146,5 +148,17 @@ public class HostService {
       throw new MeongnyangerangException(DUPLICATE_PHONE_NUMBER);
     }
     host.updatePhoneNumber(newPhoneNumber);
+  }
+
+  // 호스트 이름 변경
+  public void updateName(Long hostId, String newName) {
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    if (host.getName().equals(newName)) {
+      throw new MeongnyangerangException(ALREADY_REGISTERED_NAME);
+    }
+
+    host.updateName(newName);
   }
 }
