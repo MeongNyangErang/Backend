@@ -52,7 +52,7 @@ public class AccommodationRecommendationService {
     Map<String, List<RecommendationResponse>> result = new HashMap<>();
 
     for (PetType petType : PetType.values()) {
-      result.put(petType.name(), searchByPetType(petType));
+      result.put(petType.getValue(), searchByPetType(petType));
     }
 
     return result;

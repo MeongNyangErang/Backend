@@ -112,19 +112,19 @@ class AccommodationRecommendationServiceTest {
 
     // then
     // 결과에 각 petType이 key로 들어 있는지 확인
-    assertTrue(result.containsKey("SMALL_DOG"));
-    assertTrue(result.containsKey("LARGE_DOG"));
-    assertTrue(result.containsKey("MEDIUM_DOG"));
-    assertTrue(result.containsKey("CAT"));
+    assertTrue(result.containsKey("소형견"));
+    assertTrue(result.containsKey("대형견"));
+    assertTrue(result.containsKey("중형견"));
+    assertTrue(result.containsKey("고양이"));
 
     // 각 key에 대한 추천 숙소 수가 예상대로인지 확인
-    assertEquals(1, result.get("SMALL_DOG").size());
-    assertEquals(2, result.get("LARGE_DOG").size());
-    assertEquals(1, result.get("MEDIUM_DOG").size());
-    assertEquals(1, result.get("CAT").size());
+    assertEquals(1, result.get("소형견").size());
+    assertEquals(2, result.get("대형견").size());
+    assertEquals(1, result.get("중형견").size());
+    assertEquals(1, result.get("고양이").size());
 
     // LARGE_DOG 추천 목록이 평점 높은 순으로 정렬되어 있는지 확인
-    List<RecommendationResponse> largeDogList = result.get("LARGE_DOG");
+    List<RecommendationResponse> largeDogList = result.get("대형견");
     assertEquals(4.7, largeDogList.get(0).getTotalRating());
     assertEquals(4.5, largeDogList.get(1).getTotalRating());
   }
