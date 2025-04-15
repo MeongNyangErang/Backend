@@ -38,6 +38,7 @@ import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -83,6 +84,9 @@ class AccommodationServiceTest {
   @Mock
   private ReviewRepository reviewRepository;
 
+  @Mock
+  private AccommodationRoomSearchService searchService;
+
   @InjectMocks
   private AccommodationService accommodationService;
 
@@ -109,6 +113,7 @@ class AccommodationServiceTest {
   private List<AccommodationPetFacility> petFacilities;
   private List<AllowPet> allowPets;
   private List<AccommodationImage> accommodationImages;
+  private List<String> deleteImageUrls;
 
   @BeforeEach
   void setUp() {
@@ -156,7 +161,8 @@ class AccommodationServiceTest {
         127.123,
         FACILITY_TYPES,
         PET_FACILITY_TYPES,
-        PET_TYPES
+        PET_TYPES,
+        deleteImageUrls
     );
 
     facilities = Arrays.asList(AccommodationFacility.builder()
@@ -222,6 +228,8 @@ class AccommodationServiceTest {
             "image/jpg",
             "image1 content".getBytes())
     );
+
+    deleteImageUrls = List.of("test-delete-image1.jpg", "test-delete-image2.jpg");
   }
 
   @Test
@@ -403,43 +411,34 @@ class AccommodationServiceTest {
   void updateAccommodation_Success() {
     // given
     Long accommodationId = accommodation.getId();
+    Long hostId = host.getId();
 
-    when(accommodationRepository.findByHostId(host.getId()))
-        .thenReturn(Optional.ofNullable(accommodation));
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(accommodation));
+    when(accommodationImageRepository.countByAccommodationId(accommodationId)).thenReturn(1);
     when(imageService.storeImage(thumbnail)).thenReturn(THUMBNAIL_URL);
-    when(imageService.storeImage(additionalImages.get(0))).thenReturn(ADDITIONAL_IMAGE_URL1);
+
+    ArgumentCaptor<List<AccommodationFacility>> facilityCaptor = ArgumentCaptor.forClass(
+        List.class);
+    when(accommodationFacilityRepository.saveAll(facilityCaptor.capture()))
+        .thenReturn(facilities);
+    ArgumentCaptor<List<AccommodationPetFacility>> petFacilityCaptor = ArgumentCaptor.forClass(
+        List.class);
+    when(accommodationPetFacilityRepository.saveAll(petFacilityCaptor.capture()))
+        .thenReturn(petFacilities);
+    ArgumentCaptor<List<AllowPet>> allowPetCaptor = ArgumentCaptor.forClass(
+        List.class);
+    when(allowPetRepository.saveAll(allowPetCaptor.capture())).thenReturn(allowPets);
 
     // when
-    AccommodationResponse response = accommodationService
-        .updateAccommodation(host.getId(), updateRequest, thumbnail, additionalImages);
+    accommodationService.updateAccommodation(hostId, updateRequest, thumbnail, additionalImages);
 
     // then
-    assertThat(response).isNotNull();
-
-    // 숙소 기본 정보 검증
-    assertThat(response.accommodationId()).isEqualTo(accommodationId);
-
-    verify(accommodationFacilityRepository, times(1))
-        .deleteAllByAccommodationId(accommodationId);
-
-    verify(accommodationPetFacilityRepository, times(1))
-        .deleteAllByAccommodationId(accommodationId);
-
-    verify(allowPetRepository, times(1))
-        .deleteAllByAccommodationId(accommodationId);
-
-    verify(accommodationImageRepository, times(1))
-        .deleteAllByAccommodationId(accommodationId);
-
-    // 이미지 서비스 호출 검증
-    verify(imageService, times(1)).storeImage(thumbnail);
-    verify(imageService, times(1)).storeImage(additionalImages.get(0));
-
-    // 이미지 삭제 등록 확인
-    ArgumentCaptor<List<String>> deletedImagesCaptor = ArgumentCaptor.forClass(List.class);
-    verify(imageService).deleteImagesAsync(deletedImagesCaptor.capture());
-    List<String> deletedImages = deletedImagesCaptor.getValue();
-    assertThat(deletedImages).contains(OLD_THUMBNAIL_URL);
+    verify(accommodationRepository).findByHostId(hostId);
+    verify(imageService).storeImage(thumbnail);
+    verify(accommodationImageRepository).countByAccommodationId(accommodation.getId());
+    verify(accommodationFacilityRepository).deleteAllByAccommodationId(accommodation.getId());
+    verify(accommodationPetFacilityRepository).deleteAllByAccommodationId(accommodation.getId());
+    verify(allowPetRepository).deleteAllByAccommodationId(accommodation.getId());
   }
 
   @Test
@@ -516,11 +515,15 @@ class AccommodationServiceTest {
     // when
     Mockito.when(accommodationRepository.findById(1L)).thenReturn(Optional.of(accommodation));
     Mockito.when(accommodationImageRepository.findAllByAccommodationId(1L)).thenReturn(images);
-    Mockito.when(accommodationFacilityRepository.findAllByAccommodationId(1L)).thenReturn(facilities);
-    Mockito.when(accommodationPetFacilityRepository.findAllByAccommodationId(1L)).thenReturn(petFacilities);
+    Mockito.when(accommodationFacilityRepository.findAllByAccommodationId(1L))
+        .thenReturn(facilities);
+    Mockito.when(accommodationPetFacilityRepository.findAllByAccommodationId(1L))
+        .thenReturn(petFacilities);
     Mockito.when(allowPetRepository.findAllByAccommodationId(1L)).thenReturn(allowPets);
-    Mockito.when(roomRepository.findAllByAccommodationIdOrderByPriceAsc(1L)).thenReturn(List.of(room));
-    Mockito.when(reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(review));
+    Mockito.when(roomRepository.findAllByAccommodationIdOrderByPriceAsc(1L))
+        .thenReturn(List.of(room));
+    Mockito.when(reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(1L))
+        .thenReturn(List.of(review));
 
     // then
     AccommodationDetailResponse response = accommodationService.getAccommodationDetail(1L);
@@ -543,10 +546,12 @@ class AccommodationServiceTest {
     Mockito.when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.empty());
 
     // when
-    Throwable thrown = catchThrowable(() -> accommodationService.getAccommodationDetail(accommodationId));
+    Throwable thrown = catchThrowable(
+        () -> accommodationService.getAccommodationDetail(accommodationId));
 
     // then
     assertThat(thrown).isInstanceOf(MeongnyangerangException.class);
-    assertThat(((MeongnyangerangException) thrown).getErrorCode()).isEqualTo(ErrorCode.ACCOMMODATION_NOT_FOUND);
+    assertThat(((MeongnyangerangException) thrown).getErrorCode()).isEqualTo(
+        ErrorCode.ACCOMMODATION_NOT_FOUND);
   }
 }

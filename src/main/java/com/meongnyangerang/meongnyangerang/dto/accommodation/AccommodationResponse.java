@@ -1,7 +1,6 @@
 package com.meongnyangerang.meongnyangerang.dto.accommodation;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
-import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationImage;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AllowPet;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationFacility;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacility;
@@ -28,7 +27,7 @@ public record AccommodationResponse(
       List<AccommodationFacility> facilities,
       List<AccommodationPetFacility> petFacilities,
       List<AllowPet> allowedPets,
-      List<AccommodationImage> additionalImages
+      List<String> additionalImageUrls
   ) {
     List<String> facilityValues = facilities.stream()
         .map(facility -> facility.getType().getValue())
@@ -40,10 +39,6 @@ public record AccommodationResponse(
 
     List<String> allowPetValues = allowedPets.stream()
         .map(allowPet -> allowPet.getPetType().getValue())
-        .toList();
-
-    List<String> imageUrls = additionalImages.stream()
-        .map(AccommodationImage::getImageUrl)
         .toList();
 
     return new AccommodationResponse(
@@ -59,7 +54,7 @@ public record AccommodationResponse(
         facilityValues,
         petFacilityValues,
         allowPetValues,
-        imageUrls
+        additionalImageUrls
     );
   }
 }

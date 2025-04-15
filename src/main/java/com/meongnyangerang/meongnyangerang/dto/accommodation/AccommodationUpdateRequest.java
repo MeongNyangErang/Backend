@@ -37,7 +37,9 @@ public record AccommodationUpdateRequest(
     List<AccommodationPetFacilityType> petFacilityTypes,
 
     @NotEmpty(message = "허용 가능한 반려동물 유형을 하나 이상 선택해 주세요.")
-    List<PetType> allowPetTypes
+    List<PetType> allowPetTypes,
+
+    List<String> deleteImageUrls
 ) {
 
   public static AccommodationUpdateRequest of(
@@ -50,7 +52,8 @@ public record AccommodationUpdateRequest(
       Double longitude,
       List<AccommodationFacilityType> facilityTypes,
       List<AccommodationPetFacilityType> petFacilityTypes,
-      List<PetType> allowPetTypes
+      List<PetType> allowPetTypes,
+      List<String> deleteImageUrls
   ) {
     return new AccommodationUpdateRequest(
         name,
@@ -62,7 +65,8 @@ public record AccommodationUpdateRequest(
         longitude,
         facilityTypes,
         petFacilityTypes,
-        allowPetTypes
+        allowPetTypes,
+        deleteImageUrls
     );
   }
 }
