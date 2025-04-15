@@ -2,7 +2,6 @@ package com.meongnyangerang.meongnyangerang.service;
 
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_ALREADY_EXISTS;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_NOT_FOUND;
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_REGISTRATION_FAILED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXISTS_HOST;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
@@ -20,6 +19,7 @@ import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationCreate
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationUpdateRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
@@ -30,7 +30,6 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +55,8 @@ public class AccommodationService {
   private final AccommodationRoomSearchService searchService;
   private final ReviewRepository reviewRepository;
 
+  private static final int MAX_ADDITIONAL_IMAGE_COUNT = 3;
+
   /**
    * 숙소 등록
    */
@@ -65,45 +66,47 @@ public class AccommodationService {
       MultipartFile thumbnail,
       List<MultipartFile> additionalImages
   ) {
+    log.info("숙소 등록 시작");
+
     Host host = validateHost(hostId);
     additionalImages = initAdditionalImages(additionalImages);
+    validateImagesCount(additionalImages);
 
-    List<String> trackingList = new ArrayList<>(); // 업로드 성공한 이미지 추적
+    String thumbnailUrl = imageService.storeImage(thumbnail);
+    List<String> newAdditionalImageUrls = uploadImages(additionalImages);
 
-    try {
-      String thumbnailUrl = uploadImage(thumbnail, trackingList);
-      List<String> newAdditionalImageUrls = uploadImages(additionalImages, trackingList);
+    Accommodation accommodation = request.toEntity(host, thumbnailUrl);
+    saveAccommodationWithRelatedEntities(request, accommodation, newAdditionalImageUrls);
 
-      Accommodation accommodation = request.toEntity(host, thumbnailUrl);
-      saveEntities(request, accommodation, newAdditionalImageUrls);
-
-      log.info("숙소 등록 성공, 호스트 ID : {}, 숙소 ID : {}", hostId, accommodation.getId());
-    } catch (Exception e) {
-      log.error("숙소 등록 에러 발생, S3에 업로드된 이미지 삭제, 원인: {}", e.getMessage());
-      imageService.deleteImagesAsync(trackingList);
-      throw new MeongnyangerangException(ACCOMMODATION_REGISTRATION_FAILED);
-    }
-  }
-
-  @Transactional
-  public void saveEntities(
-      AccommodationCreateRequest request,
-      Accommodation accommodation,
-      List<String> newAdditionalImageUrls
-  ) {
-    accommodationRepository.save(accommodation);
-    saveAccommodationFacilities(request.facilityTypes(), accommodation);
-    saveAccommodationPetFacilities(request.petFacilityTypes(), accommodation);
-    saveAllowPets(request.allowPetTypes(), accommodation);
-    saveAdditionalImages(newAdditionalImageUrls, accommodation);
+    log.info("숙소 등록 성공, 호스트 ID : {}, 숙소 ID : {}", hostId, accommodation.getId());
   }
 
   /**
    * 숙소 조회
    */
   public AccommodationResponse getAccommodation(Long hostId) {
+    log.info("숙소 조회 시작");
+
     Accommodation accommodation = findAccommodationByHostId(hostId);
-    return createAccommodationResponse(accommodation);
+    Long accommodationId = accommodation.getId();
+
+    List<AccommodationFacility> facilities = accommodationFacilityRepository
+        .findAllByAccommodationId(accommodationId);
+
+    List<AccommodationPetFacility> petFacilities = accommodationPetFacilityRepository
+        .findAllByAccommodationId(accommodationId);
+
+    List<AllowPet> allowPets = allowPetRepository.findAllByAccommodationId(accommodationId);
+    List<String> additionalImageUrls = getImageUrls(accommodationId);
+
+    log.info("숙소 조회 성공, 호스트 ID : {}, 숙소 ID : {}", hostId, accommodation.getId());
+    return createAccommodationResponse(
+        accommodation,
+        facilities,
+        petFacilities,
+        allowPets,
+        additionalImageUrls
+    );
   }
 
   /**
@@ -116,34 +119,33 @@ public class AccommodationService {
       MultipartFile thumbnail,
       List<MultipartFile> newAdditionalImages
   ) {
+    log.info("숙소 수정 시작");
+    
     Accommodation accommodation = findAccommodationByHostId(hostId);
     newAdditionalImages = initAdditionalImages(newAdditionalImages);
+    validateImagesCount(newAdditionalImages);
 
-    List<String> trackingList = new ArrayList<>(); // 업로드 성공한 이미지 추적 (롤백 위함)
-    List<String> oldImageUrlsToDelete = new ArrayList<>(); // 삭제할 이미지 추적
+    String newThumbnailUrl = thumbnailUpdate(accommodation.getThumbnailUrl(), thumbnail);
+    List<String> newAdditionalImageUrls = additionalImagesUpdate(
+        accommodation, newAdditionalImages, request.deleteImageUrls());
 
-    try {
-      String newThumbnailUrl = processThumbnailUpdate(
-          accommodation.getThumbnailUrl(), thumbnail, trackingList, oldImageUrlsToDelete);
+    accommodation.updateAccommodation(request, newThumbnailUrl);
+    List<AccommodationFacility> updatedFacilities = updateFacilities(
+        request.facilityTypes(), accommodation);
+    List<AccommodationPetFacility> updatedPetFacilities = updatePetFacilities(
+        request.petFacilityTypes(), accommodation);
+    List<AllowPet> updatedAllowPets = updateAllowPets(request.allowPetTypes(), accommodation);
 
-      List<String> newAdditionalImageUrls = processAdditionalImagesUpdate(
-          accommodation, newAdditionalImages, trackingList, oldImageUrlsToDelete);
+    updateSearchIndex(accommodation); // 색인 갱신 - 객실이 있을 경우에만
 
-      updateEntities(accommodation, request, newThumbnailUrl, newAdditionalImageUrls);
-      imageService.deleteImagesAsync(oldImageUrlsToDelete);
-
-      // 색인 갱신 - 객실이 있을 경우에만
-      List<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId());
-      searchService.updateAllRooms(accommodation, rooms);
-      searchService.updateAccommodationDocument(accommodation);
-
-      log.info("숙소 수정 성공, 숙소 ID : {}", accommodation.getId());
-      return createAccommodationResponse(accommodation);
-    } catch (Exception e) {
-      log.error("숙소 수정 에러 발생, S3에 업로드된 이미지 삭제 처리, 원인: {}", e.getMessage());
-      imageService.deleteImagesAsync(trackingList);
-      throw new MeongnyangerangException(ACCOMMODATION_REGISTRATION_FAILED);
-    }
+    log.info("숙소 수정 성공, 호스트 ID : {}, 숙소 ID : {}", hostId, accommodation.getId());
+    return createAccommodationResponse(
+        accommodation,
+        updatedFacilities,
+        updatedPetFacilities,
+        updatedAllowPets,
+        newAdditionalImageUrls
+    );
   }
 
   /**
@@ -182,69 +184,76 @@ public class AccommodationService {
         allowPets, reviews, rooms);
   }
 
-  private String uploadImage(MultipartFile thumbnail, List<String> trackingList) {
-    String thumbnailUrl = imageService.storeImage(thumbnail);
-    trackingList.add(thumbnailUrl);
-    return thumbnailUrl;
-  }
-
-  private String processThumbnailUpdate(
-      String oldThumbnailUrl,
-      MultipartFile newThumbnail,
-      List<String> trackingList,
-      List<String> oldImageUrlsToDelete
+  private void saveAccommodationWithRelatedEntities(
+      AccommodationCreateRequest request,
+      Accommodation accommodation,
+      List<String> newAdditionalImageUrls
   ) {
-    String newThumbnailUrl = oldThumbnailUrl;
-
-    if (newThumbnail != null && !newThumbnail.isEmpty()) {
-      newThumbnailUrl = uploadImage(newThumbnail, trackingList);
-      oldImageUrlsToDelete.add(oldThumbnailUrl);
-    }
-
-    return newThumbnailUrl;
+    accommodationRepository.save(accommodation);
+    saveAccommodationFacilities(request.facilityTypes(), accommodation);
+    saveAccommodationPetFacilities(request.petFacilityTypes(), accommodation);
+    saveAllowPets(request.allowPetTypes(), accommodation);
+    saveAdditionalImages(newAdditionalImageUrls, accommodation);
   }
 
-  private List<String> processAdditionalImagesUpdate(
+  private String thumbnailUpdate(String oldThumbnailUrl, MultipartFile newThumbnail) {
+    if (newThumbnail == null || newThumbnail.isEmpty()) {
+      return oldThumbnailUrl;
+    }
+    imageService.deleteImageAsync(oldThumbnailUrl);
+
+    return imageService.storeImage(newThumbnail);
+  }
+
+  private List<String> additionalImagesUpdate(
       Accommodation accommodation,
       List<MultipartFile> newAdditionalImages,
-      List<String> trackingList,
-      List<String> oldImageUrlsToDelete
+      List<String> deleteImageUrls
   ) {
-    if (newAdditionalImages.isEmpty()) {
-      return List.of();
-    }
-    List<String> newAdditionalImageUrls = uploadImages(newAdditionalImages, trackingList);
+    // 현재 숙소에 연결된 모든 추가 이미지 개수를 가져옴
+    int currentImagesCount = accommodationImageRepository.countByAccommodationId(
+        accommodation.getId());
 
-    List<AccommodationImage> existingImages = accommodationImageRepository
-        .findAllByAccommodationId(accommodation.getId());
+    // 삭제될 이미지 개수 계산
+    int deleteCount = (deleteImageUrls != null) ? deleteImageUrls.size() : 0;
 
-    for (AccommodationImage image : existingImages) {
-      oldImageUrlsToDelete.add(image.getImageUrl());
+    // 삭제 후 남을 이미지 개수 + 새로 추가될 이미지 개수가 3을 초과하는지 확인
+    int totalImagesAfterUpdate = currentImagesCount - deleteCount + newAdditionalImages.size();
+
+    if (totalImagesAfterUpdate > MAX_ADDITIONAL_IMAGE_COUNT) {
+      throw new MeongnyangerangException(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED);
     }
+    if (deleteCount > 0) {
+      imageService.deleteImagesAsync(deleteImageUrls);
+      accommodationImageRepository.deleteAllByImageUrl(deleteImageUrls);
+    }
+    List<String> newAdditionalImageUrls = uploadImages(newAdditionalImages);
+    saveAdditionalImages(newAdditionalImageUrls, accommodation);
 
     return newAdditionalImageUrls;
   }
 
-  private AccommodationResponse createAccommodationResponse(Accommodation accommodation) {
-    Long accommodationId = accommodation.getId();
+  private List<String> getImageUrls(Long accommodationId) {
+    return accommodationImageRepository
+        .findAllByAccommodationId(accommodationId)
+        .stream()
+        .map(AccommodationImage::getImageUrl)
+        .toList();
+  }
 
-    List<AccommodationFacility> facilities = accommodationFacilityRepository
-        .findAllByAccommodationId(accommodationId);
-
-    List<AccommodationPetFacility> petFacilities = accommodationPetFacilityRepository
-        .findAllByAccommodationId(accommodationId);
-
-    List<AllowPet> allowPets = allowPetRepository.findAllByAccommodationId(accommodationId);
-
-    List<AccommodationImage> additionalImages = accommodationImageRepository
-        .findAllByAccommodationId(accommodationId);
-
+  private AccommodationResponse createAccommodationResponse(
+      Accommodation accommodation,
+      List<AccommodationFacility> savedFacility,
+      List<AccommodationPetFacility> savedPetFacilities,
+      List<AllowPet> savedAllowPets,
+      List<String> additionalImageUrls
+  ) {
     return AccommodationResponse.of(
         accommodation,
-        facilities,
-        petFacilities,
-        allowPets,
-        additionalImages
+        savedFacility,
+        savedPetFacilities,
+        savedAllowPets,
+        additionalImageUrls
     );
   }
 
@@ -253,58 +262,32 @@ public class AccommodationService {
         .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
   }
 
-  private void updateEntities(
-      Accommodation accommodation,
-      AccommodationUpdateRequest request,
-      String newThumbnailUrl,
-      List<String> newAdditionalImageUrls
-  ) {
-    accommodation.updateAccommodation(request, newThumbnailUrl);
-    updateFacilities(request.facilityTypes(), accommodation);
-
-    updatePetFacilities(request.petFacilityTypes(), accommodation);
-    updateAllowPets(request.allowPetTypes(), accommodation);
-
-    if (!newAdditionalImageUrls.isEmpty()) {
-      accommodationImageRepository.deleteAllByAccommodationId(accommodation.getId());
-      saveAdditionalImages(newAdditionalImageUrls, accommodation);
-    }
-  }
-
-  private void updateFacilities(
+  private List<AccommodationFacility> updateFacilities(
       List<AccommodationFacilityType> newFacilityTypes, Accommodation accommodation
   ) {
     accommodationFacilityRepository.deleteAllByAccommodationId(accommodation.getId());
-    saveAccommodationFacilities(newFacilityTypes, accommodation);
+    return saveAccommodationFacilities(newFacilityTypes, accommodation);
   }
 
-  private void updatePetFacilities(
+  private List<AccommodationPetFacility> updatePetFacilities(
       List<AccommodationPetFacilityType> newPetFacilityTypes, Accommodation accommodation
   ) {
     accommodationPetFacilityRepository.deleteAllByAccommodationId(accommodation.getId());
-    saveAccommodationPetFacilities(newPetFacilityTypes, accommodation);
+    return saveAccommodationPetFacilities(newPetFacilityTypes, accommodation);
   }
 
-  private void updateAllowPets(List<PetType> newPetTypes, Accommodation accommodation) {
+  private List<AllowPet> updateAllowPets(List<PetType> newPetTypes, Accommodation accommodation) {
     allowPetRepository.deleteAllByAccommodationId(accommodation.getId());
-    saveAllowPets(newPetTypes, accommodation);
+    return saveAllowPets(newPetTypes, accommodation);
   }
 
-  private List<String> uploadImages(
-      List<MultipartFile> additionalImages,
-      List<String> uploadedImageUrls
-  ) {
-    List<String> imageUrls = new ArrayList<>();
-
-    for (MultipartFile image : additionalImages) {
-      String imageUrl = uploadImage(image, imageUrls);
-      uploadedImageUrls.add(imageUrl);
-    }
-
-    return imageUrls;
+  private List<String> uploadImages(List<MultipartFile> additionalImages) {
+    return additionalImages.stream()
+        .map(imageService::storeImage)
+        .toList();
   }
 
-  private void saveAccommodationFacilities(
+  private List<AccommodationFacility> saveAccommodationFacilities(
       List<AccommodationFacilityType> facilityTypes, Accommodation accommodation
   ) {
     List<AccommodationFacility> facilities = facilityTypes.stream()
@@ -314,10 +297,10 @@ public class AccommodationService {
             .build())
         .toList();
 
-    accommodationFacilityRepository.saveAll(facilities);
+    return accommodationFacilityRepository.saveAll(facilities);
   }
 
-  private void saveAccommodationPetFacilities(
+  private List<AccommodationPetFacility> saveAccommodationPetFacilities(
       List<AccommodationPetFacilityType> petFacilityTypes, Accommodation accommodation
   ) {
     List<AccommodationPetFacility> petFacilities = petFacilityTypes.stream()
@@ -327,10 +310,10 @@ public class AccommodationService {
             .build())
         .toList();
 
-    accommodationPetFacilityRepository.saveAll(petFacilities);
+    return accommodationPetFacilityRepository.saveAll(petFacilities);
   }
 
-  private void saveAllowPets(List<PetType> petTypes, Accommodation accommodation) {
+  private List<AllowPet> saveAllowPets(List<PetType> petTypes, Accommodation accommodation) {
     List<AllowPet> allowPets = petTypes.stream()
         .map(petType -> AllowPet.builder()
             .accommodation(accommodation)
@@ -338,18 +321,24 @@ public class AccommodationService {
             .build())
         .toList();
 
-    allowPetRepository.saveAll(allowPets);
+    return allowPetRepository.saveAll(allowPets);
   }
 
-  private void saveAdditionalImages(List<String> filenames, Accommodation accommodation) {
-    List<AccommodationImage> accommodationImages = filenames.stream()
-        .map(filename -> AccommodationImage.builder()
+  private void saveAdditionalImages(List<String> additionalImageUrls, Accommodation accommodation) {
+    List<AccommodationImage> accommodationImages = additionalImageUrls.stream()
+        .map(additionalImageUrl -> AccommodationImage.builder()
             .accommodation(accommodation)
-            .imageUrl(filename)
+            .imageUrl(additionalImageUrl)
             .build())
         .toList();
 
     accommodationImageRepository.saveAll(accommodationImages);
+  }
+
+  private void updateSearchIndex(Accommodation accommodation) {
+    List<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId());
+    searchService.updateAllRooms(accommodation, rooms);
+    searchService.updateAccommodationDocument(accommodation);
   }
 
   private Host validateHost(Long hostId) {
@@ -373,5 +362,11 @@ public class AccommodationService {
   private Host getHost(Long hostId) {
     return hostRepository.findById(hostId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXISTS_HOST));
+  }
+
+  private void validateImagesCount(List<MultipartFile> newAdditionalImages) {
+    if (newAdditionalImages.size() > 3) {
+      throw new MeongnyangerangException(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED);
+    }
   }
 }
