@@ -903,7 +903,7 @@ class ReviewServiceTest {
   }
 
   @Test
-  @DisplayName("숙소 목록 조회 성공 - 다음 커서 존재")
+  @DisplayName("호스트의 숙소 목록 조회 성공 - 다음 커서 존재")
   void getHostReviews_Success_WithNextCursor() {
     // given
     settingTestReview();
@@ -929,31 +929,34 @@ class ReviewServiceTest {
     assertThat(response.content()).hasSize(3);
     assertThat(response.hasNext()).isTrue();
     assertThat(response.cursorId()).isEqualTo(3L);
-
+    
     // 반환된 리뷰의 ID 검증
     List<Long> returnedIds = response.content().stream()
         .map(ReviewContent::reviewId)
         .toList();
     assertThat(returnedIds).containsExactly(1L, 2L, 3L);
 
-    // 첫 번째 리뷰의 이미지 검증
+    // 첫 번째 리뷰 검증
     ReviewContent firstReview = response.content().get(0);
+    assertThat(firstReview.nickname()).isEqualTo("닉네임1");
     assertThat(firstReview.reviewId()).isEqualTo(1L);
     assertThat(firstReview.imageUrls()).contains("image1_1.jpg");
 
-    // 두 번째 리뷰의 이미지 검증
+    // 두 번째 리뷰 검증
     ReviewContent secondReview = response.content().get(1);
+    assertThat(secondReview.nickname()).isEqualTo("닉네임2");
     assertThat(secondReview.reviewId()).isEqualTo(2L);
     assertThat(secondReview.imageUrls()).contains("image2_1.jpg");
 
-    // 세 번째 리뷰의 이미지 검증
+    // 세 번째 리뷰 검증
     ReviewContent thirdReview = response.content().get(2);
+    assertThat(thirdReview.nickname()).isEqualTo("닉네임3");
     assertThat(thirdReview.reviewId()).isEqualTo(3L);
     assertThat(thirdReview.imageUrls()).contains("image3_1.jpg");
   }
 
   @Test
-  @DisplayName("숙소 목록 조회 성공 - 다음 커서 없음")
+  @DisplayName("호스트의 숙소 목록 조회 성공 - 다음 커서 없음")
   void getHostReviews_Success_WithoutNextCursor() {
     // given
     settingTestReview();
@@ -983,33 +986,39 @@ class ReviewServiceTest {
         .toList();
     assertThat(returnedIds).containsExactly(1L, 2L, 3L, 4L, 5L);
 
-    // 첫 번째 리뷰의 이미지 검증
+    // 첫 번째 리뷰 검증
     ReviewContent firstReview = response.content().get(0);
+    assertThat(firstReview.nickname()).isEqualTo("닉네임1");
     assertThat(firstReview.reviewId()).isEqualTo(1L);
     assertThat(firstReview.imageUrls()).contains("image1_1.jpg");
 
-    // 두 번째 리뷰의 이미지 검증
+    // 두 번째 리뷰 검증
     ReviewContent secondReview = response.content().get(1);
+    assertThat(secondReview.nickname()).isEqualTo("닉네임2");
     assertThat(secondReview.reviewId()).isEqualTo(2L);
     assertThat(secondReview.imageUrls()).contains("image2_1.jpg");
 
-    // 세 번째 리뷰의 이미지 검증
+    // 세 번째 리뷰 검증
     ReviewContent thirdReview = response.content().get(2);
+    assertThat(thirdReview.nickname()).isEqualTo("닉네임3");
     assertThat(thirdReview.reviewId()).isEqualTo(3L);
     assertThat(thirdReview.imageUrls()).contains("image3_1.jpg");
 
-    // 네 번째 리뷰의 이미지 검증
+    // 네 번째 리뷰 검증
     ReviewContent fourthReview = response.content().get(3);
+    assertThat(fourthReview.nickname()).isEqualTo("닉네임4");
     assertThat(fourthReview.reviewId()).isEqualTo(4L);
     assertThat(fourthReview.imageUrls()).contains("image4_1.jpg");
 
-    // 다섯 번째 리뷰의 이미지 검증
+    // 다섯 번째 리뷰 검증
     ReviewContent fifthReview_1 = response.content().get(4);
+    assertThat(fifthReview_1.nickname()).isEqualTo("닉네임5");
     assertThat(fifthReview_1.reviewId()).isEqualTo(5L);
     assertThat(fifthReview_1.imageUrls()).contains("image5_1.jpg");
 
     // 다섯2 번째 리뷰의 이미지 검증
     ReviewContent fifthReview_2 = response.content().get(4);
+    assertThat(fifthReview_2.nickname()).isEqualTo("닉네임5");
     assertThat(fifthReview_2.reviewId()).isEqualTo(5L);
     assertThat(fifthReview_2.imageUrls()).contains("image5_2.jpg");
   }
@@ -1174,6 +1183,7 @@ class ReviewServiceTest {
   private Review createTestReview(Long id, String content) {
     User user = User.builder()
         .id(100L + id)
+        .nickname("닉네임" + id)
         .build();
 
     Room room = Room.builder()
