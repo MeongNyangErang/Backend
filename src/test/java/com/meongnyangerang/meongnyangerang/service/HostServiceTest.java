@@ -264,5 +264,23 @@ class HostServiceTest {
         .isEqualTo(ErrorCode.DUPLICATE_PHONE_NUMBER);
   }
 
+  @DisplayName("호스트 이름 변경 - 성공")
+  @Test
+  void updateName_success() {
+    // given
+    Long hostId = 1L;
+    Host host = Host.builder()
+        .id(hostId)
+        .name("기존이름")
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+
+    // when
+    hostService.updateName(hostId, "새이름");
+
+    // then
+    assertThat(host.getName()).isEqualTo("새이름");
+  }
 
 }
