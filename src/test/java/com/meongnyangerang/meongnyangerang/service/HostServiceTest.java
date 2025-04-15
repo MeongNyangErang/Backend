@@ -283,4 +283,22 @@ class HostServiceTest {
     assertThat(host.getName()).isEqualTo("새이름");
   }
 
+  @DisplayName("호스트 이름 변경 - 실패 (동일한 이름)")
+  @Test
+  void updateName_fail_sameName() {
+    // given
+    Long hostId = 1L;
+    String sameName = "동일이름";
+    Host host = Host.builder()
+        .id(hostId)
+        .name(sameName)
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updateName(hostId, sameName))
+        .extracting("errorCode")
+        .isEqualTo(ALREADY_REGISTERED_NAME);
+  }
 }
