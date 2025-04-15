@@ -195,7 +195,7 @@ class HostServiceTest {
         .build();
 
     given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
-    given(hostRepository.existByPhoneNumberAndIdNot(newPhone, hostId)).willReturn(false);
+    given(hostRepository.existsByPhoneNumberAndIdNot(newPhone, hostId)).willReturn(false);
 
     // when
     hostService.updatePhoneNumber(hostId, newPhone);
@@ -255,7 +255,7 @@ class HostServiceTest {
         .build();
 
     given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
-    given(hostRepository.existByPhoneNumberAndIdNot(newPhone, hostId)).willReturn(true);
+    given(hostRepository.existsByPhoneNumberAndIdNot(newPhone, hostId)).willReturn(true);
 
     // when & then
     assertThatThrownBy(() -> hostService.updatePhoneNumber(hostId, newPhone))
