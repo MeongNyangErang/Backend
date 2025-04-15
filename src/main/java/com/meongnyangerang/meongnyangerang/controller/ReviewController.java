@@ -38,10 +38,10 @@ public class ReviewController {
   @PostMapping("/users/reviews")
   public ResponseEntity<Void> createReview(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
-      @Valid @RequestPart ReviewRequest reviewRequest,
+      @Valid @RequestPart ReviewRequest request,
       @RequestPart(required = false) List<MultipartFile> images) {
 
-    reviewService.createReview(userDetails.getId(), reviewRequest,
+    reviewService.createReview(userDetails.getId(), request,
         (images != null) ? images : Collections.emptyList());
 
     return ResponseEntity.ok().build();

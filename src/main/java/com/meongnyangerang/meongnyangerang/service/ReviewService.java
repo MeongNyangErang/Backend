@@ -51,15 +51,15 @@ public class ReviewService {
   private final NotificationService notificationService;
 
   @Transactional
-  public void createReview(Long userId, ReviewRequest reviewRequest, List<MultipartFile> images) {
+  public void createReview(Long userId, ReviewRequest request, List<MultipartFile> images) {
     // 예약 정보 가져오기
-    Reservation reservation = reservationRepository.findById(reviewRequest.getReservationId())
+    Reservation reservation = reservationRepository.findById(request.getReservationId())
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.RESERVATION_NOT_FOUND));
 
     // 리뷰 작성 가능 여부 검증
     validateReviewCreation(userId, reservation);
 
-    Review review = reviewRequest.toEntity(reservation.getUser(),
+    Review review = request.toEntity(reservation.getUser(),
         reservation.getRoom().getAccommodation(), reservation);
     Review savedReview = reviewRepository.save(review);
 
