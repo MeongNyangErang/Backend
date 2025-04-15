@@ -10,7 +10,7 @@ public record ReviewContent(
     Long reviewId,
     String roomName,
     Double totalRating,
-    String content,
+    String reviewContent,
     List<String> imageUrls,
     LocalDateTime createdAt
 ) {
