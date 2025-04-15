@@ -298,6 +298,7 @@ class HostServiceTest {
 
     // when & then
     assertThatThrownBy(() -> hostService.updateName(hostId, sameName))
+        .isInstanceOf(MeongnyangerangException.class)
         .extracting("errorCode")
         .isEqualTo(ALREADY_REGISTERED_NAME);
   }
