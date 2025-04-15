@@ -302,4 +302,18 @@ class HostServiceTest {
         .extracting("errorCode")
         .isEqualTo(ALREADY_REGISTERED_NAME);
   }
+
+  @DisplayName("호스트 이름 변경 - 실패 (존재하지 않는 호스트)")
+  @Test
+  void updateName_fail_hostNotFound() {
+    // given
+    Long hostId = 1L;
+    given(hostRepository.findById(hostId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updateName(hostId, "아무이름"))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
 }
