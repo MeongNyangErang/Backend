@@ -70,7 +70,7 @@ public class AccommodationService {
 
     Host host = validateHost(hostId);
     additionalImages = initAdditionalImages(additionalImages);
-    validateImagesCount(additionalImages);
+    validateImagesCount(additionalImages.size());
 
     String thumbnailUrl = imageService.storeImage(thumbnail);
     List<String> newAdditionalImageUrls = uploadImages(additionalImages);
@@ -123,7 +123,7 @@ public class AccommodationService {
     
     Accommodation accommodation = findAccommodationByHostId(hostId);
     newAdditionalImages = initAdditionalImages(newAdditionalImages);
-    validateImagesCount(newAdditionalImages);
+    validateImagesCount(newAdditionalImages.size());
 
     String newThumbnailUrl = thumbnailUpdate(accommodation.getThumbnailUrl(), thumbnail);
     List<String> newAdditionalImageUrls = additionalImagesUpdate(
@@ -219,10 +219,8 @@ public class AccommodationService {
 
     // 삭제 후 남을 이미지 개수 + 새로 추가될 이미지 개수가 3을 초과하는지 확인
     int totalImagesAfterUpdate = currentImagesCount - deleteCount + newAdditionalImages.size();
-
-    if (totalImagesAfterUpdate > MAX_ADDITIONAL_IMAGE_COUNT) {
-      throw new MeongnyangerangException(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED);
-    }
+    validateImagesCount(totalImagesAfterUpdate);
+    
     if (deleteCount > 0) {
       imageService.deleteImagesAsync(deleteImageUrls);
       accommodationImageRepository.deleteAllByImageUrl(deleteImageUrls);
@@ -364,8 +362,8 @@ public class AccommodationService {
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXISTS_HOST));
   }
 
-  private void validateImagesCount(List<MultipartFile> newAdditionalImages) {
-    if (newAdditionalImages.size() > 3) {
+  private void validateImagesCount(int imageSize) {
+    if (imageSize > MAX_ADDITIONAL_IMAGE_COUNT) {
       throw new MeongnyangerangException(ErrorCode.MAX_IMAGE_LIMIT_EXCEEDED);
     }
   }
