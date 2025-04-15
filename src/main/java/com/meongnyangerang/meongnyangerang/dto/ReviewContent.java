@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ReviewContent(
-    Long userId,
+    String nickname,
     Long roomId,
     Long reviewId,
     String roomName,
@@ -19,7 +19,7 @@ public record ReviewContent(
     Double totalRating = (review.getUserRating() + review.getPetFriendlyRating()) / 2;
 
     return new ReviewContent(
-        review.getUser().getId(),
+        review.getUser().getNickname(),
         review.getReservation().getRoom().getId(),
         review.getId(),
         review.getReservation().getRoomName(),
