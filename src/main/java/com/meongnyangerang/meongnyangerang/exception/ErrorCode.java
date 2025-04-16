@@ -31,6 +31,7 @@ public enum ErrorCode {
   ALREADY_REGISTERED_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "이미 등록된 전화번호입니다."),
   DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "이미 사용 중인 전화번호입니다."),
   ALREADY_REGISTERED_NAME(HttpStatus.BAD_REQUEST,"이미 등록된 이름입니다."),
+  ALREADY_REGISTERED_NICKNAME(HttpStatus.BAD_REQUEST, "기존 닉네임과 동일합니다."),
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
   INVALID_JWT_FORMAT(HttpStatus.BAD_REQUEST, "JWT 형식이 올바르지 않습니다."),
