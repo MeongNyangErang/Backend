@@ -1,11 +1,14 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationPageResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.AccommodationRecommendationService;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +27,14 @@ public class AccommodationRecommendationController {
   public ResponseEntity<Map<String, List<RecommendationResponse>>> getDefaultRecommendations() {
 
     return ResponseEntity.ok(recommendationService.getDefaultRecommendations());
+  }
+
+  // 비로그인 사용자 기본 추천 더보기
+  @GetMapping("/default/more")
+  public ResponseEntity<RecommendationPageResponse> getDefaultLoadMoreRecommendations(
+      @PageableDefault(size = 20) Pageable pageable) {
+
+    return ResponseEntity.ok(recommendationService.getDefaultLoadMoreRecommendations(pageable));
   }
 
   // 사용자가 등록한 반려동물 기반 추천
