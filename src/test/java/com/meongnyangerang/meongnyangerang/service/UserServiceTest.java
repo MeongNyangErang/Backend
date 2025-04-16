@@ -275,4 +275,23 @@ class UserServiceTest {
     // then
     assertThat(user.getNickname()).isEqualTo("newNickname");
   }
+
+  @DisplayName("사용자 닉네임 변경 - 실패 (이미 등록된 닉네임)")
+  @Test
+  void updateNickname_User_AlreadyRegistered() {
+    // given
+    Long userId = 1L;
+    User user = User.builder()
+        .id(userId)
+        .nickname("sameNick")
+        .build();
+
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+    // when & then
+    assertThatThrownBy(() -> userService.updateNickname(userId, "sameNick"))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ALREADY_REGISTERED_NICKNAME);
+  }
 }
