@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.PetRecommendationGroup;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationPageResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
@@ -13,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,17 +35,31 @@ public class AccommodationRecommendationController {
   // 비로그인 사용자 기본 추천 더보기
   @GetMapping("/default/more")
   public ResponseEntity<RecommendationPageResponse> getDefaultLoadMoreRecommendations(
+      @RequestParam PetType type,
       @PageableDefault(size = 20) Pageable pageable) {
 
-    return ResponseEntity.ok(recommendationService.getDefaultLoadMoreRecommendations(pageable));
+    return ResponseEntity.ok(
+        recommendationService.getDefaultLoadMoreRecommendations(type, pageable));
   }
 
   // 사용자가 등록한 반려동물 기반 추천
   @GetMapping("/user-pet")
-  public ResponseEntity<Map<String, List<RecommendationResponse>>> getUserPetRecommendations(
+  public ResponseEntity<List<PetRecommendationGroup>> getUserPetRecommendations(
       @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
     return ResponseEntity.ok(recommendationService.getUserPetRecommendations(userDetails.getId()));
+  }
+
+  // 사용자가 등록한 반려동물 기반 추천 더보기
+  @GetMapping("/user-pet/more")
+  public ResponseEntity<RecommendationPageResponse> getUserPetLoadMoreRecommendations(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @RequestParam Long petId,
+      @PageableDefault(size = 20) Pageable pageable) {
+
+    return ResponseEntity.ok(
+        recommendationService.getUserPetLoadMoreRecommendations(userDetails.getId(), petId,
+            pageable));
   }
 
   // 많은 사람들이 관심을 가진 숙소 추천
