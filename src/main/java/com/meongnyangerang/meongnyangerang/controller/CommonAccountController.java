@@ -45,9 +45,9 @@ public class CommonAccountController {
       @Valid @RequestBody NicknameUpdateRequest request
   ) {
     if (userDetails.getRole().equals(Role.ROLE_USER)) {
-      userService.updateNickname(userDetails.getId(), request.nickname());
+      userService.updateNickname(userDetails.getId(), request.newNickname());
     } else if (userDetails.getRole().equals(Role.ROLE_HOST)) {
-      hostService.updateNickname(userDetails.getId(), request.nickname());
+      hostService.updateNickname(userDetails.getId(), request.newNickname());
     }
 
     return ResponseEntity.ok().build();
