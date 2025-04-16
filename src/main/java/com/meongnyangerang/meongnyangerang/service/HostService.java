@@ -19,6 +19,7 @@ import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
+import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
@@ -160,5 +161,16 @@ public class HostService {
     }
 
     host.updateName(newName);
+  }
+
+  // 호스트 비밀번호 변경
+  public void updatePassword(Long hostId, PasswordUpdateRequest request) {
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    if (!passwordEncoder.matches(request.currentPassword(), host.getPassword())) {
+      throw new MeongnyangerangException(INVALID_PASSWORD);
+    }
+    host.updatePassword(passwordEncoder.encode(request.newPassword()));
   }
 }
