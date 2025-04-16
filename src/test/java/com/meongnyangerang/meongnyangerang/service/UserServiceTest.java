@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -186,7 +187,7 @@ class UserServiceTest {
     assertThatThrownBy(() -> userService.getMyProfile(invalidUserId))
         .isInstanceOf(MeongnyangerangException.class)
         .extracting("errorCode")
-        .isEqualTo(ErrorCode.NOT_EXIST_ACCOUNT);
+        .isEqualTo(NOT_EXIST_ACCOUNT);
   }
 
   @Test
@@ -225,6 +226,28 @@ class UserServiceTest {
     assertThatThrownBy(() -> userService.updatePassword(userId, request))
         .isInstanceOf(MeongnyangerangException.class)
         .extracting("errorCode")
-        .isEqualTo(ErrorCode.NOT_EXIST_ACCOUNT);
+        .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
+
+  @Test
+  @DisplayName("사용자 비밀번호 변경 - 실패(기존 비밀번호 불일치)")
+  void updatePassword_Fail_InvalidPassword() {
+    // given
+    Long userId = 1L;
+    User user = User.builder()
+        .id(userId)
+        .password("encodedOldPassword")
+        .build();
+
+    PasswordUpdateRequest request = new PasswordUpdateRequest("wrongOldPassword", "newPassword1!");
+
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(passwordEncoder.matches("wrongOldPassword", "encodedOldPassword")).willReturn(false);
+
+    // when & then
+    assertThatThrownBy(() -> userService.updatePassword(userId, request))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(INVALID_PASSWORD);
   }
 }
