@@ -341,4 +341,20 @@ class HostServiceTest {
     // then
     assertThat(host.getPassword()).isEqualTo("encodedNewPassword");
   }
+
+  @Test
+  @DisplayName("호스트 비밀번호 변경 - 실패(존재하지 않는 호스트)")
+  void updatePassword_Fail_NotExistHost() {
+    // given
+    Long hostId = 1L;
+    PasswordUpdateRequest request = new PasswordUpdateRequest("oldPassword", "newPassword1!");
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePassword(hostId, request))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
 }
