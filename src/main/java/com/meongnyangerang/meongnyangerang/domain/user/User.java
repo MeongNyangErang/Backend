@@ -59,4 +59,8 @@ public class User {
   private LocalDateTime updatedAt;
 
   private LocalDateTime deletedAt;
+
+  public void updatePassword(String newPassword) {
+    this.password = newPassword;
+  }
 }
