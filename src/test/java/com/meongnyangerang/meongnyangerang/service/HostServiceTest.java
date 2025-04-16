@@ -403,4 +403,23 @@ class HostServiceTest {
     // then
     assertThat(host.getNickname()).isEqualTo("newNick");
   }
+
+  @DisplayName("호스트 닉네임 변경 - 실패 (이미 등록된 닉네임)")
+  @Test
+  void updateNickname_Host_AlreadyRegistered() {
+    // given
+    Long hostId = 1L;
+    Host host = Host.builder()
+        .id(hostId)
+        .nickname("sameNick")
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updateNickname(hostId, "sameNick"))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ALREADY_REGISTERED_NICKNAME);
+  }
 }
