@@ -6,6 +6,7 @@ import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_HOST;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_PENDING;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NAME;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_PHONE_NUMBER;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_PHONE_NUMBER;
@@ -47,6 +48,7 @@ public class HostService {
   private final JwtTokenProvider jwtTokenProvider;
   private final ImageService imageService;
   private final ReservationRepository reservationRepository;
+  private final AuthService authService;
 
   // 호스트 회원가입
   public void registerHost(HostSignupRequest request,
@@ -172,5 +174,20 @@ public class HostService {
       throw new MeongnyangerangException(INVALID_PASSWORD);
     }
     host.updatePassword(passwordEncoder.encode(request.newPassword()));
+  }
+
+  // 호스트 닉네임 변경
+  public void updateNickname(Long hostId, String newNickname) {
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    if (host.getNickname().equals(newNickname)) {
+      throw new MeongnyangerangException(ALREADY_REGISTERED_NICKNAME);
+    }
+
+    // 이메일 중복 확인 및 예외처리
+    authService.checkNickname(newNickname);
+
+    host.updateNickname(newNickname);
   }
 }
