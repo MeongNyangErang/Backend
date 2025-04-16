@@ -4,6 +4,7 @@ import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_USER;
 import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.ACTIVE;
 import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.DELETED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
