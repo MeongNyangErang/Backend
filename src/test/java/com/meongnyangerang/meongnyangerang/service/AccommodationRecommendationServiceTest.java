@@ -21,6 +21,7 @@ import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.ActivityLevel;
 import com.meongnyangerang.meongnyangerang.domain.user.Personality;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.PetRecommendationGroup;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
@@ -212,15 +213,15 @@ class AccommodationRecommendationServiceTest {
         });
 
     // when
-    Map<String, List<RecommendationResponse>> result = recommendationService.getUserPetRecommendations(
+    List<PetRecommendationGroup> result = recommendationService.getUserPetRecommendations(
         1L);
 
     // then
-    assertTrue(result.containsKey("초코"));
-    assertTrue(result.containsKey("나비"));
+    assertEquals("초코", result.get(0).getPetName());
+    assertEquals("나비", result.get(1).getPetName());
 
-    List<RecommendationResponse> chocoList = result.get("초코");
-    List<RecommendationResponse> nabiList = result.get("나비");
+    List<RecommendationResponse> chocoList = result.get(0).getRecommendations();
+    List<RecommendationResponse> nabiList = result.get(1).getRecommendations();
 
     assertEquals(2, chocoList.size());
     assertEquals(1, nabiList.size());
