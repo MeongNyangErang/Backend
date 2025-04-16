@@ -24,7 +24,7 @@ public class HostSignupRequest {
   @Pattern(regexp = "^[가-힣a-zA-Z]+$", message = "이름은 한글 또는 영문만 입력 가능합니다.")
   private String name;
 
-  @Size(min = 2, max = 20)
+  @Size(min = 2, max = 20, message = "닉네임은 2자 이상 20자 이하여야 합니다.")
   @NotBlank(message = "닉네임은 필수 입력 항목입니다.")
   private String nickname;
 
