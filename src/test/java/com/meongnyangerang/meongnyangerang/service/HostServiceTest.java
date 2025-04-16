@@ -357,4 +357,26 @@ class HostServiceTest {
         .extracting("errorCode")
         .isEqualTo(NOT_EXIST_ACCOUNT);
   }
+
+  @Test
+  @DisplayName("호스트 비밀번호 변경 - 실패(기존 비밀번호 불일치)")
+  void updatePassword_Fail_InvalidPassword() {
+    // given
+    Long hostId = 1L;
+    Host host = Host.builder()
+        .id(hostId)
+        .password("encodedOldPassword")
+        .build();
+
+    PasswordUpdateRequest request = new PasswordUpdateRequest("wrongOldPassword", "newPassword1!");
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    given(passwordEncoder.matches("wrongOldPassword", "encodedOldPassword")).willReturn(false);
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePassword(hostId, request))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(INVALID_PASSWORD);
+  }
 }
