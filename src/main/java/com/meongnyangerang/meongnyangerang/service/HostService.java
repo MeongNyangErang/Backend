@@ -177,6 +177,7 @@ public class HostService {
   }
 
   // 호스트 닉네임 변경
+  @Transactional
   public void updateNickname(Long hostId, String newNickname) {
     Host host = hostRepository.findById(hostId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));

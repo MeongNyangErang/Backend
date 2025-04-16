@@ -124,6 +124,7 @@ public class UserService {
   }
 
   // 사용자 닉네임 변경
+  @Transactional
   public void updateNickname(Long userId, String newNickname) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
