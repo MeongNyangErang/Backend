@@ -218,7 +218,7 @@ class AccommodationServiceTest {
         "thumbnail",
         "thumbnail.jpg",
         "image/jpg",
-        "thumbnail content".getBytes()
+        "thumbnail reviewContent".getBytes()
     );
 
     additionalImages = List.of(
@@ -226,7 +226,7 @@ class AccommodationServiceTest {
             "image1",
             "image1.jpg",
             "image/jpg",
-            "image1 content".getBytes())
+            "image1 reviewContent".getBytes())
     );
 
     deleteImageUrls = List.of("test-delete-image1.jpg", "test-delete-image2.jpg");
