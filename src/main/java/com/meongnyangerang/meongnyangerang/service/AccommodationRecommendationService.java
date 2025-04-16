@@ -16,8 +16,8 @@ import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.PetRecommendationGroup;
-import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationPageResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
@@ -62,7 +62,7 @@ public class AccommodationRecommendationService {
   }
 
   // 비로그인 사용자 기본 추천 더보기
-  public RecommendationPageResponse getDefaultLoadMoreRecommendations(PetType type,
+  public PageResponse<RecommendationResponse> getDefaultLoadMoreRecommendations(PetType type,
       Pageable pageable) {
     int size = calculateActualSize(pageable);
     int from = (int) pageable.getOffset();
@@ -86,11 +86,17 @@ public class AccommodationRecommendationService {
       long totalElements = response.hits().total().value();
       int totalPages = (int) Math.ceil((double) totalElements / size);
 
-      return new RecommendationPageResponse(
+      boolean isFirst = pageable.getPageNumber() == 0;
+      boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
+
+      return new PageResponse<>(
           content,
           pageable.getPageNumber(),
+          size,
+          totalElements,
           totalPages,
-          (from + size >= MAX_RESULTS || totalElements <= (from + size))
+          isFirst,
+          isLast
       );
     } catch (IOException e) {
       throw new MeongnyangerangException(ErrorCode.DEFAULT_RECOMMENDATION_FAILED);
@@ -111,7 +117,7 @@ public class AccommodationRecommendationService {
   }
 
   // 사용자가 등록한 반려동물 기반 추천 더보기
-  public RecommendationPageResponse getUserPetLoadMoreRecommendations(Long userId,
+  public PageResponse<RecommendationResponse> getUserPetLoadMoreRecommendations(Long userId,
       Long petId, Pageable pageable) {
     UserPet pet = validateAndGetUserPet(userId, petId);
 
@@ -138,11 +144,17 @@ public class AccommodationRecommendationService {
       long totalElements = response.hits().total().value();
       int totalPages = (int) Math.ceil((double) totalElements / pageable.getPageSize());
 
-      return new RecommendationPageResponse(
+      boolean isFirst = pageable.getPageNumber() == 0;
+      boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
+
+      return new PageResponse<>(
           content,
           pageable.getPageNumber(),
+          size,
+          totalElements,
           totalPages,
-          (from + size >= MAX_RESULTS || totalElements <= (from + size))
+          isFirst,
+          isLast
       );
     } catch (IOException e) {
       throw new MeongnyangerangException(ErrorCode.USER_RECOMMENDATION_FAILED);

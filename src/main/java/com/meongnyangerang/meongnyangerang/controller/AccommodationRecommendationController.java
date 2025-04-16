@@ -2,8 +2,8 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.PetRecommendationGroup;
-import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationPageResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.AccommodationRecommendationService;
 import java.util.List;
@@ -34,7 +34,7 @@ public class AccommodationRecommendationController {
 
   // 비로그인 사용자 기본 추천 더보기
   @GetMapping("/default/more")
-  public ResponseEntity<RecommendationPageResponse> getDefaultLoadMoreRecommendations(
+  public ResponseEntity<PageResponse<RecommendationResponse>> getDefaultLoadMoreRecommendations(
       @RequestParam PetType type,
       @PageableDefault(size = 20) Pageable pageable) {
 
@@ -52,7 +52,7 @@ public class AccommodationRecommendationController {
 
   // 사용자가 등록한 반려동물 기반 추천 더보기
   @GetMapping("/user-pet/more")
-  public ResponseEntity<RecommendationPageResponse> getUserPetLoadMoreRecommendations(
+  public ResponseEntity<PageResponse<RecommendationResponse>> getUserPetLoadMoreRecommendations(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
       @RequestParam Long petId,
       @PageableDefault(size = 20) Pageable pageable) {
