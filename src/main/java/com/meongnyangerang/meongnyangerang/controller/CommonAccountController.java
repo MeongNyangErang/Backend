@@ -36,4 +36,19 @@ public class CommonAccountController {
 
     return ResponseEntity.ok().build();
   }
+
+  // 닉네임 변경(사용자, 호스트 공통 기능)
+  @PatchMapping("/nickname")
+  public ResponseEntity<Void> updateNickname(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @Valid @RequestBody NicknameUpdateRequest request
+  ) {
+    if (userDetails.getRole().equals(Role.ROLE_USER)) {
+      userService.updateNickname(userDetails.getId(), request.nickname());
+    } else if (userDetails.getRole().equals(Role.ROLE_HOST)) {
+      hostService.updateNickname(userDetails.getId(), request.nickname());
+    }
+
+    return ResponseEntity.ok().build();
+  }
 }
