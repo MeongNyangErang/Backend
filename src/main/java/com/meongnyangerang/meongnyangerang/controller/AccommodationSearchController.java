@@ -5,7 +5,6 @@ import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearch
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.service.AccommodationSearchService;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;

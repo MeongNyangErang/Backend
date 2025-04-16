@@ -145,6 +145,10 @@ public class AccommodationRoomSearchService {
   public void updateAccommodationDocument(Accommodation accommodation) {
     List<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId());
 
+    if (rooms.isEmpty()) {
+      return;
+    }
+
     Set<String> updatedAccommodationPetFacilities = getAccommodationPetFacilities(accommodation);
     Set<String> updatedRoomPetFacilities = collectRoomPetFacilities(rooms);
     long minPrice = calculateMinRoomPrice(rooms);
