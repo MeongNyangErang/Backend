@@ -7,6 +7,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.json.JsonData;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationDocument;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
@@ -17,6 +18,7 @@ import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityT
 import com.meongnyangerang.meongnyangerang.domain.user.ActivityLevel;
 import com.meongnyangerang.meongnyangerang.domain.user.Personality;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
+import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationPageResponse;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
@@ -32,6 +34,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -46,6 +49,7 @@ public class AccommodationRecommendationService {
 
   private static final String INDEX_NAME = "accommodations";
   private static final int SIZE = 6;
+  private static final int MAX_RESULTS = 100;
 
   // 비로그인 사용자 기본 추천
   public Map<String, List<RecommendationResponse>> getDefaultRecommendations() {
@@ -56,6 +60,47 @@ public class AccommodationRecommendationService {
     }
 
     return result;
+  }
+
+  // 비로그인 사용자 기본 추천 더보기
+  public RecommendationPageResponse getDefaultLoadMoreRecommendations(Pageable pageable) {
+    // 총 개수를 고려해 최대 100개까지 결과를 가져오도록 제한
+    int size = pageable.getPageSize();
+    int from = (int) pageable.getOffset();
+
+    if (from + size > MAX_RESULTS) {
+      size = Math.max(0, MAX_RESULTS - from);
+    }
+
+    Query query = buildRatingFilterQuery();
+
+    // Elasticsearch 요청
+    SearchRequest request = buildSearchRequest(query, "totalRating", true, size, from);
+
+    try {
+      // Elasticsearch에 요청 후 데이터 반환
+      SearchResponse<AccommodationDocument> response =
+          elasticsearchClient.search(request, AccommodationDocument.class);
+
+      // 응답을 페이지별로 구성
+      List<RecommendationResponse> content = response.hits().hits().stream()
+          .map(Hit::source).filter(Objects::nonNull)
+          .map(this::mapToResponse)
+          .toList();
+
+      // 총 개수 및 페이지 계산
+      long totalElements = response.hits().total().value();
+      int totalPages = (int) Math.ceil((double) totalElements / size);
+
+      return new RecommendationPageResponse(
+          content,
+          pageable.getPageNumber(),
+          totalPages,
+          (from + size >= MAX_RESULTS || totalElements <= (from + size))
+      );
+    } catch (IOException e) {
+      throw new MeongnyangerangException(ErrorCode.DEFAULT_RECOMMENDATION_FAILED);
+    }
   }
 
   // 로그인 사용자 맞춤 추천
@@ -94,7 +139,7 @@ public class AccommodationRecommendationService {
     Query query = buildPetTypeQuery(petType.name());
 
     // totalRating 기준으로 내림차순 정렬된 검색 요청 생성 (source 필드 필터 포함)
-    SearchRequest request = buildSearchRequest(query, "totalRating", true);
+    SearchRequest request = buildSearchRequest(query, "totalRating", true, 0, 0);
 
     try {
       // Elasticsearch에 요청 후 RecommendationResponse로 매핑된 결과 반환
@@ -127,7 +172,7 @@ public class AccommodationRecommendationService {
     Query query = buildPetTypeQuery(type.name());
 
     // 정렬 없이 (점수로 후처리 예정) 검색 요청 생성 (source 필터링 생략)
-    SearchRequest request = buildSearchRequest(query, null, false);
+    SearchRequest request = buildSearchRequest(query, null, false, 0, 0);
 
     try {
       // Elasticsearch에 요청 후 AccommodationDocument로 매핑된 결과 반환
@@ -152,19 +197,35 @@ public class AccommodationRecommendationService {
   // allowedPetTypes에 정확히 일치하는 petType을 검색하는 쿼리 생성
   private Query buildPetTypeQuery(String petType) {
     return TermQuery.of(t -> t
-        .field("allowedPetTypes")
+        .field("allowedPetTypes.keyword")
         .value(petType)
     )._toQuery();
   }
 
+  private Query buildRatingFilterQuery() {
+    return Query.of(q -> q
+        .bool(b -> b
+            .must(Query.of(qr -> qr
+                .range(r -> r.field("totalRating").gte(JsonData.of(3.0))))
+            )
+        )
+    );
+  }
+
   // 공통 SearchRequest 생성 메서드
   private SearchRequest buildSearchRequest(Query query, String sortField,
-      boolean withSourceFilter) {
+      boolean withSourceFilter, int size, int from) {
     return SearchRequest.of(s -> {
       // 기본 검색 조건 설정: 인덱스, 쿼리, 결과 크기
       SearchRequest.Builder builder = s.index(INDEX_NAME)
-          .query(query)
-          .size(SIZE);
+          .query(query);
+
+      if (size != 0) {
+        builder.size(size);
+        builder.from(from);
+      } else {
+        builder.size(SIZE);
+      }
 
       // 정렬 필드가 존재할 경우 정렬 추가
       if (sortField != null) {
