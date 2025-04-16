@@ -211,4 +211,20 @@ class UserServiceTest {
     // then
     assertThat(user.getPassword()).isEqualTo("encodedNewPassword");
   }
+
+  @Test
+  @DisplayName("사용자 비밀번호 변경 - 실패(존재하지 않는 사용자)")
+  void updatePassword_Fail_NotExistUser() {
+    // given
+    Long userId = 1L;
+    PasswordUpdateRequest request = new PasswordUpdateRequest("oldPassword", "newPassword1!");
+
+    given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> userService.updatePassword(userId, request))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.NOT_EXIST_ACCOUNT);
+  }
 }
