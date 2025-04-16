@@ -62,6 +62,7 @@ public class SecurityConfig {
             .requestMatchers("/api/v1/recommendations/most-viewed").hasAuthority("ROLE_USER")
             .requestMatchers("/api/v1/hosts/**").hasAuthority("ROLE_HOST")
             .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
+            .requestMatchers("/api/v1/account/**").hasAnyAuthority("ROLE_USER", "ROLE_HOST")
             .anyRequest().authenticated() // 그 외 모든 요청은 인증 필요
         )
         .addFilterBefore(jwtAuthenticationFilter,

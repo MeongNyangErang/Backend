@@ -12,8 +12,10 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_R
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
+import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -105,5 +107,17 @@ public class UserService {
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 
     return UserProfileResponse.of(user);
+  }
+
+  // 사용자 비밀번호 변경
+  @Transactional
+  public void updatePassword(Long userId, PasswordUpdateRequest request) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+      throw new MeongnyangerangException(INVALID_PASSWORD);
+    }
+    user.updatePassword(passwordEncoder.encode(request.newPassword()));
   }
 }

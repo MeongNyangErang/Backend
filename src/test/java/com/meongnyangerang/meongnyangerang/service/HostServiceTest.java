@@ -21,6 +21,7 @@ import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
+import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
@@ -315,5 +316,67 @@ class HostServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .extracting("errorCode")
         .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
+
+  @Test
+  @DisplayName("호스트 비밀번호 변경 - 성공")
+  void updatePassword_Success() {
+    // given
+    Long hostId = 1L;
+    Host host = Host.builder()
+        .id(hostId)
+        .password("encodedOldPassword")
+        .build();
+
+    PasswordUpdateRequest request = new PasswordUpdateRequest("oldPassword", "newPassword1!");
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    given(passwordEncoder.matches("oldPassword", "encodedOldPassword")).willReturn(true);
+    given(passwordEncoder.encode("newPassword1!"))
+        .willReturn("encodedNewPassword");
+
+    // when
+    hostService.updatePassword(hostId, request);
+
+    // then
+    assertThat(host.getPassword()).isEqualTo("encodedNewPassword");
+  }
+
+  @Test
+  @DisplayName("호스트 비밀번호 변경 - 실패(존재하지 않는 호스트)")
+  void updatePassword_Fail_NotExistHost() {
+    // given
+    Long hostId = 1L;
+    PasswordUpdateRequest request = new PasswordUpdateRequest("oldPassword", "newPassword1!");
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePassword(hostId, request))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
+
+  @Test
+  @DisplayName("호스트 비밀번호 변경 - 실패(기존 비밀번호 불일치)")
+  void updatePassword_Fail_InvalidPassword() {
+    // given
+    Long hostId = 1L;
+    Host host = Host.builder()
+        .id(hostId)
+        .password("encodedOldPassword")
+        .build();
+
+    PasswordUpdateRequest request = new PasswordUpdateRequest("wrongOldPassword", "newPassword1!");
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    given(passwordEncoder.matches("wrongOldPassword", "encodedOldPassword")).willReturn(false);
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updatePassword(hostId, request))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(INVALID_PASSWORD);
   }
 }
