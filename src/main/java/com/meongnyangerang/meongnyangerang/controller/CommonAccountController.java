@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/account")
-public class CommonProfileController {
+public class CommonAccountController {
 
   private final UserService userService;
   private final HostService hostService;
