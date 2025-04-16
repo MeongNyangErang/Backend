@@ -10,7 +10,7 @@ public enum ErrorCode {
 
   // 400 BAD REQUEST (잘못된 요청)
   INVALID_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
-  INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호가 올바르지 않습니다."),
+  INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
   DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "이미 가입된 이메일입니다"),
   DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "이미 등록된 닉네임입니다."),
   EXPIRED_AUTH_CODE(HttpStatus.BAD_REQUEST, "인증코드가 만료되었습니다. 다시 발급받아주세요"),
