@@ -21,7 +21,6 @@ public enum ErrorCode {
   INVALID_FILENAME(HttpStatus.BAD_REQUEST, "파일명이 유효하지 않습니다."),
   INVALID_EXTENSION(HttpStatus.BAD_REQUEST, "파일 확장자가 유효하지 않습니다."),
   NOT_SUPPORTED_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다."),
-  NOT_EXIST_ACCOUNT(HttpStatus.BAD_REQUEST, "해당 계정은 존재하지 않습니다."),
   EMPTY_PET_TYPE(HttpStatus.BAD_REQUEST, "허용 반려동물 타입을 지정해 주세요."),
   RESERVATION_ALREADY_CANCELED(HttpStatus.BAD_REQUEST, "이미 취소된 예약입니다."),
   REVIEW_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "리뷰가 이미 존재합니다."),
@@ -53,6 +52,7 @@ public enum ErrorCode {
   WEBSOCKET_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "WebSocket 권한 없음"),
 
   // 404  NOT FOUND
+  NOT_EXIST_ACCOUNT(HttpStatus.BAD_REQUEST, "해당 계정은 존재하지 않습니다."),
   NOT_EXISTS_HOST(HttpStatus.NOT_FOUND, "존재하지 않는 호스트입니다."),
   FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일이 존재하지 않습니다."),
   FILE_IS_EMPTY(HttpStatus.NOT_FOUND, "파일이 비어있습니다."),
