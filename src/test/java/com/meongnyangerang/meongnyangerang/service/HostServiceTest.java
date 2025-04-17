@@ -12,6 +12,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -57,6 +59,9 @@ class HostServiceTest {
 
   @Mock
   private ReservationRepository reservationRepository;
+
+  @Mock
+  private AuthService authService;
 
   @Test
   @DisplayName("호스트 회원가입 성공 테스트")
@@ -378,5 +383,64 @@ class HostServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .extracting("errorCode")
         .isEqualTo(INVALID_PASSWORD);
+  }
+
+  @DisplayName("호스트 닉네임 변경 - 성공")
+  @Test
+  void updateNickname_Host_Success() {
+    // given
+    Long hostId = 1L;
+    Host host = Host.builder()
+        .id(hostId)
+        .nickname("oldNick")
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    willDoNothing().given(authService).checkNickname("newNick");
+
+    // when
+    hostService.updateNickname(hostId, "newNick");
+
+    // then
+    assertThat(host.getNickname()).isEqualTo("newNick");
+  }
+
+  @DisplayName("호스트 닉네임 변경 - 실패 (이미 등록된 닉네임)")
+  @Test
+  void updateNickname_Host_AlreadyRegistered() {
+    // given
+    Long hostId = 1L;
+    Host host = Host.builder()
+        .id(hostId)
+        .nickname("sameNick")
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updateNickname(hostId, "sameNick"))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ALREADY_REGISTERED_NICKNAME);
+  }
+
+  @DisplayName("호스트 닉네임 변경 - 실패 (중복 닉네임 존재)")
+  @Test
+  void updateNickname_Host_DuplicateNickname() {
+    // given
+    Long hostId = 1L;
+    Host host = Host.builder()
+        .id(hostId)
+        .nickname("oldNick")
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    willThrow(new MeongnyangerangException(DUPLICATE_NICKNAME)).given(authService).checkNickname("duplicateNick");
+
+    // when & then
+    assertThatThrownBy(() -> hostService.updateNickname(hostId, "duplicateNick"))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(DUPLICATE_NICKNAME);
   }
 }

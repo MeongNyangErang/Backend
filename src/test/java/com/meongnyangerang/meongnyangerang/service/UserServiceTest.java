@@ -11,6 +11,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +55,9 @@ class UserServiceTest {
 
   @Mock
   private ReservationRepository reservationRepository;
+
+  @Mock
+  private AuthService authService;
 
   @Test
   @DisplayName("사용자 회원가입 성공 테스트 - 프로필 이미지 없음")
@@ -249,5 +254,65 @@ class UserServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .extracting("errorCode")
         .isEqualTo(INVALID_PASSWORD);
+  }
+
+
+  @Test
+  @DisplayName("사용자 닉네임 변경 - 성공")
+  void updateNickname_Success() {
+    // given
+    Long userId = 1L;
+    User user = User.builder()
+        .id(userId)
+        .nickname("oldNickname")
+        .build();
+
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    willDoNothing().given(authService).checkNickname("newNickname");
+
+    // when
+    userService.updateNickname(userId, "newNickname");
+
+    // then
+    assertThat(user.getNickname()).isEqualTo("newNickname");
+  }
+
+  @DisplayName("사용자 닉네임 변경 - 실패 (이미 등록된 닉네임)")
+  @Test
+  void updateNickname_User_AlreadyRegistered() {
+    // given
+    Long userId = 1L;
+    User user = User.builder()
+        .id(userId)
+        .nickname("sameNick")
+        .build();
+
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+    // when & then
+    assertThatThrownBy(() -> userService.updateNickname(userId, "sameNick"))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(ALREADY_REGISTERED_NICKNAME);
+  }
+
+  @DisplayName("사용자 닉네임 변경 - 실패 (중복 닉네임 존재)")
+  @Test
+  void updateNickname_User_DuplicateNickname() {
+    // given
+    Long userId = 1L;
+    User user = User.builder()
+        .id(userId)
+        .nickname("oldNick")
+        .build();
+
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    willThrow(new MeongnyangerangException(DUPLICATE_NICKNAME)).given(authService).checkNickname("duplicateNick");
+
+    // when & then
+    assertThatThrownBy(() -> userService.updateNickname(userId, "duplicateNick"))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(DUPLICATE_NICKNAME);
   }
 }

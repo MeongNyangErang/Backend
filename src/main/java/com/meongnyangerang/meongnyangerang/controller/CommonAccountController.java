@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
+import com.meongnyangerang.meongnyangerang.dto.NicknameUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.HostService;
@@ -32,6 +33,21 @@ public class CommonAccountController {
       userService.updatePassword(userDetails.getId(), request);
     } else if (userDetails.getRole().equals(Role.ROLE_HOST)) {
       hostService.updatePassword(userDetails.getId(), request);
+    }
+
+    return ResponseEntity.ok().build();
+  }
+
+  // 닉네임 변경 API(사용자, 호스트 공통 기능)
+  @PatchMapping("/nickname")
+  public ResponseEntity<Void> updateNickname(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @Valid @RequestBody NicknameUpdateRequest request
+  ) {
+    if (userDetails.getRole().equals(Role.ROLE_USER)) {
+      userService.updateNickname(userDetails.getId(), request.newNickname());
+    } else if (userDetails.getRole().equals(Role.ROLE_HOST)) {
+      hostService.updateNickname(userDetails.getId(), request.newNickname());
     }
 
     return ResponseEntity.ok().build();

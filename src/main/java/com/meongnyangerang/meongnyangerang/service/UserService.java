@@ -4,6 +4,7 @@ import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_USER;
 import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.ACTIVE;
 import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.DELETED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
@@ -38,6 +39,7 @@ public class UserService {
   private final JwtTokenProvider jwtTokenProvider;
   private final ImageService imageService;
   private final ReservationRepository reservationRepository;
+  private final AuthService authService;
 
   // 사용자 회원가입
   public void registerUser(UserSignupRequest request, MultipartFile profileImage) {
@@ -119,5 +121,21 @@ public class UserService {
       throw new MeongnyangerangException(INVALID_PASSWORD);
     }
     user.updatePassword(passwordEncoder.encode(request.newPassword()));
+  }
+
+  // 사용자 닉네임 변경
+  @Transactional
+  public void updateNickname(Long userId, String newNickname) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    if (user.getNickname().equals(newNickname)) {
+      throw new MeongnyangerangException(ALREADY_REGISTERED_NICKNAME);
+    }
+
+    // 이메일 중복 확인 및 예외처리
+    authService.checkNickname(newNickname);
+
+    user.updateNickname(newNickname);
   }
 }
