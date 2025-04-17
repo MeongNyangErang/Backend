@@ -860,14 +860,19 @@ public class DummyDataCreateService {
 
   private void saveIndex(List<Accommodation> accommodations, List<Room> rooms) {
     for (Accommodation accommodation : accommodations) {
-      for (Room room : rooms) {
-        searchService.save(accommodation, room);
+      List<Room> relatedRooms = rooms.stream()
+          .filter(room -> room.getAccommodation().getId().equals(accommodation.getId()))
+          .toList();
 
-        if (roomRepository.findAllByAccommodationId(accommodation.getId()).size() > 1) {
-          searchService.updateAccommodationDocument(accommodation);
-        } else {
-          searchService.indexAccommodationDocument(accommodation, room);
-        }
+      Room firstRoom = relatedRooms.get(0);
+      searchService.indexAccommodationDocument(accommodation, firstRoom);
+
+      for (Room room : relatedRooms) {
+        searchService.save(accommodation, room);
+      }
+
+      if (relatedRooms.size() > 1) {
+        searchService.updateAccommodationDocument(accommodation);
       }
     }
   }
