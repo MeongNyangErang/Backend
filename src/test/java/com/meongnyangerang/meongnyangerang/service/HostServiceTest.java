@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -442,5 +443,24 @@ class HostServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .extracting("errorCode")
         .isEqualTo(DUPLICATE_NICKNAME);
+  }
+
+  @Test
+  @DisplayName("호스트 프로필 이미지 변경 - 성공 (기존 이미지 O)")
+  void updateProfileImage_success_withExistingImage() {
+    Long hostId = 1L;
+    MultipartFile newImage = mock(MultipartFile.class);
+    Host host = Host.builder()
+        .id(hostId)
+        .profileImageUrl("https://s3.aws/old-host.jpg")
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    given(imageService.storeImage(newImage)).willReturn("https://s3.aws/new-host.jpg");
+
+    hostService.updateProfileImage(hostId, newImage);
+
+    verify(imageService).deleteImageAsync("https://s3.aws/old-host.jpg");
+    assertThat(host.getProfileImageUrl()).isEqualTo("https://s3.aws/new-host.jpg");
   }
 }
