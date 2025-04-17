@@ -482,4 +482,18 @@ class HostServiceTest {
     verify(imageService, never()).deleteImageAsync(any());
     assertThat(host.getProfileImageUrl()).isEqualTo("https://s3.aws/new-host.jpg");
   }
+
+  @Test
+  @DisplayName("호스트 프로필 이미지 변경 - 실패 (존재하지 않는 호스트)")
+  void updateProfileImage_fail_hostNotFound() {
+    Long hostId = 999L;
+    MultipartFile newImage = mock(MultipartFile.class);
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> hostService.updateProfileImage(hostId, newImage))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
 }
