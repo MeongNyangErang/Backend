@@ -139,6 +139,8 @@ public class UserService {
     user.updateNickname(newNickname);
   }
 
+  // 사용자 프로필 사진 변경
+  @Transactional
   public void updateProfileImage(Long userId, MultipartFile newProfileImage) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
