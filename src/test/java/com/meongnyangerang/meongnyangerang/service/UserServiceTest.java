@@ -14,6 +14,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -337,6 +338,25 @@ class UserServiceTest {
 
     // then
     verify(imageService).deleteImageAsync("https://s3.aws/old-image.jpg");
+    assertThat(user.getProfileImage()).isEqualTo("https://s3.aws/new-image.jpg");
+  }
+
+  @Test
+  @DisplayName("사용자 프로필 이미지 변경 - 성공 (기존 이미지 X)")
+  void updateProfileImage_success_withoutExistingImage() {
+    Long userId = 2L;
+    MultipartFile newImage = mock(MultipartFile.class);
+    User user = User.builder()
+        .id(userId)
+        .profileImage(null)
+        .build();
+
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(imageService.storeImage(newImage)).willReturn("https://s3.aws/new-image.jpg");
+
+    userService.updateProfileImage(userId, newImage);
+
+    verify(imageService, never()).deleteImageAsync(any());
     assertThat(user.getProfileImage()).isEqualTo("https://s3.aws/new-image.jpg");
   }
 }
