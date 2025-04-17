@@ -35,12 +35,16 @@ public class ChatMessage {
   @JoinColumn(name = "chat_room_id", nullable = false)
   private ChatRoom chatRoom;
 
+  @Column(columnDefinition = "TEXT", nullable = false)
+  private String content;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private SenderType senderType;
 
-  @Column(columnDefinition = "TEXT", nullable = false)
-  private String content;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private MessageType messageType;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
