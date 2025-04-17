@@ -138,4 +138,14 @@ public class UserService {
 
     user.updateNickname(newNickname);
   }
+
+  public void updateProfileImage(Long userId, MultipartFile newProfileImage) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    if (user.getProfileImage() != null) {
+      imageService.deleteImageAsync(user.getProfileImage());
+    }
+    user.updateProfileImage(imageService.storeImage(newProfileImage));
+  }
 }
