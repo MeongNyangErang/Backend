@@ -56,7 +56,7 @@ public class CommonAccountController {
   }
 
   // 프로필 사진 변경 API(사용자, 호스트 공통 기능)
-  @PatchMapping
+  @PatchMapping("/profile-image")
   public ResponseEntity<Void> updateProfileImage(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
       @RequestPart(value = "newProfileImage")MultipartFile newProfileImage
