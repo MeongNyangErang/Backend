@@ -4,11 +4,12 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatMessage;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatReadStatus;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatRoom;
+import com.meongnyangerang.meongnyangerang.domain.chat.MessageType;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
-import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagesResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
@@ -24,7 +25,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -52,7 +52,7 @@ public class ChatService {
    * 채팅방 생성
    */
   @Transactional
-  public void createChatRoom(Long userId, Long accommodationId) {
+  public ChatCreateResponse createChatRoom(Long userId, Long accommodationId) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
 
@@ -61,36 +61,27 @@ public class ChatService {
 
     Host host = accommodation.getHost();
 
-    if (chatRoomRepository.existsByUser_IdAndHost_Id(user.getId(), host.getId())) {
-      throw new MeongnyangerangException(ErrorCode.CHAT_ALREADY_EXISTS);
-    }
+    ChatRoom chatRoom = chatRoomRepository.findByUser_IdAndHost_Id(user.getId(), host.getId())
+        .orElseGet(() -> createNewChatRoom(user, host));
 
-    ChatRoom newChatRoom = createChatRoom(user, host);
-    ChatRoom savedChatRoom = chatRoomRepository.save(newChatRoom);
-
-    createReadStatusForParticipants(savedChatRoom, userId, host.getId()); // 읽음 상태 초기화
+    return new ChatCreateResponse(chatRoom.getId());
   }
 
   /**
    * 일반회원이 채팅방 목록 조회
    */
   public PageResponse<ChatRoomResponse> getChatRoomsAsUser(Long userId, Pageable pageable) {
-    Page<ChatRoom> chatRooms = chatRoomRepository.findAllByUser_IdOrderByUpdatedAtDesc(
-        userId, pageable);
-    Page<ChatRoomResponse> response = chatRooms.map(this::createChatRoomResponseAsUser);
-
-    return PageResponse.from(response);
+    Page<ChatRoom> chatRooms = chatRoomRepository.findAllByUser_Id(userId, pageable);
+    Page<ChatRoomResponse> responses = chatRooms.map(this::createChatRoomResponseAsUser);
+    return PageResponse.from(responses);
   }
 
   /**
    * 호스트가 채팅방 목록 조회
    */
   public PageResponse<ChatRoomResponse> getChatRoomsAsHost(Long hostId, Pageable pageable) {
-    Page<ChatRoom> chatRooms = chatRoomRepository.findAllByHost_IdOrderByUpdatedAtDesc(
-        hostId, pageable);
-
+    Page<ChatRoom> chatRooms = chatRoomRepository.findAllByHost_Id(hostId, pageable);
     Page<ChatRoomResponse> response = chatRooms.map(this::createChatRoomResponseAsHost);
-
     return PageResponse.from(response);
   }
 
@@ -98,15 +89,19 @@ public class ChatService {
    * 메시지 이력 조회
    */
   @Transactional
-  public ChatMessagesResponse getChatMessages(
-      Long viewerId, Long chatRoomId, Long cursorId, int size, SenderType senderType
+  public PageResponse<ChatMessageResponse> getChatMessages(
+      Long viewerId,
+      Long chatRoomId,
+      Pageable pageable,
+      SenderType senderType
   ) {
-    ChatRoom chatRoom = findAndValidateChatRoom(chatRoomId, viewerId, senderType);
-
-    // 읽음 상태 업데이트 (채팅방에 들어왔으므로 메시지를 읽음으로 표시)
+    ChatRoom chatRoom = findAndValidateChatRoom(viewerId, chatRoomId, senderType);
     updateReadStatus(chatRoom, viewerId, senderType);
+    Page<ChatMessageResponse> responses = chatMessageRepository.findByChatRoomId(
+            chatRoomId, pageable)
+        .map(ChatMessageResponse::from);
 
-    return getFetchMessageWithPaging(chatRoomId, cursorId, size);
+    return PageResponse.from(responses);
   }
 
   /**
@@ -119,9 +114,9 @@ public class ChatService {
       Long senderId,
       SenderType senderType
   ) {
-    ChatRoom chatRoom = findAndValidateChatRoom(chatRoomId, senderId, senderType);
-    ChatMessage savedMessage = saveMessageAndUpdateChat(content, senderId, senderType, chatRoom);
-
+    ChatRoom chatRoom = findAndValidateChatRoom(senderId, chatRoomId, senderType);
+    ChatMessage savedMessage = saveMessageAndUpdateChat(
+        content, senderId, chatRoom, senderType, MessageType.MESSAGE);
     sendWebSocketMessage(chatRoomId, savedMessage);
   }
 
@@ -135,24 +130,31 @@ public class ChatService {
       Long senderId,
       SenderType senderType
   ) {
-    ChatRoom chatRoom = findAndValidateChatRoom(chatRoomId, senderId, senderType);
+    ChatRoom chatRoom = findAndValidateChatRoom(senderId, chatRoomId, senderType);
     String imageUrl = imageService.storeImage(imageFile);
-    ChatMessage savedMessage = saveMessageAndUpdateChat(imageUrl, senderId, senderType, chatRoom);
-
+    ChatMessage savedMessage = saveMessageAndUpdateChat(
+        imageUrl, senderId, chatRoom, senderType, MessageType.IMAGE);
     sendWebSocketMessage(chatRoomId, savedMessage);
+  }
+
+  private ChatRoom createNewChatRoom(User user, Host host) {
+    ChatRoom newChatRoom = createChatRoom(user, host);
+    ChatRoom savedChatRoom = chatRoomRepository.save(newChatRoom);
+    createReadStatusForParticipants(savedChatRoom, user.getId(), host.getId()); // 읽음 상태 초기화
+    return savedChatRoom;
   }
 
   private ChatMessage saveMessageAndUpdateChat(
       String content,
       Long senderId,
+      ChatRoom chatRoom,
       SenderType senderType,
-      ChatRoom chatRoom
+      MessageType messageType
   ) {
-    ChatMessage message = createChatMessage(content, senderType, chatRoom);
+    ChatMessage message = createChatMessage(content, chatRoom, senderType, messageType);
     ChatMessage savedMessage = chatMessageRepository.save(message);
     chatRoom.updateLastActivity(); // 채팅방 업데이트 시간 갱신
     updateReadStatus(chatRoom, senderId, senderType);
-
     return savedMessage;
   }
 
@@ -171,37 +173,16 @@ public class ChatService {
     chatReadStatus.updateLastReadTime(LocalDateTime.now());
   }
 
-  private ChatMessagesResponse getFetchMessageWithPaging(
-      Long chatRoomId, Long cursorId, int size
-  ) {
-    Pageable pageable = PageRequest.of(0, size + 1);
-
-    List<ChatMessage> messages = chatMessageRepository.findByChatRoomIdWithCursor(
-        chatRoomId, cursorId, pageable);
-
-    boolean hasNext = messages.size() > size;
-
-    List<ChatMessage> resultMessages = hasNext ? messages.subList(0, size) : messages;
-    Long nextCursorId = hasNext ? messages.get(size - 1).getId() : null;
-
-    List<ChatMessageResponse> messageResponses = resultMessages.stream()
-        .map(ChatMessageResponse::from)
-        .toList();
-
-    return new ChatMessagesResponse(messageResponses, nextCursorId, hasNext);
-  }
-
   private void sendWebSocketMessage(Long chatRoomId, ChatMessage savedMessage) {
     ChatMessageResponse payload = ChatMessageResponse.from(savedMessage);
     messagingTemplate.convertAndSend(CHAT_DESTINATION + chatRoomId, payload);
     log.debug("메시지 전송 완료: {}", CHAT_DESTINATION + chatRoomId);
   }
 
-  private ChatRoom findAndValidateChatRoom(Long chatRoomId, Long senderId, SenderType senderType) {
+  private ChatRoom findAndValidateChatRoom(Long senderId, Long chatRoomId, SenderType senderType) {
     ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_CHAT_ROOM));
     validateChatRoomAccess(senderId, chatRoom, senderType); // 발신자가 채팅방 참여자인지 확인
-
     return chatRoom;
   }
 
@@ -304,12 +285,16 @@ public class ChatService {
   }
 
   private static ChatMessage createChatMessage(
-      String content, SenderType senderType, ChatRoom chatRoom
+      String content,
+      ChatRoom chatRoom,
+      SenderType senderType,
+      MessageType messageType
   ) {
     return ChatMessage.builder()
         .chatRoom(chatRoom)
-        .senderType(senderType)
         .content(content)
+        .senderType(senderType)
+        .messageType(messageType)
         .build();
   }
 }
