@@ -21,7 +21,6 @@ import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusReposit
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
