@@ -359,4 +359,18 @@ class UserServiceTest {
     verify(imageService, never()).deleteImageAsync(any());
     assertThat(user.getProfileImage()).isEqualTo("https://s3.aws/new-image.jpg");
   }
+
+  @Test
+  @DisplayName("사용자 프로필 이미지 변경 - 실패 (존재하지 않는 사용자)")
+  void updateProfileImage_fail_userNotFound() {
+    Long userId = 999L;
+    MultipartFile newImage = mock(MultipartFile.class);
+
+    given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> userService.updateProfileImage(userId, newImage))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(NOT_EXIST_ACCOUNT);
+  }
 }
