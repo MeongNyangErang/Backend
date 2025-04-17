@@ -463,4 +463,23 @@ class HostServiceTest {
     verify(imageService).deleteImageAsync("https://s3.aws/old-host.jpg");
     assertThat(host.getProfileImageUrl()).isEqualTo("https://s3.aws/new-host.jpg");
   }
+
+  @Test
+  @DisplayName("호스트 프로필 이미지 변경 - 성공 (기존 이미지 X)")
+  void updateProfileImage_success_withoutExistingImage() {
+    Long hostId = 2L;
+    MultipartFile newImage = mock(MultipartFile.class);
+    Host host = Host.builder()
+        .id(hostId)
+        .profileImageUrl(null)
+        .build();
+
+    given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
+    given(imageService.storeImage(newImage)).willReturn("https://s3.aws/new-host.jpg");
+
+    hostService.updateProfileImage(hostId, newImage);
+
+    verify(imageService, never()).deleteImageAsync(any());
+    assertThat(host.getProfileImageUrl()).isEqualTo("https://s3.aws/new-host.jpg");
+  }
 }
