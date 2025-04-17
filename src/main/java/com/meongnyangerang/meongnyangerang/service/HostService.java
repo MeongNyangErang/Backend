@@ -198,7 +198,7 @@ public class HostService {
     Host host = hostRepository.findById(hotsId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 
-    if (host.getProfileImageUrl() != null) {
+    if (host.getProfileImageUrl() != null && !host.getProfileImageUrl().isBlank()) {
       imageService.deleteImageAsync(host.getProfileImageUrl());
     }
 

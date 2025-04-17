@@ -145,7 +145,7 @@ public class UserService {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 
-    if (user.getProfileImage() != null) {
+    if (user.getProfileImage() != null && !user.getProfileImage().isBlank()) {
       imageService.deleteImageAsync(user.getProfileImage());
     }
     user.updateProfileImage(imageService.storeImage(newProfileImage));
