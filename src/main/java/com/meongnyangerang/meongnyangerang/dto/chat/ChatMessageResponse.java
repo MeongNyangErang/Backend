@@ -6,6 +6,7 @@ import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import java.time.LocalDateTime;
 
 public record ChatMessageResponse(
+    Long chatRoomId,
     String messageContent,
     SenderType senderType,
     MessageType messageType,
@@ -14,6 +15,7 @@ public record ChatMessageResponse(
 
   public static ChatMessageResponse from(ChatMessage chatMessage) {
     return new ChatMessageResponse(
+        chatMessage.getChatRoom().getId(),
         chatMessage.getContent(),
         chatMessage.getSenderType(),
         chatMessage.getMessageType(),
