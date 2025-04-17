@@ -88,4 +88,8 @@ public class Host {
   public void updateNickname(String newNickname) {
     this.nickname = newNickname;
   }
+
+  public void updateProfileImage(String newProfileImage) {
+    this.profileImageUrl = newProfileImage;
+  }
 }
