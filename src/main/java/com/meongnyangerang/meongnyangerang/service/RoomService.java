@@ -178,7 +178,8 @@ public class RoomService {
   }
 
   private List<RoomPetFacility> saveRoomPetFacilities(
-      List<RoomPetFacilityType> petFacilityTypes, Room room
+      List<RoomPetFacilityType> petFacilityTypes,
+      Room room
   ) {
     List<RoomPetFacility> petFacilities = petFacilityTypes.stream()
         .map(petFacilityType -> RoomPetFacility.builder()

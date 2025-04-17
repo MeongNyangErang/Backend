@@ -121,7 +121,6 @@ public class ChatService {
   ) {
     ChatRoom chatRoom = findAndValidateChatRoom(chatRoomId, senderId, senderType);
     ChatMessage savedMessage = saveMessageAndUpdateChat(content, senderId, senderType, chatRoom);
-
     sendWebSocketMessage(chatRoomId, savedMessage);
   }
 
