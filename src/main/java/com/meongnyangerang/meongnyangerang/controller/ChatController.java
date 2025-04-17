@@ -7,6 +7,7 @@ import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateRequest;
+import com.meongnyangerang.meongnyangerang.dto.chat.SendImageRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
@@ -92,18 +93,18 @@ public class ChatController {
   /**
    * 사진 전송
    */
-  @PostMapping("/send/image/{chatRoomId}")
+  @PostMapping("/send/image")
   public ResponseEntity<Void> sendImage(
-      @PathVariable Long chatRoomId,
+      @RequestPart SendImageRequest request,
       @RequestPart MultipartFile imageFile,
       @AuthenticationPrincipal UserDetailsImpl userDetails
   ) {
     Role viewerRole = userDetails.getRole();
 
     if (viewerRole == Role.ROLE_USER) {
-      chatService.sendImage(chatRoomId, imageFile, userDetails.getId(), SenderType.USER);
+      chatService.sendImage(request.chatRoomId(), imageFile, userDetails.getId(), SenderType.USER);
     } else if (viewerRole == Role.ROLE_HOST) {
-      chatService.sendImage(chatRoomId, imageFile, userDetails.getId(), SenderType.HOST);
+      chatService.sendImage(request.chatRoomId(), imageFile, userDetails.getId(), SenderType.HOST);
     } else {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }
