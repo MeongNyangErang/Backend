@@ -28,7 +28,6 @@ import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusReposit
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +45,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
@@ -460,7 +458,7 @@ class ChatServiceTest {
     List<ChatMessageResponse> messages = response.content();
     for (int i = 0; i < messages.size(); i++) {
       ChatMessageResponse message = messages.get(i);
-      assertThat(message.messageId()).isEqualTo(i + 1);
+      assertThat(message.chatRoomId()).isEqualTo(chatRoomId);
       assertThat(message.messageContent()).isEqualTo("테스트 메시지" + (i + 1));
       assertThat(messages.get(i).senderType())
           .isEqualTo(i % 2 == 0 ? SenderType.USER : SenderType.HOST);
