@@ -83,8 +83,8 @@ public class DummyDataCreateService {
 
   private final AccommodationRoomSearchService searchService;
 
-  private static final String USER_PASSWORD = "password123";
-  private static final String HOST_PASSWORD = "host123";
+  private static final String USER_PASSWORD = "!User123";
+  private static final String HOST_PASSWORD = "!Host123";
   private static final String LOCALE = "ko";
   private static final int REQUIRE_COUNT = 1;
   private static final int MAX_RESERVATION_FIND_DATE_ATTEMPT_COUNT = 20;
@@ -230,6 +230,7 @@ public class DummyDataCreateService {
       List<String> savedUserEmails,
       Set<String> usedNicknames
   ) {
+    Faker enFaker = new Faker(new Locale("en"));
     List<User> users = new ArrayList<>();
     Set<String> usedUserEmails = new HashSet<>(savedUserEmails); // 중복 닉네임 방지를 위한 Set
 
@@ -238,7 +239,7 @@ public class DummyDataCreateService {
       String nickname;
 
       do { // 중복되지 않는 이메일 생성
-        email = faker.internet().emailAddress(); // 무작위 이메일 생성
+        email = enFaker.internet().emailAddress(); // 무작위 이메일 생성
       } while (usedUserEmails.contains(email));
       usedUserEmails.add(email);
 
@@ -271,6 +272,7 @@ public class DummyDataCreateService {
       List<String> savedHostEmails,
       Set<String> usedNicknames
   ) {
+    Faker enFaker = new Faker(new Locale("en"));
     List<Host> hosts = new ArrayList<>();
     Set<String> usedEmails = new HashSet<>(savedHostEmails);
 
@@ -279,7 +281,7 @@ public class DummyDataCreateService {
       String nickname;
 
       do { // 중복되지 않는 이메일 생성
-        email = faker.internet().emailAddress();
+        email = enFaker.internet().emailAddress();
       } while (usedEmails.contains(email));
       usedEmails.add(email);
 
@@ -290,7 +292,7 @@ public class DummyDataCreateService {
 
       Host host = Host.builder()
           .email(email)
-          .name(faker.name().fullName())
+          .name(faker.name().fullName().replaceAll("\\s+", ""))
           .nickname(nickname)
           .password(passwordEncoder.encode(HOST_PASSWORD))
           .profileImageUrl(
@@ -366,6 +368,8 @@ public class DummyDataCreateService {
       LocalDateTime randomReviewCreatedAt = reservation.getCheckOutDate()
           .atTime(12, 0).plusDays(random.nextInt(5));
 
+      int reportCount = random.nextInt(21);
+
       Review review = Review.builder()
           .user(reservation.getUser())
           .accommodation(reservation.getRoom().getAccommodation())
@@ -373,7 +377,7 @@ public class DummyDataCreateService {
           .userRating(userRating)
           .petFriendlyRating(petFriendlyRating)
           .content(faker.lorem().paragraph(1 + random.nextInt(3)))
-          .reportCount(0)
+          .reportCount(reportCount)
           .createdAt(randomReviewCreatedAt)
           .updatedAt(randomReviewCreatedAt)
           .build();
