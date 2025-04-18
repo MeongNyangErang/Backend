@@ -10,11 +10,11 @@ public class DataConstant {
 
   // 이미지 URL 목록 - 실제 서비스에서는 S3에 있는 이미지 URL로 대체
   public static final List<String> IMAGE_URLS = List.of(
-      "https://picsum.photos/800/600",
-      "https://picsum.photos/800/601",
-      "https://picsum.photos/800/602",
-      "https://picsum.photos/800/603",
-      "https://picsum.photos/800/604"
+      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/72015682-b942-44da-825d-89d3b0004b99.png.",
+      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/ef298fbb-d4f6-4510-9861-0465fc4ac4b6.png",
+      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/199836da-d9fa-4053-a080-62600c350404.png",
+      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/199836da-d9fa-4053-a080-62600c350404.png",
+      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/f6706acc-97be-4be5-9f84-9331cc604ebd.png"
   );
 
   // 지역 정보
