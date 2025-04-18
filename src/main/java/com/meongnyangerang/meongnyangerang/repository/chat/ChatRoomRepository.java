@@ -10,10 +10,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
-  // 사용자 ID로 채팅방 목록 조회
   Page<ChatRoom> findAllByUser_Id(Long userId, Pageable pageable);
 
-  // 호스트 ID로 채팅방 목록 조회
   Page<ChatRoom> findAllByHost_Id(Long hostId, Pageable pageable);
 
   Optional<ChatRoom> findByUser_IdAndHost_Id(Long userId, Long hostId);
