@@ -412,13 +412,14 @@ public class DummyDataCreateService {
 
       // 현재 날짜 기준으로 예약 가능한 기간 설정
       LocalDate now = LocalDate.now();
+      LocalDate minDate = now.minusDays(60); // 과거 60일부터
       LocalDate maxDate = now.plusDays(90); // 향후 90일 이내
 
       // 이 객실의 이미 예약된 날짜들
       Set<LocalDate> bookedDates = roomBookedDatesMap.get(room.getId());
 
       // 예약 기간 선택 (체크인 날짜, 숙박 일수)
-      LocalDate checkInDate = findAvailableDate(now, maxDate, bookedDates, random);
+      LocalDate checkInDate = findAvailableDate(minDate, maxDate, bookedDates, random);
       int stayDays = 1 + random.nextInt(5); // 1~5일 숙박
       LocalDate checkOutDate = checkInDate.plusDays(stayDays);
 
@@ -516,7 +517,6 @@ public class DummyDataCreateService {
       log.warn("생성된 예약 수({})가 요청된 수({})보다 적습니다. 가능한 날짜가 부족합니다.",
           successCount, totalReservations);
     }
-
     return reservations;
   }
 
@@ -860,14 +860,19 @@ public class DummyDataCreateService {
 
   private void saveIndex(List<Accommodation> accommodations, List<Room> rooms) {
     for (Accommodation accommodation : accommodations) {
-      for (Room room : rooms) {
-        searchService.save(accommodation, room);
+      List<Room> relatedRooms = rooms.stream()
+          .filter(room -> room.getAccommodation().getId().equals(accommodation.getId()))
+          .toList();
 
-        if (roomRepository.findAllByAccommodationId(accommodation.getId()).size() > 1) {
-          searchService.updateAccommodationDocument(accommodation);
-        } else {
-          searchService.indexAccommodationDocument(accommodation, room);
-        }
+      Room firstRoom = relatedRooms.get(0);
+      searchService.indexAccommodationDocument(accommodation, firstRoom);
+
+      for (Room room : relatedRooms) {
+        searchService.save(accommodation, room);
+      }
+
+      if (relatedRooms.size() > 1) {
+        searchService.updateAccommodationDocument(accommodation);
       }
     }
   }
