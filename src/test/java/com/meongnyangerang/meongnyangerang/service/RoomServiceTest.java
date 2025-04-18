@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -19,9 +20,10 @@ import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
-import com.meongnyangerang.meongnyangerang.dto.room.RoomListResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
@@ -31,6 +33,7 @@ import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityReposi
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -46,6 +49,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -94,17 +99,13 @@ class RoomServiceTest {
   List<RoomPetFacility> updatePetFacilities;
   List<Hashtag> updateHashtags;
 
-  private final int PAGE_SIZE = 5;
-
-  Pageable pageable = PageRequest.of(0, PAGE_SIZE + 1);
-
   @BeforeEach
   void setUp() {
     image = new MockMultipartFile(
         "image",
         imageUrl,
         "image/jpeg",
-        "test image content" .getBytes()
+        "test image content".getBytes()
     );
 
     imageUrl = "https://example.com/images/test-image.jpg";
@@ -201,15 +202,15 @@ class RoomServiceTest {
         hashtagTypes
     );
 
-    LocalDateTime now = LocalDateTime.now();
     rooms = new ArrayList<>();
-
-    for (int i = 1; i <= 10; i++) {
+    for (int i = 1; i <= 5; i++) {
       Room room = Room.builder()
           .id((long) i)
           .name("객실 " + i)
           .accommodation(accommodation)
-          .createdAt(now.minusDays(i))
+          .createdAt(LocalDateTime.of(
+              LocalDate.of(2025, 3, 10 + i),
+              LocalTime.of(9, 0, 0)))
           .build();
 
       rooms.add(room);
@@ -332,65 +333,61 @@ class RoomServiceTest {
   }
 
   @Test
-  @DisplayName("객실 목록 조회 성공 - 첫 페이지 조회")
-  void getRoomList_FirstPage_Success() {
+  @DisplayName("객실 목록 조회 성공")
+  void getRoomList_Success() {
     // given
     int pageSize = 5;
+    Pageable pageable = PageRequest.of(
+        0, pageSize, Sort.by("createdAt").descending());
+    Page<Room> pagedReviews = new PageImpl<>(rooms, pageable, rooms.size());
 
     when(accommodationRepository.findByHostId(host.getId())).thenReturn(
         Optional.of(accommodation));
-    when(roomRepository.findByAccommodationIdWithCursor(accommodation.getId(), null, pageable))
-        .thenReturn(rooms.subList(0, 6)); // 5개 요청 + 1개 추가
+    when(roomRepository.findAllByAccommodationId(accommodation.getId(), pageable))
+        .thenReturn(pagedReviews);
 
     // when
-    RoomListResponse response = roomService.getRoomList(host.getId(), null, pageSize);
+    PageResponse<RoomSummaryResponse> response = roomService.getRoomList(host.getId(), pageable);
 
     // then
     assertThat(response.content()).hasSize(5);
-    assertThat(response.hasNext()).isTrue();
-    assertThat(response.nextCursor()).isEqualTo(5L); // 마지막으로 조회된 객실의 ID
-  }
+    assertThat(response.page()).isEqualTo(0);
+    assertThat(response.size()).isEqualTo(5);
+    assertThat(response.totalElements()).isEqualTo(5);
+    assertThat(response.totalPages()).isEqualTo(1);
+    assertTrue(response.first());
+    assertTrue(response.last());
 
-  @Test
-  @DisplayName("객실 목록 조회 성공 - 다음 페이지")
-  void getRoomList_NextPage_Success() {
-    // given
-    Long cursorId = 6L; // 이전 페이지의 마지막 ID
-    int pageSize = 5;
+    // 모든 객실 포함되었는지 검증
+    List<Long> returnedIds = response.content().stream()
+        .map(RoomSummaryResponse::roomId)
+        .toList();
+    assertThat(returnedIds).containsExactly(1L, 2L, 3L, 4L, 5L);
 
-    when(accommodationRepository.findByHostId(host.getId()))
-        .thenReturn(Optional.of(accommodation));
-    when(roomRepository.findByAccommodationIdWithCursor(accommodation.getId(), cursorId, pageable))
-        .thenReturn(rooms.subList(5, 10)); // ID가 6 ~ 10인 객실
+    // 첫 번째 객실 검증
+    RoomSummaryResponse firstRoom = response.content().get(0);
+    assertThat(firstRoom.roomId()).isEqualTo(1L);
+    assertThat(firstRoom.name()).isEqualTo("객실 1");
 
-    // when
-    RoomListResponse response = roomService.getRoomList(host.getId(), cursorId, pageSize);
+    // 두 번째 객실 검증
+    RoomSummaryResponse secondRoom = response.content().get(1);
+    assertThat(secondRoom.roomId()).isEqualTo(2L);
+    assertThat(secondRoom.name()).isEqualTo("객실 2");
 
-    // then
-    assertThat(response.content()).hasSize(5);
-    assertThat(response.hasNext()).isFalse(); // 다음 페이지 없음
-    assertThat(response.nextCursor()).isNull();
-  }
+    // 세 번째 객실 검증
+    RoomSummaryResponse thirdRoom = response.content().get(2);
+    assertThat(thirdRoom.roomId()).isEqualTo(3L);
+    assertThat(thirdRoom.name()).isEqualTo("객실 3");
 
-  @Test
-  @DisplayName("객실 목록 조회 성공 - 결과가 없는 경우")
-  void getRoomList_EmptyResult_Success() {
-    // given
-    Long cursorId = 1L;
-    int pageSize = 5;
+    // 네 번째 객실 검증
+    RoomSummaryResponse fourthRoom = response.content().get(3);
+    assertThat(fourthRoom.roomId()).isEqualTo(4L);
+    assertThat(fourthRoom.name()).isEqualTo("객실 4");
 
-    when(accommodationRepository.findByHostId(host.getId()))
-        .thenReturn(Optional.of(accommodation));
-    when(roomRepository.findByAccommodationIdWithCursor(accommodation.getId(), cursorId, pageable))
-        .thenReturn(new ArrayList<>()); // 빈 결과
-
-    // when
-    RoomListResponse response = roomService.getRoomList(host.getId(), cursorId, pageSize);
-
-    // then
-    assertThat(response.content()).isEmpty();
-    assertThat(response.hasNext()).isFalse();
-    assertThat(response.nextCursor()).isNull();
+    // 다섯 번째 객실 검증
+    RoomSummaryResponse fifthRoom = response.content().get(4);
+    assertThat(fifthRoom.roomId()).isEqualTo(5L);
+    assertThat(fifthRoom.name()).isEqualTo("객실 5");
   }
 
   @Test
@@ -398,13 +395,14 @@ class RoomServiceTest {
   void getRoomList_AccommodationNotFound_ThrowsException() {
     // given
     int pageSize = 5;
+    Pageable pageable = PageRequest.of(
+        10, pageSize, Sort.by("createdAt").descending());
 
     when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.empty());
 
     // when
     // then
-    assertThatThrownBy(() -> roomService.getRoomList(
-        host.getId(), null, pageSize))
+    assertThatThrownBy(() -> roomService.getRoomList(host.getId(), pageable))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
   }
@@ -564,7 +562,7 @@ class RoomServiceTest {
         "image",
         imageUrl,
         "image/jpeg",
-        "test image content" .getBytes()
+        "test image content".getBytes()
     );
 
     when(accommodationRepository.findByHostId(host.getId()))
