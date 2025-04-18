@@ -32,7 +32,7 @@ public class DummyDataController {
   /**
    * 더미 데이터 삭제 API
    */
-  @DeleteMapping("/dummy-data")
+  @DeleteMapping
   public ResponseEntity<Map<String, Object>> clearDummyData() {
     // 더미 데이터 삭제
     Map<String, Object> result = dummyDataDeleteService.clearData();
