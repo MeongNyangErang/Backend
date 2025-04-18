@@ -2,11 +2,12 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
-import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
+import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReviewService;
 import jakarta.validation.Valid;
@@ -14,6 +15,9 @@ import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Range;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -99,12 +103,12 @@ public class ReviewController {
    * 호스트의 숙소 리뷰 목록 조회
    */
   @GetMapping("/hosts/reviews")
-  public ResponseEntity<HostReviewResponse> getHostReviews(
+  public ResponseEntity<PageResponse<ReviewContent>> getHostReviews(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
-      @RequestParam(required = false) Long cursorId,
-      @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size
+      @PageableDefault(size = 20, sort = "createdAt", direction = Direction.DESC)
+      Pageable pageable
   ) {
-    return ResponseEntity.ok(reviewService.getHostReviews(userDetails.getId(), cursorId, size));
+    return ResponseEntity.ok(reviewService.getHostReviews(userDetails.getId(), pageable));
   }
 
   // 최신 리뷰 10개 조회

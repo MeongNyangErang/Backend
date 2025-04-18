@@ -34,12 +34,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccommodationService {
@@ -66,8 +64,6 @@ public class AccommodationService {
       MultipartFile thumbnail,
       List<MultipartFile> additionalImages
   ) {
-    log.info("숙소 등록 시작");
-
     Host host = validateHost(hostId);
     additionalImages = initAdditionalImages(additionalImages);
     validateImagesCount(additionalImages.size());
@@ -77,16 +73,12 @@ public class AccommodationService {
 
     Accommodation accommodation = request.toEntity(host, thumbnailUrl);
     saveAccommodationWithRelatedEntities(request, accommodation, newAdditionalImageUrls);
-
-    log.info("숙소 등록 성공, 호스트 ID : {}, 숙소 ID : {}", hostId, accommodation.getId());
   }
 
   /**
    * 숙소 조회
    */
   public AccommodationResponse getAccommodation(Long hostId) {
-    log.info("숙소 조회 시작");
-
     Accommodation accommodation = findAccommodationByHostId(hostId);
     Long accommodationId = accommodation.getId();
 
@@ -99,7 +91,6 @@ public class AccommodationService {
     List<AllowPet> allowPets = allowPetRepository.findAllByAccommodationId(accommodationId);
     List<String> additionalImageUrls = getImageUrls(accommodationId);
 
-    log.info("숙소 조회 성공, 호스트 ID : {}, 숙소 ID : {}", hostId, accommodation.getId());
     return createAccommodationResponse(
         accommodation,
         facilities,
@@ -119,8 +110,6 @@ public class AccommodationService {
       MultipartFile thumbnail,
       List<MultipartFile> newAdditionalImages
   ) {
-    log.info("숙소 수정 시작");
-    
     Accommodation accommodation = findAccommodationByHostId(hostId);
     newAdditionalImages = initAdditionalImages(newAdditionalImages);
     validateImagesCount(newAdditionalImages.size());
@@ -138,7 +127,6 @@ public class AccommodationService {
 
     updateSearchIndex(accommodation); // 색인 갱신 - 객실이 있을 경우에만
 
-    log.info("숙소 수정 성공, 호스트 ID : {}, 숙소 ID : {}", hostId, accommodation.getId());
     return createAccommodationResponse(
         accommodation,
         updatedFacilities,
@@ -201,7 +189,6 @@ public class AccommodationService {
       return oldThumbnailUrl;
     }
     imageService.deleteImageAsync(oldThumbnailUrl);
-
     return imageService.storeImage(newThumbnail);
   }
 
@@ -220,7 +207,7 @@ public class AccommodationService {
     // 삭제 후 남을 이미지 개수 + 새로 추가될 이미지 개수가 3을 초과하는지 확인
     int totalImagesAfterUpdate = currentImagesCount - deleteCount + newAdditionalImages.size();
     validateImagesCount(totalImagesAfterUpdate);
-    
+
     if (deleteCount > 0) {
       imageService.deleteImagesAsync(deleteImageUrls);
       accommodationImageRepository.deleteAllByImageUrl(deleteImageUrls);
@@ -342,7 +329,6 @@ public class AccommodationService {
   private Host validateHost(Long hostId) {
     Host host = getHost(hostId);
     validateNotExistsAccommodation(hostId);
-
     return host;
   }
 

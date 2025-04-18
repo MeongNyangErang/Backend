@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,13 +25,13 @@ import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
-import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
 import com.meongnyangerang.meongnyangerang.dto.ReviewImageResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -55,8 +56,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -88,6 +92,8 @@ class ReviewServiceTest {
   private Accommodation accommodation;
   private List<Review> reviews;
   private List<ReviewImageProjection> reviewImageProjections;
+
+  private static final int VISIBLE_REVIEW_REPORT_THRESHOLD = 20;
 
   @Test
   @DisplayName("유저는 예약한 숙소에 대해 리뷰를 작성할 수 있습니다.")
@@ -903,82 +909,36 @@ class ReviewServiceTest {
   }
 
   @Test
-  @DisplayName("호스트의 숙소 목록 조회 성공 - 다음 커서 존재")
-  void getHostReviews_Success_WithNextCursor() {
+  @DisplayName("호스트의 숙소 리뷰 목록 조회 성공")
+  void getHostReviews_Success() {
     // given
     settingTestReview();
-    Long cursorId = null;
-    int pageSize = 3;
-
-    List<Review> pagedReviews = reviews.subList(0, pageSize + 1);
-    Pageable pageable = PageRequest.of(0, pageSize + 1);
-
-    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
-    when(reviewRepository.findByAccommodationIdWithCursor(
-        accommodation.getId(), cursorId, pageable)).thenReturn(pagedReviews);
-
-    List<Review> actualReviews = pagedReviews.subList(0, pageSize); // 실제 반환될 리뷰
-    List<Long> actualReviewIds = actualReviews.stream().map(Review::getId).toList();
-    when(reviewImageRepository.findByReviewIds(actualReviewIds))
-        .thenReturn(reviewImageProjections.subList(0, 3));
-
-    // when
-    HostReviewResponse response = reviewService.getHostReviews(host.getId(), cursorId, pageSize);
-
-    // then
-    assertThat(response.content()).hasSize(3);
-    assertThat(response.hasNext()).isTrue();
-    assertThat(response.cursorId()).isEqualTo(3L);
-    
-    // 반환된 리뷰의 ID 검증
-    List<Long> returnedIds = response.content().stream()
-        .map(ReviewContent::reviewId)
-        .toList();
-    assertThat(returnedIds).containsExactly(1L, 2L, 3L);
-
-    // 첫 번째 리뷰 검증
-    ReviewContent firstReview = response.content().get(0);
-    assertThat(firstReview.nickname()).isEqualTo("닉네임1");
-    assertThat(firstReview.reviewId()).isEqualTo(1L);
-    assertThat(firstReview.imageUrls()).contains("image1_1.jpg");
-
-    // 두 번째 리뷰 검증
-    ReviewContent secondReview = response.content().get(1);
-    assertThat(secondReview.nickname()).isEqualTo("닉네임2");
-    assertThat(secondReview.reviewId()).isEqualTo(2L);
-    assertThat(secondReview.imageUrls()).contains("image2_1.jpg");
-
-    // 세 번째 리뷰 검증
-    ReviewContent thirdReview = response.content().get(2);
-    assertThat(thirdReview.nickname()).isEqualTo("닉네임3");
-    assertThat(thirdReview.reviewId()).isEqualTo(3L);
-    assertThat(thirdReview.imageUrls()).contains("image3_1.jpg");
-  }
-
-  @Test
-  @DisplayName("호스트의 숙소 목록 조회 성공 - 다음 커서 없음")
-  void getHostReviews_Success_WithoutNextCursor() {
-    // given
-    settingTestReview();
-    Long cursorId = null;
     int pageSize = 5;
-    Pageable pageable = PageRequest.of(0, pageSize + 1);
+    Pageable pageable = PageRequest.of(
+        0, pageSize, Sort.by("createdAt").descending());
+    Page<Review> pagedReviews = new PageImpl<>(reviews, pageable, reviews.size());
 
     when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
-    when(reviewRepository.findByAccommodationIdWithCursor(
-        accommodation.getId(), cursorId, pageable)).thenReturn(reviews); // ㅁ
+    when(reviewRepository.findAllByAccommodationIdAndReportCountLessThan(
+        accommodation.getId(), VISIBLE_REVIEW_REPORT_THRESHOLD, pageable))
+        .thenReturn(pagedReviews);
 
     List<Long> actualReviewIds = reviews.stream().map(Review::getId).toList();
 
-    when(reviewImageRepository.findByReviewIds(actualReviewIds)).thenReturn(reviewImageProjections);
+    when(reviewImageRepository.findByReview_IdIn(actualReviewIds)).thenReturn(
+        reviewImageProjections);
 
     // when
-    HostReviewResponse response = reviewService.getHostReviews(host.getId(), cursorId, pageSize);
+    PageResponse<ReviewContent> response = reviewService.getHostReviews(host.getId(), pageable);
 
     // then
     assertThat(response.content()).hasSize(5);
-    assertThat(response.hasNext()).isFalse();
-    assertThat(response.cursorId()).isEqualTo(null);
+    assertThat(response.page()).isEqualTo(0);
+    assertThat(response.size()).isEqualTo(5);
+    assertThat(response.totalElements()).isEqualTo(5);
+    assertThat(response.totalPages()).isEqualTo(1);
+    assertTrue(response.first());
+    assertTrue(response.last());
 
     // 모든 리뷰가 포함되었는지 검증
     List<Long> returnedIds = response.content().stream()
@@ -1027,15 +987,16 @@ class ReviewServiceTest {
   @DisplayName("숙소 목록 조회 실패 - 숙소 존재하지 않음")
   void getHostReviews_AccommodationNotFound_ThrowsException() {
     // given
-    Long cursorId = null;
-    int pageSize = 5;
     Long nonExistentHostId = 999L;
+    int pageSize = 5;
+    Pageable pageable = PageRequest.of(
+        0, pageSize, Sort.by("createdAt").descending());
 
     when(accommodationRepository.findByHostId(nonExistentHostId)).thenReturn(Optional.empty());
 
     // when
     // then
-    assertThatThrownBy(() -> reviewService.getHostReviews(nonExistentHostId, cursorId, pageSize))
+    assertThatThrownBy(() -> reviewService.getHostReviews(nonExistentHostId, pageable))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
   }

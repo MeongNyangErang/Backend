@@ -60,7 +60,6 @@ public class ImageService {
 
   private void validateImage(MultipartFile image) {
     if (image == null || image.isEmpty()) {
-      log.info("파일이 비어있습니다.");
       throw new MeongnyangerangException(ErrorCode.MISSING_IMAGE_FILE);
     }
     validateImageFormat(image.getContentType(), image.getOriginalFilename());

@@ -2,7 +2,7 @@ package com.meongnyangerang.meongnyangerang.dto.room;
 
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 
-public record RoomContent(
+public record RoomSummaryResponse(
     Long roomId,
     String name,
     String description,
@@ -14,8 +14,8 @@ public record RoomContent(
     Integer maxPetCount
 ) {
 
-  public static RoomContent of(Room room) {
-    return new RoomContent(
+  public static RoomSummaryResponse of(Room room) {
+    return new RoomSummaryResponse(
         room.getId(),
         room.getName(),
         room.getDescription(),
