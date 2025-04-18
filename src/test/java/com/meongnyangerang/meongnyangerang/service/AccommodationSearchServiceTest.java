@@ -1,6 +1,8 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -14,7 +16,10 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationTyp
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
+import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Function;
@@ -131,6 +136,39 @@ class AccommodationSearchServiceTest {
     assertThat(response.content()).hasSize(2);
     assertThat(response.content()).extracting("accommodationId")
         .containsExactlyInAnyOrder(1L, 2L);
+  }
+
+  @Test
+  @DisplayName("숙소 목록 조회 실패 - Elasticsearch IOException 발생")
+  void searchAccommodation_ElasticsearchError_ThrowsException() throws Exception {
+    // given
+    AccommodationSearchRequest request = new AccommodationSearchRequest(
+        "서울",
+        LocalDate.of(2025, 4, 18),
+        LocalDate.of(2025, 4, 19),
+        2, 1,
+        AccommodationType.PENSION,
+        50000L, 150000L, 4.0,
+        List.of("WIFI", "BREAKFAST"),
+        List.of("SHOWER_ROOM", "SWIMMING_POOL"),
+        List.of("AIR_CONDITIONER", "TV"),
+        List.of("FOOD_BOWL", "TOY"),
+        List.of("FAMILY_TRIP", "OCEAN_VIEW"),
+        List.of("SMALL_DOG", "CAT")
+    );
+
+    given(reservationSlotRepository.findReservedRoomIdsBetweenDates(
+        request.getCheckInDate(), request.getCheckOutDate().minusDays(1)))
+        .willReturn(List.of());
+
+    given(elasticsearchClient.search(any(Function.class), eq(AccommodationRoomDocument.class)))
+        .willThrow(new IOException("Elasticsearch 연결 실패"));
+
+    // when & then
+    assertThatThrownBy(() -> searchService.searchAccommodation(request, PageRequest.of(0, 20)))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(SEARCH_FAILED);
   }
 }
 
