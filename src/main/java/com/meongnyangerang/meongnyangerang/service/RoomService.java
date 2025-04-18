@@ -10,8 +10,9 @@ import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
-import com.meongnyangerang.meongnyangerang.dto.room.RoomListResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
@@ -25,7 +26,7 @@ import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,22 +70,12 @@ public class RoomService {
   /**
    * 객실 목록 조회
    */
-  public RoomListResponse getRoomList(Long hostId, Long cursorId, int pageSize) {
+  public PageResponse<RoomSummaryResponse> getRoomList(Long hostId, Pageable pageable) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
-    Pageable pageable = PageRequest.of(0, pageSize + 1);
-    // 다음 페이지 여부를 알기 위해 pageSize + 1
+    Page<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId(), pageable);
+    Page<RoomSummaryResponse> response = rooms.map(RoomSummaryResponse::of);
 
-    List<Room> rooms = roomRepository.findByAccommodationIdWithCursor(
-        accommodation.getId(), cursorId, pageable);
-
-    boolean hasNext = rooms.size() > pageSize;
-
-    if (hasNext) {
-      rooms = rooms.subList(0, pageSize);
-    }
-    Long nextCursorId = hasNext ? rooms.get(rooms.size() - 1).getId() : null;
-
-    return RoomListResponse.of(rooms, nextCursorId, hasNext);
+    return PageResponse.from(response);
   }
 
   /**

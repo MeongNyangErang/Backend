@@ -1,14 +1,17 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
-import com.meongnyangerang.meongnyangerang.dto.room.RoomListResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomUpdateRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.RoomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.validator.constraints.Range;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,7 +20,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -46,12 +48,12 @@ public class RoomController {
    * 객실 목록 조회
    */
   @GetMapping
-  public ResponseEntity<RoomListResponse> getRoomList(
+  public ResponseEntity<PageResponse<RoomSummaryResponse>> getRoomList(
       @AuthenticationPrincipal UserDetailsImpl userDetail,
-      @RequestParam(required = false) Long cursorId,
-      @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size
+      @PageableDefault(size = 20, sort = "createdAt", direction = Direction.DESC)
+      Pageable pageable
   ) {
-    return ResponseEntity.ok(roomService.getRoomList(userDetail.getId(), cursorId, size));
+    return ResponseEntity.ok(roomService.getRoomList(userDetail.getId(), pageable));
   }
 
   /**
