@@ -1,5 +1,15 @@
 package com.meongnyangerang.meongnyangerang.dev;
 
+import static com.meongnyangerang.meongnyangerang.dev.DataConstant.AREAS;
+import static com.meongnyangerang.meongnyangerang.dev.DataConstant.IMAGE_URLS;
+import static com.meongnyangerang.meongnyangerang.dev.DataConstant.REQUIRE_COUNT;
+import static com.meongnyangerang.meongnyangerang.dev.DataConstant.TOWNS_BY_AREA;
+import static com.meongnyangerang.meongnyangerang.dev.DataGeneratorUtils.generateRealisticAccommodationDescription;
+import static com.meongnyangerang.meongnyangerang.dev.DataGeneratorUtils.generateRealisticAccommodationName;
+import static com.meongnyangerang.meongnyangerang.dev.DataGeneratorUtils.generateRealisticRoomDesc;
+import static com.meongnyangerang.meongnyangerang.dev.DataGeneratorUtils.generateRealisticRoomName;
+import static javax.swing.text.html.HTML.Tag.AREA;
+
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationImage;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
@@ -83,36 +93,9 @@ public class DummyDataCreateService {
 
   private final AccommodationRoomSearchService searchService;
 
-  private static final String USER_PASSWORD = "password123";
-  private static final String HOST_PASSWORD = "host123";
-  private static final String LOCALE = "ko";
-  private static final int REQUIRE_COUNT = 1;
-  private static final int MAX_RESERVATION_FIND_DATE_ATTEMPT_COUNT = 20;
-
-  // 이미지 URL 목록 - 실제 서비스에서는 S3에 있는 이미지 URL로 대체
-  private final List<String> imageUrls = List.of(
-      "https://picsum.photos/800/600",
-      "https://picsum.photos/800/601",
-      "https://picsum.photos/800/602",
-      "https://picsum.photos/800/603",
-      "https://picsum.photos/800/604"
-  );
-
-  // 지역 정보
-  private final List<String> areas = List.of(
-      "서울", "부산", "제주", "인천", "대구", "광주", "대전", "울산", "경기", "강원");
-  private final Map<String, List<String>> townsByArea = Map.of(
-      "서울", List.of("강남구", "서초구", "송파구", "마포구", "종로구"),
-      "부산", List.of("해운대구", "수영구", "남구", "부산진구", "동래구"),
-      "제주", List.of("제주시", "서귀포시", "애월읍", "조천읍", "한림읍"),
-      "인천", List.of("중구", "연수구", "남동구", "서구", "계양구"),
-      "대구", List.of("중구", "수성구", "달서구", "동구", "북구")
-  );
-
-
   @Transactional
   public Map<String, Object> generateData(DummyDataGenerateRequest request) {
-    Faker faker = new Faker(new Locale(LOCALE));
+    Faker faker = new Faker(new Locale(DataConstant.LOCALE));
     Random random = new Random();
     Map<String, Object> result = new HashMap<>();
 
@@ -238,7 +221,7 @@ public class DummyDataCreateService {
       String nickname;
 
       do { // 중복되지 않는 이메일 생성
-        email = faker.internet().emailAddress(); // 무작위 이메일 생성
+        email = DataGeneratorUtils.generateEnglishEmail(random); // 무작위 이메일 생성
       } while (usedUserEmails.contains(email));
       usedUserEmails.add(email);
 
@@ -250,9 +233,9 @@ public class DummyDataCreateService {
       User user = User.builder()
           .email(email)
           .nickname(nickname)
-          .password(passwordEncoder.encode(USER_PASSWORD))
+          .password(passwordEncoder.encode(DataConstant.USER_PASSWORD))
           .profileImage( // 50% 확률로 이미지 있거나, null
-              random.nextBoolean() ? imageUrls.get(random.nextInt(imageUrls.size())) : null)
+              random.nextBoolean() ? IMAGE_URLS.get(random.nextInt(IMAGE_URLS.size())) : null)
           .status(UserStatus.ACTIVE)
           .role(Role.ROLE_USER)
           .createdAt(LocalDateTime.now())
@@ -279,7 +262,7 @@ public class DummyDataCreateService {
       String nickname;
 
       do { // 중복되지 않는 이메일 생성
-        email = faker.internet().emailAddress();
+        email = DataGeneratorUtils.generateEnglishEmail(random);
       } while (usedEmails.contains(email));
       usedEmails.add(email);
 
@@ -290,16 +273,16 @@ public class DummyDataCreateService {
 
       Host host = Host.builder()
           .email(email)
-          .name(faker.name().fullName())
+          .name(faker.name().fullName().replaceAll("\\s+", ""))
           .nickname(nickname)
-          .password(passwordEncoder.encode(HOST_PASSWORD))
+          .password(passwordEncoder.encode(DataConstant.HOST_PASSWORD))
           .profileImageUrl(
-              random.nextBoolean() ? imageUrls.get(random.nextInt(imageUrls.size())) : null)
-          .businessLicenseImageUrl(imageUrls.get(random.nextInt(imageUrls.size())))
-          .submitDocumentImageUrl(imageUrls.get(random.nextInt(imageUrls.size())))
+              random.nextBoolean() ? IMAGE_URLS.get(random.nextInt(IMAGE_URLS.size())) : null)
+          .businessLicenseImageUrl(IMAGE_URLS.get(random.nextInt(IMAGE_URLS.size())))
+          .submitDocumentImageUrl(IMAGE_URLS.get(random.nextInt(IMAGE_URLS.size())))
           .phoneNumber(createRandomPhoneNumber(faker))
           .status(HostStatus.ACTIVE)
-          .role(Role.ROLE_USER)
+          .role(Role.ROLE_HOST)
           .createdAt(LocalDateTime.now())
           .updatedAt(LocalDateTime.now())
           .build();
@@ -339,7 +322,7 @@ public class DummyDataCreateService {
         for (int i = 0; i < imageCount; i++) {
           ReviewImage reviewImage = ReviewImage.builder()
               .review(review)
-              .imageUrl(imageUrls.get(random.nextInt(imageUrls.size())))
+              .imageUrl(IMAGE_URLS.get(random.nextInt(IMAGE_URLS.size())))
               .createdAt(review.getCreatedAt())
               .build();
 
@@ -360,11 +343,23 @@ public class DummyDataCreateService {
 
     for (int i = 0; i < totalReviewCount; i++) {
       Reservation reservation = completedReservations.get(i % completedReservations.size());
+      Accommodation accommodation = reservation.getRoom().getAccommodation();
 
       double userRating = 0.5 + random.nextInt(10) * 0.5;
       double petFriendlyRating = 0.5 + random.nextInt(10) * 0.5;
+      double avgRating = (userRating + petFriendlyRating) / 2.0;
+
       LocalDateTime randomReviewCreatedAt = reservation.getCheckOutDate()
           .atTime(12, 0).plusDays(random.nextInt(5));
+
+      int reportCount = random.nextInt(21);
+
+      int stayDuration = (int) ChronoUnit.DAYS.between(
+          reservation.getCheckInDate(), reservation.getCheckOutDate());
+
+      // 현실적인 리뷰 내용 생성
+      String content = DataGeneratorUtils.generateRealisticReviewContent(
+          accommodation.getName(), avgRating, stayDuration, random);
 
       Review review = Review.builder()
           .user(reservation.getUser())
@@ -372,8 +367,8 @@ public class DummyDataCreateService {
           .reservation(reservation)
           .userRating(userRating)
           .petFriendlyRating(petFriendlyRating)
-          .content(faker.lorem().paragraph(1 + random.nextInt(3)))
-          .reportCount(0)
+          .content(content)
+          .reportCount(reportCount)
           .createdAt(randomReviewCreatedAt)
           .updatedAt(randomReviewCreatedAt)
           .build();
@@ -498,7 +493,7 @@ public class DummyDataCreateService {
             .checkOutDate(checkOutDate)
             .peopleCount(peopleCount)
             .petCount(petCount)
-            .reserverName(faker.name().fullName())
+            .reserverName(faker.name().fullName().replaceAll("\\s+", ""))
             .reserverPhoneNumber(createRandomPhoneNumber(faker))
             .hasVehicle(random.nextBoolean())
             .totalPrice(totalPrice)
@@ -526,7 +521,7 @@ public class DummyDataCreateService {
       Set<LocalDate> bookedDates,
       Random random
   ) {
-    for (int attempt = 0; attempt < MAX_RESERVATION_FIND_DATE_ATTEMPT_COUNT; attempt++) {
+    for (int attempt = 0; attempt < DataConstant.MAX_RESERVATION_FIND_DATE_ATTEMPT_COUNT; attempt++) {
       // 최소 날짜(minDate)와 최대 날짜(maxDate) 사이의 일수를 계산
       long daysBetween = ChronoUnit.DAYS.between(minDate, maxDate);
 
@@ -627,8 +622,8 @@ public class DummyDataCreateService {
       int roomCount = 1 + random.nextInt(request.getRoomCount());
 
       for (int i = 0; i < roomCount; i++) {
-        String name = faker.lorem().word() + " " + faker.lorem().word() + " 룸";
-        String description = faker.lorem().paragraph(1);
+        String name = generateRealisticRoomName(random);
+        String description = generateRealisticRoomDesc(name, random);
 
         // 인원 및 반려동물 수 설정
         int standardPeopleCount = 1 + random.nextInt(3);
@@ -638,7 +633,7 @@ public class DummyDataCreateService {
         int maxPetCount = standardPetCount + random.nextInt(2);
 
         // 이미지 및 가격 설정
-        String roomImageUrl = imageUrls.get(random.nextInt(imageUrls.size()));
+        String roomImageUrl = IMAGE_URLS.get(random.nextInt(IMAGE_URLS.size()));
         Long price = 50000L + (random.nextInt(20) * 10000L); // 5~25만원
 
         // 추가 요금 설정
@@ -660,7 +655,7 @@ public class DummyDataCreateService {
             .maxPeopleCount(maxPeopleCount)
             .standardPetCount(standardPetCount)
             .maxPetCount(maxPetCount)
-            .imageUrl(roomImageUrl) // 객실 이미지는 Room 엔티티에 직접 저장
+            .imageUrl(roomImageUrl)
             .price(price)
             .extraPeopleFee(extraPeopleFee)
             .extraPetFee(extraPetFee)
@@ -766,7 +761,7 @@ public class DummyDataCreateService {
       for (int i = 0; i < imageCount; i++) {
         AccommodationImage image = AccommodationImage.builder()
             .accommodation(accommodation)
-            .imageUrl(imageUrls.get(random.nextInt(imageUrls.size())))
+            .imageUrl(IMAGE_URLS.get(random.nextInt(IMAGE_URLS.size())))
             .createdAt(accommodation.getCreatedAt())
             .build();
 
@@ -785,23 +780,20 @@ public class DummyDataCreateService {
     List<Accommodation> accommodations = new ArrayList<>();
 
     for (int i = 0; i < request.getAccommodationCount(); i++) {
-      String name = faker.company().name() + " " + // 무작위 회사 이름
-          faker.lorem().word() + " " + // 무작위 단어
-          faker.lorem().word();
-      String description = faker.lorem().paragraph(1); // 무작위 한 개의 문단
-
-      // 주소 설정
-      String area = areas.get(random.nextInt(areas.size()));
-      List<String> towns = townsByArea.getOrDefault(area, List.of("서구"));
+      String name = generateRealisticAccommodationName(random);
+      String area = AREAS.get(random.nextInt(AREAS.size()));
+      List<String> towns = TOWNS_BY_AREA.getOrDefault(area, List.of("서구"));
       String town = towns.get(random.nextInt(towns.size()));
       String detailedAddress = faker.address().streetAddress(); // 무작위 도로명 주소
+      String description = generateRealisticAccommodationDescription(name, area, random);
+
 
       // 위치 정보 (위도, 경도)
       Double latitude = 33.0 + random.nextDouble() * 10.0; // 33~43 범위의 위도
       Double longitude = 125.0 + random.nextDouble() * 10.0; // 125~135 범위의 경도
 
       AccommodationType type = randomEnum(AccommodationType.class, random); // 무작위 숙소 유형
-      String thumbnailUrl = imageUrls.get(random.nextInt(imageUrls.size())); // 썸네일 이미지
+      String thumbnailUrl = IMAGE_URLS.get(random.nextInt(IMAGE_URLS.size())); // 썸네일 이미지
 
       // 평점 및 조회수
       Double totalRating =
