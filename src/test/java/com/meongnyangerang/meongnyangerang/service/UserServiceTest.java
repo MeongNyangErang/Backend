@@ -13,6 +13,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -314,5 +317,60 @@ class UserServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .extracting("errorCode")
         .isEqualTo(DUPLICATE_NICKNAME);
+  }
+
+  @Test
+  @DisplayName("사용자 프로필 이미지 변경 - 성공 (기존 이미지 O)")
+  void updateProfileImage_success_withExistingImage() {
+    // given
+    Long userId = 1L;
+    MultipartFile newImage = mock(MultipartFile.class);
+    User user = User.builder()
+        .id(userId)
+        .profileImage("https://s3.aws/old-image.jpg")
+        .build();
+
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(imageService.storeImage(newImage)).willReturn("https://s3.aws/new-image.jpg");
+
+    // when
+    userService.updateProfileImage(userId, newImage);
+
+    // then
+    verify(imageService).deleteImageAsync("https://s3.aws/old-image.jpg");
+    assertThat(user.getProfileImage()).isEqualTo("https://s3.aws/new-image.jpg");
+  }
+
+  @Test
+  @DisplayName("사용자 프로필 이미지 변경 - 성공 (기존 이미지 X)")
+  void updateProfileImage_success_withoutExistingImage() {
+    Long userId = 2L;
+    MultipartFile newImage = mock(MultipartFile.class);
+    User user = User.builder()
+        .id(userId)
+        .profileImage(null)
+        .build();
+
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(imageService.storeImage(newImage)).willReturn("https://s3.aws/new-image.jpg");
+
+    userService.updateProfileImage(userId, newImage);
+
+    verify(imageService, never()).deleteImageAsync(any());
+    assertThat(user.getProfileImage()).isEqualTo("https://s3.aws/new-image.jpg");
+  }
+
+  @Test
+  @DisplayName("사용자 프로필 이미지 변경 - 실패 (존재하지 않는 사용자)")
+  void updateProfileImage_fail_userNotFound() {
+    Long userId = 999L;
+    MultipartFile newImage = mock(MultipartFile.class);
+
+    given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> userService.updateProfileImage(userId, newImage))
+        .isInstanceOf(MeongnyangerangException.class)
+        .extracting("errorCode")
+        .isEqualTo(NOT_EXIST_ACCOUNT);
   }
 }

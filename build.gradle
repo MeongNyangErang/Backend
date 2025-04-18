@@ -69,6 +69,9 @@ dependencies {
     // env
     implementation 'me.paulschwarz:spring-dotenv:3.0.0'
 
+    // 더미 데이터 생성
+    implementation 'net.datafaker:datafaker:2.0.2'
+
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'

@@ -12,11 +12,11 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatMessage;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatReadStatus;
 import com.meongnyangerang.meongnyangerang.domain.chat.ChatRoom;
+import com.meongnyangerang.meongnyangerang.domain.chat.MessageType;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
-import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagesResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
@@ -28,7 +28,6 @@ import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusReposit
 import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -85,7 +84,8 @@ class ChatServiceTest {
   private ChatMessage lastMessage1;
   private ChatMessage lastMessage2;
   private ChatReadStatus userReadStatus;
-  private ChatMessage chatMessage;
+  private ChatMessage chatMessage1;
+  private ChatMessage chatMessage2;
   private MultipartFile imageFile;
   private final LocalDateTime now = LocalDateTime.now();
 
@@ -156,11 +156,20 @@ class ChatServiceTest {
         .lastReadTime(now.minusHours(1))
         .build();
 
-    chatMessage = ChatMessage.builder()
+    chatMessage1 = ChatMessage.builder()
         .id(1L)
         .chatRoom(chatRoom1)
-        .content("테스트 메시지")
+        .content("테스트 메시지1")
         .senderType(SenderType.USER)
+        .messageType(MessageType.MESSAGE)
+        .build();
+
+    chatMessage2 = ChatMessage.builder()
+        .id(2L)
+        .chatRoom(chatRoom1)
+        .content("테스트 메시지2")
+        .senderType(SenderType.HOST)
+        .messageType(MessageType.IMAGE)
         .build();
 
     imageFile = new MockMultipartFile(
@@ -172,8 +181,8 @@ class ChatServiceTest {
   }
 
   @Test
-  @DisplayName("채팅방 생성 성공")
-  public void createChatRoom_Success() {
+  @DisplayName("채팅방 생성 성공 - 이미 채팅방 존재할 경우")
+  public void createChatRoom_AlreadyExistsChatRoom_Success() {
     // given
     Long userId = user.getId();
     Long hostId = accommodation.getHost().getId();
@@ -181,8 +190,31 @@ class ChatServiceTest {
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
-    when(chatRoomRepository.existsByUser_IdAndHost_Id(userId, hostId)).thenReturn(false);
+    when(chatRoomRepository.findByUser_IdAndHost_Id(userId, hostId))
+        .thenReturn(Optional.of(chatRoom1));
 
+    // when
+    chatService.createChatRoom(userId, accommodationId);
+
+    // then
+    verify(userRepository, times(1)).findById(userId);
+    verify(accommodationRepository, times(1))
+        .findById(accommodationId);
+    verify(chatRoomRepository, times(1))
+        .findByUser_IdAndHost_Id(userId, hostId);
+  }
+
+  @Test
+  @DisplayName("채팅방 생성 성공 - 채팅방 존재하지 않을 경우")
+  public void createChatRoom_NotExistsChatRoom_Success() {
+    // given
+    Long userId = user.getId();
+    Long hostId = accommodation.getHost().getId();
+    Long accommodationId = accommodation.getId();
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+    when(chatRoomRepository.findByUser_IdAndHost_Id(userId, hostId)).thenReturn(Optional.empty());
     ArgumentCaptor<ChatRoom> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatRoom.class);
     when(chatRoomRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatRoom1);
 
@@ -194,9 +226,9 @@ class ChatServiceTest {
     verify(accommodationRepository, times(1))
         .findById(accommodationId);
     verify(chatRoomRepository, times(1))
-        .existsByUser_IdAndHost_Id(userId, hostId);
+        .findByUser_IdAndHost_Id(userId, hostId);
     verify(chatRoomRepository, times(1))
-        .save(chatRoomArgumentCaptor.capture());
+        .save(chatRoomArgumentCaptor.getValue());
   }
 
   @Test
@@ -239,31 +271,6 @@ class ChatServiceTest {
   }
 
   @Test
-  @DisplayName("채팅방 생성 실패 - 이미 채팅방 존재")
-  void createChatRoom_AlreadyExists_ThrowsException() {
-    // given
-    Long userId = user.getId();
-    Long hostId = accommodation.getHost().getId();
-    Long accommodationId = accommodation.getId();
-
-    when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-    when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
-    when(chatRoomRepository.existsByUser_IdAndHost_Id(userId, hostId)).thenReturn(true);
-
-    // when
-    // then
-    assertThatThrownBy(() -> chatService.createChatRoom(userId, accommodationId))
-        .isInstanceOf(MeongnyangerangException.class)
-        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ALREADY_EXISTS);
-
-    verify(userRepository, times(1)).findById(userId);
-    verify(accommodationRepository, times(1))
-        .findById(accommodationId);
-    verify(chatRoomRepository, times(1))
-        .existsByUser_IdAndHost_Id(userId, hostId);
-  }
-
-  @Test
   @DisplayName("일반회원 관점에서 채팅방 목록 조회 성공")
   void getChatRoomsAsUser_Success() {
     // given
@@ -277,8 +284,7 @@ class ChatServiceTest {
         0, 10, Sort.by("updatedAt").descending());
     Page<ChatRoom> pagedChatRooms = new PageImpl<>(chatRooms, pageable, chatRooms.size());
 
-    when(chatRoomRepository.findAllByUser_IdOrderByUpdatedAtDesc(userId, pageable))
-        .thenReturn(pagedChatRooms);
+    when(chatRoomRepository.findAllByUser_Id(userId, pageable)).thenReturn(pagedChatRooms);
 
     when(accommodationRepository.findByHostId(chatRooms.get(0).getHostId()))
         .thenReturn(Optional.of(accommodation));
@@ -328,7 +334,7 @@ class ChatServiceTest {
 
     // 메서드 호출 검증
     verify(chatRoomRepository, times(1))
-        .findAllByUser_IdOrderByUpdatedAtDesc(userId, pageable);
+        .findAllByUser_Id(userId, pageable);
     verify(accommodationRepository, times(2))
         .findByHostId(chatRooms.get(0).getHostId());
     verify(chatMessageRepository, times(1))
@@ -353,7 +359,7 @@ class ChatServiceTest {
         0, 10, Sort.by("updatedAt").descending());
     Page<ChatRoom> pagedChatRooms = new PageImpl<>(chatRooms, pageable, chatRooms.size());
 
-    when(chatRoomRepository.findAllByHost_IdOrderByUpdatedAtDesc(hostId, pageable))
+    when(chatRoomRepository.findAllByHost_Id(hostId, pageable))
         .thenReturn(pagedChatRooms);
 
     when(chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1))
@@ -391,7 +397,7 @@ class ChatServiceTest {
     assertThat(response2.unreadCount()).isEqualTo(3);
 
     // 메서드 호출 검증
-    verify(chatRoomRepository).findAllByHost_IdOrderByUpdatedAtDesc(hostId, pageable);
+    verify(chatRoomRepository).findAllByHost_Id(hostId, pageable);
     verify(chatMessageRepository, times(1))
         .findTopByChatRoomIdOrderByCreatedAtDesc(chatRoomId1);
     verify(chatMessageRepository, times(1))
@@ -411,7 +417,7 @@ class ChatServiceTest {
     // 빈 페이지 반환
     Page<ChatRoom> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
-    when(chatRoomRepository.findAllByUser_IdOrderByUpdatedAtDesc(userId, pageable))
+    when(chatRoomRepository.findAllByUser_Id(userId, pageable))
         .thenReturn(emptyPage);
 
     // when
@@ -427,42 +433,50 @@ class ChatServiceTest {
     // given
     Long userId = user.getId();
     Long chatRoomId = chatRoom1.getId();
-    Long cursorId = null;
-    int size = 5;
+    SenderType senderType = SenderType.USER;
+    List<ChatMessage> chatMessages = Arrays.asList(chatMessage1, chatMessage2);
     ChatReadStatus chatReadStatus = ChatReadStatus.builder()
         .chatRoom(chatRoom1)
         .participantId(userId)
-        .participantType(SenderType.USER)
+        .participantType(senderType)
         .build();
-
-    Pageable pageable = PageRequest.of(0, size + 1);
+    Pageable pageable = PageRequest.of(
+        0, 10, Sort.by("createdAt").descending());
+    Page<ChatMessage> pagedChatRooms = new PageImpl<>(chatMessages, pageable, chatMessages.size());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
-    when(chatMessageRepository.findByChatRoomIdWithCursor(chatRoomId, cursorId, pageable))
-        .thenReturn(createTestMessageResponses(chatRoom1, size));
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
-        chatRoomId, userId, SenderType.USER)).thenReturn(Optional.of(chatReadStatus));
+        chatRoomId, userId, senderType)).thenReturn(Optional.of(chatReadStatus));
+    when(chatMessageRepository.findByChatRoomId(chatRoomId, pageable))
+        .thenReturn(pagedChatRooms);
 
     // when
-    ChatMessagesResponse response = chatService.getChatMessages(
-        userId, chatRoomId, cursorId, size, SenderType.USER);
+    PageResponse<ChatMessageResponse> response = chatService.getChatMessages(
+        userId, chatRoomId, pageable, SenderType.USER);
 
     // then
-    List<ChatMessageResponse> messages = response.messages();
-    for (int i = 0; i < size; i++) {
-      assertThat(messages.get(i).messageId()).isEqualTo(size - i);
+    List<ChatMessageResponse> messages = response.content();
+    for (int i = 0; i < messages.size(); i++) {
+      ChatMessageResponse message = messages.get(i);
+      assertThat(message.chatRoomId()).isEqualTo(chatRoomId);
+      assertThat(message.messageContent()).isEqualTo("테스트 메시지" + (i + 1));
       assertThat(messages.get(i).senderType())
           .isEqualTo(i % 2 == 0 ? SenderType.USER : SenderType.HOST);
-      assertThat(messages.get(i).content()).isEqualTo("Test message " + i);
+      assertThat(messages.get(i).messageType())
+          .isEqualTo(i % 2 == 0 ? MessageType.MESSAGE : MessageType.IMAGE);
     }
-    assertThat(response.nextCursorId()).isNull();
-    assertThat(response.hasNext()).isFalse();
+    assertThat(response.page()).isEqualTo(0);
+    assertThat(response.size()).isEqualTo(10);
+    assertThat(response.totalElements()).isEqualTo(2);
+    assertThat(response.totalPages()).isEqualTo(1);
+    assertTrue(response.first());
+    assertTrue(response.last());
 
     verify(chatRoomRepository, times(1)).findById(chatRoomId);
-    verify(chatMessageRepository, times(1))
-        .findByChatRoomIdWithCursor(chatRoomId, cursorId, pageable);
     verify(chatReadStatusRepository, times(1))
-        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, userId, SenderType.USER);
+        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, userId, senderType);
+    verify(chatMessageRepository, times(1))
+        .findByChatRoomId(chatRoomId, pageable);
   }
 
   @Test
@@ -471,13 +485,13 @@ class ChatServiceTest {
     // given
     Long userId = user.getId();
     Long chatRoomId = chatRoom1.getId();
-    Long cursorId = null;
-    int size = 5;
+    Pageable pageable = PageRequest.of(
+        0, 10, Sort.by("createdAt").descending());
 
     // when
     // then
     assertThatThrownBy(
-        () -> chatService.getChatMessages(userId, chatRoomId, cursorId, size, SenderType.USER))
+        () -> chatService.getChatMessages(userId, chatRoomId, pageable, SenderType.USER))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
 
@@ -492,15 +506,15 @@ class ChatServiceTest {
         .id(10L)
         .build();
     Long chatRoomId = chatRoom1.getId();
-    Long cursorId = null;
-    int size = 5;
+    Pageable pageable = PageRequest.of(
+        0, 10, Sort.by("createdAt").descending());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
 
     // when
     // then
     assertThatThrownBy(() -> chatService.getChatMessages(
-        notAuthorizedUser.getId(), chatRoomId, cursorId, size, SenderType.USER))
+        notAuthorizedUser.getId(), chatRoomId, pageable, SenderType.USER))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
 
@@ -516,10 +530,10 @@ class ChatServiceTest {
     Long senderId = user.getId();
     SenderType senderType = SenderType.USER;
     ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
-    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage);
+    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage1);
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
         chatRoomId, senderId, senderType)).thenReturn(Optional.of(userReadStatus));
 
@@ -546,10 +560,10 @@ class ChatServiceTest {
     ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
     ArgumentCaptor<ChatReadStatus> chatReadStatusArgumentCaptor =
         ArgumentCaptor.forClass(ChatReadStatus.class);
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
-    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage);
+    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage1);
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
         chatRoomId, senderId, senderType)).thenReturn(Optional.empty());
     when(chatReadStatusRepository.save(chatReadStatusArgumentCaptor.capture()))
@@ -576,7 +590,7 @@ class ChatServiceTest {
     String content = "안녕하세요";
     Long senderId = user.getId();
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.empty());
 
@@ -587,7 +601,7 @@ class ChatServiceTest {
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
 
     verify(chatRoomRepository).findById(chatRoomId);
-    verify(chatMessageRepository, never()).save(chatMessage);
+    verify(chatMessageRepository, never()).save(chatMessage1);
     verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
   }
 
@@ -599,7 +613,7 @@ class ChatServiceTest {
     String content = "안녕하세요";
     Long senderId = 3L; // 채팅방에 속하지 않은 사용자
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
 
@@ -610,7 +624,7 @@ class ChatServiceTest {
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
 
     verify(chatRoomRepository).findById(chatRoomId);
-    verify(chatMessageRepository, never()).save(chatMessage);
+    verify(chatMessageRepository, never()).save(chatMessage1);
     verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
   }
 
@@ -623,11 +637,11 @@ class ChatServiceTest {
 
     Long senderId = user.getId();
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
     ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
-    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage);
+    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage1);
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
         chatRoomId, senderId, senderType)).thenReturn(Optional.of(userReadStatus));
 
@@ -654,10 +668,10 @@ class ChatServiceTest {
     ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
     ArgumentCaptor<ChatReadStatus> chatReadStatusArgumentCaptor =
         ArgumentCaptor.forClass(ChatReadStatus.class);
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
-    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage);
+    when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage1);
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
         chatRoomId, senderId, senderType)).thenReturn(Optional.empty());
     when(chatReadStatusRepository.save(chatReadStatusArgumentCaptor.capture()))
@@ -684,7 +698,7 @@ class ChatServiceTest {
     Long chatRoomId = 999L;
     Long senderId = user.getId();
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.empty());
 
@@ -696,7 +710,7 @@ class ChatServiceTest {
 
     verify(chatRoomRepository).findById(chatRoomId);
     verify(imageService, never()).storeImage(imageFile);
-    verify(chatMessageRepository, never()).save(chatMessage);
+    verify(chatMessageRepository, never()).save(chatMessage1);
     verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
   }
 
@@ -707,7 +721,7 @@ class ChatServiceTest {
     Long chatRoomId = chatRoom1.getId();
     Long senderId = 3L; // 채팅방에 속하지 않은 사용자
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage);
+    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
 
@@ -719,29 +733,16 @@ class ChatServiceTest {
 
     verify(chatRoomRepository).findById(chatRoomId);
     verify(imageService, never()).storeImage(imageFile);
-    verify(chatMessageRepository, never()).save(chatMessage);
+    verify(chatMessageRepository, never()).save(chatMessage1);
     verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
-  }
-
-  private List<ChatMessage> createTestMessageResponses(ChatRoom chatRoom, int size) {
-    List<ChatMessage> messages = new ArrayList<>();
-    for (int i = 0; i < size; i++) {
-      messages.add(new ChatMessage(
-          (long) (size - i),
-          chatRoom,
-          i % 2 == 0 ? SenderType.USER : SenderType.HOST,
-          "Test message " + i,
-          LocalDateTime.now().minusMinutes(i)
-      ));
-    }
-    return messages;
   }
 
   private static ChatMessageResponse createChatMessageResponse(ChatMessage chatMessage) {
     return new ChatMessageResponse(
         chatMessage.getId(),
-        chatMessage.getSenderType(),
         chatMessage.getContent(),
+        chatMessage.getSenderType(),
+        chatMessage.getMessageType(),
         chatMessage.getCreatedAt()
     );
   }

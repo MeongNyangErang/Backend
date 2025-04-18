@@ -13,7 +13,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -50,6 +52,20 @@ public class CommonAccountController {
       hostService.updateNickname(userDetails.getId(), request.newNickname());
     }
 
+    return ResponseEntity.ok().build();
+  }
+
+  // 프로필 사진 변경 API(사용자, 호스트 공통 기능)
+  @PatchMapping("/profile-image")
+  public ResponseEntity<Void> updateProfileImage(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @RequestPart(value = "newProfileImage")MultipartFile newProfileImage
+  ) {
+    if (userDetails.getRole().equals(Role.ROLE_USER)) {
+      userService.updateProfileImage(userDetails.getId(), newProfileImage);
+    } else if (userDetails.getRole().equals(Role.ROLE_HOST)) {
+      hostService.updateProfileImage(userDetails.getId(), newProfileImage);
+    }
     return ResponseEntity.ok().build();
   }
 }
