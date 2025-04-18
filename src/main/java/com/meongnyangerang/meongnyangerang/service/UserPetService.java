@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserPetService {
 
+  private static final int MAX_PET_COUNT = 10;
+
   private final UserRepository userRepository;
   private final UserPetRepository userPetRepository;
 
@@ -31,7 +33,7 @@ public class UserPetService {
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 
     // 최대 10마리 제한
-    if (userPetRepository.countByUserId(userId) >= 10) {
+    if (userPetRepository.countByUserId(userId) >= MAX_PET_COUNT) {
       throw new MeongnyangerangException(MAX_PET_COUNT_EXCEEDED);
     }
 
