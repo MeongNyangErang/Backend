@@ -7,13 +7,13 @@ import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
-import com.meongnyangerang.meongnyangerang.dto.HostReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
 import com.meongnyangerang.meongnyangerang.dto.ReviewImageResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.dto.UpdateReviewRequest;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -24,7 +24,6 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,8 +32,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -49,6 +50,8 @@ public class ReviewService {
   private final ReviewImageRepository reviewImageRepository;
   private final AccommodationRepository accommodationRepository;
   private final NotificationService notificationService;
+
+  private static final int VISIBLE_REVIEW_REPORT_THRESHOLD = 20;
 
   @Transactional
   public void createReview(Long userId, ReviewRequest request, List<MultipartFile> images) {
@@ -155,31 +158,24 @@ public class ReviewService {
   /**
    * 호스트의 숙소 리뷰 목록 조회
    */
-  public HostReviewResponse getHostReviews(Long hostId, Long cursorId, int pageSize) {
+  public PageResponse<ReviewContent> getHostReviews(Long hostId, Pageable pageable) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
-    List<Review> reviews = getReviews(cursorId, pageSize, accommodation);
-
-    boolean hasNext = reviews.size() > pageSize;
-
-    if (hasNext) {
-      reviews = reviews.subList(0, pageSize);
-    }
-    Long nextCursorId = hasNext ? reviews.get(reviews.size() - 1).getId() : null;
+    Page<Review> reviews = reviewRepository.findAllByAccommodationIdAndReportCountLessThan(
+        accommodation.getId(), VISIBLE_REVIEW_REPORT_THRESHOLD, pageable);
 
     List<Long> reviewIds = reviews.stream().map(Review::getId).toList(); // 리뷰 ID 추출
-
-    // reviewIds에 속한 리뷰 이미지를 전부 조회
-    List<ReviewImageProjection> reviewImageProjections = reviewImageRepository.findByReviewIds(
-        reviewIds);
+    List<ReviewImageProjection> reviewImageProjections = reviewImageRepository.findByReview_IdIn(
+        reviewIds); // reviewIds에 속한 리뷰 이미지를 전부 조회
 
     // Map<ReviewId, List<ReviewImageUrl>> 형태의 Map 생성
     Map<Long, List<String>> reviewImagesMap = createReviewImagesMap(
         reviewIds, reviewImageProjections);
 
     // 각 정보를 ReviewContent로 변환
-    List<ReviewContent> reviewContents = getReviewContents(reviews, reviewImagesMap);
+    Page<ReviewContent> reviewContents = reviews.map(
+        review -> ReviewContent.of(review, reviewImagesMap.get(review.getId())));
 
-    return new HostReviewResponse(reviewContents, nextCursorId, hasNext);
+    return PageResponse.from(reviewContents);
   }
 
   public List<LatestReviewResponse> getLatestReviews() {
@@ -336,16 +332,9 @@ public class ReviewService {
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
   }
 
-  private List<Review> getReviews(Long cursorId, int pageSize, Accommodation accommodation) {
-    Pageable pageable = PageRequest.of(0, pageSize + 1);
-    // 다음 페이지 여부를 알기 위해 pageSize + 1
-
-    return reviewRepository.findByAccommodationIdWithCursor(
-        accommodation.getId(), cursorId, pageable);
-  }
-
   private static Map<Long, List<String>> createReviewImagesMap(
-      List<Long> reviewIds, List<ReviewImageProjection> reviewImageProjections
+      List<Long> reviewIds,
+      List<ReviewImageProjection> reviewImageProjections
   ) {
     Map<Long, List<String>> reviewImagesMap = new HashMap<>();
     reviewIds.forEach(id -> reviewImagesMap.put(id, new ArrayList<>()));
@@ -354,14 +343,6 @@ public class ReviewService {
         reviewImagesMap.get(projection.getReviewId()).add(projection.getImageUrl()));
 
     return reviewImagesMap;
-  }
-
-  private List<ReviewContent> getReviewContents(
-      List<Review> pagedReviews, Map<Long, List<String>> reviewImagesMap
-  ) {
-    return pagedReviews.stream()
-        .map(review -> ReviewContent.of(review, reviewImagesMap.get(review.getId())))
-        .toList();
   }
 
   private void updateAccommodationRating(Accommodation accommodation, double oldRating,
