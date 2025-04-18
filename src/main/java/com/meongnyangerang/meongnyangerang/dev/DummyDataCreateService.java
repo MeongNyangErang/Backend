@@ -301,7 +301,7 @@ public class DummyDataCreateService {
           .submitDocumentImageUrl(imageUrls.get(random.nextInt(imageUrls.size())))
           .phoneNumber(createRandomPhoneNumber(faker))
           .status(HostStatus.ACTIVE)
-          .role(Role.ROLE_USER)
+          .role(Role.ROLE_HOST)
           .createdAt(LocalDateTime.now())
           .updatedAt(LocalDateTime.now())
           .build();
