@@ -191,4 +191,17 @@ public class HostService {
 
     host.updateNickname(newNickname);
   }
+
+  // 호스트 프로필 사진 변경
+  @Transactional
+  public void updateProfileImage(Long hotsId, MultipartFile newProfileImage) {
+    Host host = hostRepository.findById(hotsId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    if (host.getProfileImageUrl() != null && !host.getProfileImageUrl().isBlank()) {
+      imageService.deleteImageAsync(host.getProfileImageUrl());
+    }
+
+    host.updateProfileImage(imageService.storeImage(newProfileImage));
+  }
 }
