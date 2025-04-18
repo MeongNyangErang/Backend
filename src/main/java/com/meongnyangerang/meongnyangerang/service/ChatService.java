@@ -237,6 +237,7 @@ public class ChatService {
         accommodation.getName(),
         accommodation.getThumbnailUrl(),
         getLastMessage(lastMessage),
+        getLastMessageType(lastMessage),
         getLastMessageTime(lastMessage),
         unreadCount
     );
@@ -259,6 +260,7 @@ public class ChatService {
         user.getNickname(),
         user.getProfileImage(),
         getLastMessage(lastMessage),
+        getLastMessageType(lastMessage),
         getLastMessageTime(lastMessage),
         unreadCount
     );
@@ -275,15 +277,19 @@ public class ChatService {
         .orElse(DEFAULT_LAST_READ_TIME);
   }
 
-  private static String getLastMessage(ChatMessage lastMessage) {
+  private String getLastMessage(ChatMessage lastMessage) {
     return lastMessage != null ? lastMessage.getContent() : "";
   }
 
-  private static LocalDateTime getLastMessageTime(ChatMessage lastMessage) {
+  private MessageType getLastMessageType(ChatMessage lastMessage) {
+    return lastMessage != null ? lastMessage.getMessageType() : MessageType.MESSAGE;
+  }
+
+  private LocalDateTime getLastMessageTime(ChatMessage lastMessage) {
     return lastMessage != null ? lastMessage.getCreatedAt() : null;
   }
 
-  private static ChatMessage createChatMessage(
+  private ChatMessage createChatMessage(
       String content,
       ChatRoom chatRoom,
       SenderType senderType,
