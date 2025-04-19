@@ -36,7 +36,7 @@ public class NotificationService {
   private final HostRepository hostRepository;
   private final NotificationAsyncService notificationAsyncSender;
 
-  private static final String RESERVATION_CONFIRMED_CONTENT = "%s 숙소에 예약이 확정되었습니다.";
+  private static final String RESERVATION_CONFIRMED_CONTENT = "%s 숙소 예약이 확정되었습니다.";
   private static final String RESERVATION_REGISTERED_CONTENT = "%s 님이 예약하였습니다.";
   private static final String RESERVATION_REMIND_CONTENT = "%s 숙소 체크인이 내일입니다. 체크인 시간은 %s입니다.";
   private static final String WRITE_REVIEW_CONTENT = "%s 님이 리뷰를 남겼습니다.";
@@ -45,7 +45,9 @@ public class NotificationService {
    * 상대방에게 메시지 알림 전송
    */
   public void sendMessageNotification(
-      MessageNotificationRequest request, Long senderId, SenderType senderType
+      MessageNotificationRequest request,
+      Long senderId,
+      SenderType senderType
   ) {
     ChatRoom chatRoom = findAndValidateChatRoom(request.chatRoomId(), senderId, senderType);
     sendNotificationToMessagePartner(chatRoom, senderId, senderType, request.content());
@@ -55,7 +57,10 @@ public class NotificationService {
    * 예약 알림 전송
    */
   public void sendReservationNotification(
-      Long reservationId, String accommodationName, User user, Host host
+      Long reservationId,
+      String accommodationName,
+      User user,
+      Host host
   ) {
     // 사용자에게 예약 확정 알림 전송 및 저장
     sendReservationNotificationToUser(reservationId, accommodationName, user);

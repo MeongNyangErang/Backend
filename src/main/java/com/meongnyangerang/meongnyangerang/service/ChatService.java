@@ -96,9 +96,9 @@ public class ChatService {
   ) {
     ChatRoom chatRoom = findAndValidateChatRoom(viewerId, chatRoomId, senderType);
     updateReadStatus(chatRoom, viewerId, senderType);
+
     Page<ChatMessageResponse> responses = chatMessageRepository.findByChatRoomId(
-            chatRoomId, pageable)
-        .map(ChatMessageResponse::from);
+        chatRoomId, pageable).map(ChatMessageResponse::from);
 
     return PageResponse.from(responses);
   }
@@ -150,7 +150,7 @@ public class ChatService {
       SenderType senderType,
       MessageType messageType
   ) {
-    ChatMessage message = createChatMessage(content, chatRoom, senderType, messageType);
+    ChatMessage message = createChatMessage(chatRoom, content, senderType, messageType);
     ChatMessage savedMessage = chatMessageRepository.save(message);
     chatRoom.updateLastActivity(); // 채팅방 업데이트 시간 갱신
     updateReadStatus(chatRoom, senderId, senderType);
@@ -161,13 +161,11 @@ public class ChatService {
     ChatReadStatus chatReadStatus = chatReadStatusRepository
         .findByChatRoomIdAndParticipantIdAndParticipantType(
             chatRoom.getId(), participantId, senderType)
-        .orElseGet(() ->
-            chatReadStatusRepository.save(ChatReadStatus.builder()
-                .chatRoom(chatRoom)
-                .participantId(participantId)
-                .participantType(senderType)
-                .lastReadTime(LocalDateTime.now())
-                .build())
+        .orElseGet(() -> {
+              ChatReadStatus newChatReadStatus = createChatReadStatus(
+                  chatRoom, participantId, senderType);
+              return chatReadStatusRepository.save(newChatReadStatus);
+            }
         );
     chatReadStatus.updateLastReadTime(LocalDateTime.now());
   }
@@ -200,7 +198,7 @@ public class ChatService {
     chatReadStatusRepository.save(hostReadStatus);
   }
 
-  private static ChatReadStatus createChatReadStatus(
+  private ChatReadStatus createChatReadStatus(
       ChatRoom chatRoom, Long participantId, SenderType participantType
   ) {
     return ChatReadStatus.builder()
@@ -211,7 +209,7 @@ public class ChatService {
         .build();
   }
 
-  private static ChatRoom createChatRoom(User user, Host host) {
+  private ChatRoom createChatRoom(User user, Host host) {
     return ChatRoom.builder()
         .user(user)
         .host(host)
@@ -225,7 +223,7 @@ public class ChatService {
     ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(
         chatRoom.getId()); // 마지막 메시지 정보
 
-    int unreadCount = chatMessageRepository.countUnreadMessages(
+    int unreadCount = chatMessageRepository.countByChatRoomIdAndSenderTypeAndCreatedAtGreaterThan(
         chatRoom.getId(),
         SenderType.HOST, // 호스트가 보낸 메시지 중에서
         getLastReadTime(chatRoom.getId(), chatRoom.getUserId(), SenderType.USER)
@@ -248,7 +246,7 @@ public class ChatService {
         chatRoom.getId()); // 마지막 메시지 정보
 
     User user = chatRoom.getUser();
-    int unreadCount = chatMessageRepository.countUnreadMessages(
+    int unreadCount = chatMessageRepository.countByChatRoomIdAndSenderTypeAndCreatedAtGreaterThan(
         chatRoom.getId(),
         SenderType.USER, // 사용자가 보낸 메시지 중에서
         getLastReadTime(chatRoom.getId(), chatRoom.getHostId(), SenderType.HOST)
@@ -290,8 +288,8 @@ public class ChatService {
   }
 
   private ChatMessage createChatMessage(
-      String content,
       ChatRoom chatRoom,
+      String content,
       SenderType senderType,
       MessageType messageType
   ) {

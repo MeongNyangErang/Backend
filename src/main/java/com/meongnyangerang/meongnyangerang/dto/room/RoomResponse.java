@@ -47,14 +47,22 @@ public record RoomResponse(
 
     return new RoomResponse(
         room.getId(),
-        room.getName(), room.getDescription(),
-        room.getStandardPeopleCount(), room.getMaxPeopleCount(),
-        room.getStandardPetCount(), room.getMaxPetCount(),
-        room.getPrice(), room.getExtraPeopleFee(),
-        room.getExtraPetFee(), room.getExtraFee(),
-        room.getCheckInTime(), room.getCheckOutTime(),
-        room.getImageUrl(), facilityValues,
-        petFacilityValues, hashtagsValues
+        room.getName(),
+        room.getDescription(),
+        room.getStandardPeopleCount(),
+        room.getMaxPeopleCount(),
+        room.getStandardPetCount(),
+        room.getMaxPetCount(),
+        room.getPrice(),
+        room.getExtraPeopleFee(),
+        room.getExtraPetFee(),
+        room.getExtraFee(),
+        room.getCheckInTime(),
+        room.getCheckOutTime(),
+        room.getImageUrl(),
+        facilityValues,
+        petFacilityValues,
+        hashtagsValues
     );
   }
 }
