@@ -80,7 +80,7 @@ public class AccommodationSearchService {
               .index("accommodation_room")
               .query(finalQuery)
               .size(pageable.getPageSize())
-              .from((int) pageable.getOffset())
+              .from(Math.toIntExact(pageable.getOffset()))
               .sort(so -> so
                   .field(f -> f
                       .field("totalRating")
