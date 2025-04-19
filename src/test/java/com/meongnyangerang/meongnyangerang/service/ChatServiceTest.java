@@ -303,9 +303,9 @@ class ChatServiceTest {
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
         chatRoomId2, userId, senderType)).thenReturn(Optional.empty());
 
-    when(chatMessageRepository.countUnreadMessages(
+    when(chatMessageRepository.countByChatRoomIdAndSenderTypeAndCreatedAtGreaterThan(
         chatRoomId1, SenderType.HOST, userReadStatus.getLastReadTime())).thenReturn(2);
-    when(chatMessageRepository.countUnreadMessages(
+    when(chatMessageRepository.countByChatRoomIdAndSenderTypeAndCreatedAtGreaterThan(
         chatRoomId2, SenderType.HOST, DEFAULT_LAST_READ_TIME)).thenReturn(0);
 
     // when
@@ -373,9 +373,9 @@ class ChatServiceTest {
     when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
         chatRoomId2, hostId, senderType)).thenReturn(Optional.empty());
 
-    when(chatMessageRepository.countUnreadMessages(
+    when(chatMessageRepository.countByChatRoomIdAndSenderTypeAndCreatedAtGreaterThan(
         chatRoomId1, SenderType.USER, userReadStatus.getLastReadTime())).thenReturn(0);
-    when(chatMessageRepository.countUnreadMessages(
+    when(chatMessageRepository.countByChatRoomIdAndSenderTypeAndCreatedAtGreaterThan(
         chatRoomId2, SenderType.USER, DEFAULT_LAST_READ_TIME)).thenReturn(3);
 
     // when
