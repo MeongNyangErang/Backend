@@ -431,6 +431,7 @@ class ReservationServiceTest {
 
     assertEquals(2, response.getContent().size());
     assertFalse(response.isHasNext());
+    assertEquals(accommodation.getId(), response.getContent().get(0).getAccommodationId());
     assertEquals(false, response.getContent().get(0).isReviewWritten());
     assertEquals(true, response.getContent().get(1).isReviewWritten());
   }
