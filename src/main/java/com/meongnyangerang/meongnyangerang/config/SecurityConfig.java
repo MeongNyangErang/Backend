@@ -32,7 +32,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
-  @Value("${cors.allowed-origins}")
+  @Value("${CORS_ALLOWED_ORIGINS}")
   private String allowedOrigins;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
 

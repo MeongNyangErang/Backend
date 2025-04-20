@@ -30,7 +30,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   // WebSocket과 함께 메시지 브로커를 활성화
 
-  @Value("${cors.allowed-origins}")
+  @Value("${CORS_ALLOWED_ORIGINS}")
   private String allowedOrigins;
   private final JwtTokenProvider jwtTokenProvider;
 
