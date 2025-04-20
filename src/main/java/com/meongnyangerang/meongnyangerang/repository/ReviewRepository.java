@@ -14,16 +14,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
   boolean existsByUserIdAndReservationId(Long userId, Long reservationId);
 
-  @Query(value = "SELECT * FROM review r " +
-      "WHERE r.user_id = :userId " +
-      "AND (:cursorId = 0 OR r.id <= :cursorId) " +
-      "AND r.report_count < 20 " +
-      "ORDER BY r.created_at DESC LIMIT :size",
-      nativeQuery = true)
-  List<Review> findByUserId(
-      @Param("userId") Long userId,
-      @Param("cursorId") Long cursorId,
-      @Param("size") int size);
+  Page<Review> findByUserId(Long userId, Pageable pageable);
 
   @Query(value = "SELECT * FROM review r " +
       "WHERE r.accommodation_id = :accommodationId " +

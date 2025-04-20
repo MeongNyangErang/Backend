@@ -77,20 +77,13 @@ public class ReviewService {
     notificationService.sendReviewNotification(savedReview); // 알림 발송
   }
 
-  public CustomReviewResponse<MyReviewResponse> getUsersReviews(Long userId, Long cursorId,
-      Integer size) {
+  public PageResponse<MyReviewResponse> getUsersReviews(Long userId, Pageable pageable) {
     // 해당 유저의 리뷰 내역만 조회 (리뷰 신고 수 20개 이상이면 조회 X)
-    List<Review> reviews = reviewRepository.findByUserId(userId, cursorId, size + 1);
+    Page<Review> reviews = reviewRepository.findByUserId(userId, pageable);
 
-    List<MyReviewResponse> content = reviews.stream()
-        .limit(size)
-        .map(this::mapToMyReviewResponse)
-        .toList();
+    Page<MyReviewResponse> responsePage = reviews.map(this::mapToMyReviewResponse);
 
-    boolean hasNext = reviews.size() > size;
-    Long cursor = hasNext ? reviews.get(size).getId() : null;
-
-    return new CustomReviewResponse<>(content, cursor, hasNext);
+    return PageResponse.from(responsePage);
   }
 
   public CustomReviewResponse<AccommodationReviewResponse> getAccommodationReviews(

@@ -53,15 +53,12 @@ public class ReviewController {
 
   // 내 리뷰 조회
   @GetMapping("/users/reviews")
-  public ResponseEntity<CustomReviewResponse<MyReviewResponse>> getUsersReviews(
+  public ResponseEntity<PageResponse<MyReviewResponse>> getUsersReviews(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
-      @RequestParam(defaultValue = "0") Long cursor,
-      @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size) {
+      @PageableDefault(size = 20, sort = "createdAt", direction = Direction.DESC) Pageable pageable) {
 
     return ResponseEntity.ok(reviewService.getUsersReviews(
-        userDetails.getId(),
-        cursor,
-        size));
+        userDetails.getId(), pageable));
   }
 
   // 숙소 리뷰 목록 조회
