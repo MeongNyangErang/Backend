@@ -7,6 +7,7 @@ import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -29,13 +30,15 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   // WebSocket과 함께 메시지 브로커를 활성화
 
+  @Value("${cors.allowed-origins}")
+  private String allowedOrigins;
   private final JwtTokenProvider jwtTokenProvider;
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
     // WebSocket 연결을 위한 엔드포인트 설정
     registry.addEndpoint("/ws")
-        .setAllowedOrigins("http://localhost:5173")
+        .setAllowedOrigins(allowedOrigins.split(","))
         .withSockJS(); // WebSocket을 지원하지 않을 때 자동으로 대체 기술 사용
   }
 
