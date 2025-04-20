@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
-  Page<Reservation> findByUserIdAndStatus(Long user_id, ReservationStatus status,
+  Page<Reservation> findByUserIdAndStatus(Long userId, ReservationStatus status,
       Pageable pageable);
 
   @Query("SELECT r FROM Reservation r " +
