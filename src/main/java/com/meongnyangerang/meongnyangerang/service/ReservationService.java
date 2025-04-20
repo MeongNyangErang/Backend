@@ -264,6 +264,7 @@ public class ReservationService {
     return UserReservationResponse.builder()
         .reservationId(reservation.getId())
         .reservationDate(reservation.getCreatedAt().format(dateFormatter))
+        .accommodationId(accommodation.getId())
         .accommodationName(accommodation.getName())
         .roomName(room.getName())
         .checkInDate(reservation.getCheckInDate().format(dateFormatter))
