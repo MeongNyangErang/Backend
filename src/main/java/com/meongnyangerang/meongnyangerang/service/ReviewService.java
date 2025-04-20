@@ -256,7 +256,7 @@ public class ReviewService {
     return AccommodationReviewResponse.builder()
         .roomName(review.getReservation().getRoom().getName())
         .profileImageUrl(review.getUser().getProfileImage())
-        .reviewImageUrl(reviewImages.stream().map(ReviewImage::getImageUrl).toList())
+        .reviewImages(reviewImages.stream().map(ReviewImage::getImageUrl).toList())
         .totalRating(totalRating)
         .content(review.getContent())
         .createdAt(review.getCreatedAt().format(dateFormatter))

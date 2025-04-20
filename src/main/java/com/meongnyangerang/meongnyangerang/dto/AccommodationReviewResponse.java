@@ -13,7 +13,7 @@ public class AccommodationReviewResponse {
   private String profileImageUrl;
   private Double totalRating;
   private String content;
-  private List<String> reviewImageUrl;
+  private List<String> reviewImages;
   private String createdAt;
 
 }
