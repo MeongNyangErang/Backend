@@ -17,7 +17,6 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationSlot;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
-import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
@@ -36,13 +35,11 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -454,9 +451,11 @@ class ReservationServiceTest {
   @Test
   @DisplayName("로그인한 호스트가 자신이 등록한 숙소의 예약 내역을 상태별로 조회할 수 있다.")
   void getHostReservation_success() {
-    Long cursorId = 0L;
+    Long hostId = 1L;
+    int page = 0;
     int size = 20;
-    ReservationStatus status = ReservationStatus.COMPLETED;
+    Pageable pageable = PageRequest.of(page, size);
+    ReservationStatus status = ReservationStatus.RESERVED;
 
     User user = User.builder().id(1L).build();
     User user2 = User.builder().id(2L).build();
@@ -469,43 +468,42 @@ class ReservationServiceTest {
     Room room3 = Room.builder().id(103L).accommodation(accommodation).name("room")
         .checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
 
-    List<Reservation> list = new ArrayList<>();
+    List<Reservation> list = List.of(
+        Reservation.builder().id(1L).status(ReservationStatus.RESERVED).user(user).room(room1)
+            .checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+            .peopleCount(2).petCount(1).totalPrice(30000L).createdAt(LocalDateTime.now())
+            .hasVehicle(false).build(),
 
-    Reservation r1 = Reservation.builder().id(1L).status(ReservationStatus.RESERVED).user(user)
-        .room(room1).checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2).petCount(1).hasVehicle(true).totalPrice(30000L)
-        .createdAt(LocalDateTime.now()).build();
+        Reservation.builder().id(2L).status(ReservationStatus.RESERVED).user(user).room(room2)
+            .checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+            .peopleCount(2).petCount(1).totalPrice(30000L).createdAt(LocalDateTime.now())
+            .hasVehicle(true).build(),
 
-    Reservation r2 = Reservation.builder().id(2L).status(ReservationStatus.COMPLETED).user(user)
-        .room(room2).checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2).petCount(1).totalPrice(30000L).hasVehicle(false)
-        .createdAt(LocalDateTime.now()).build();
+        Reservation.builder().id(3L).status(ReservationStatus.COMPLETED).user(user).room(room3)
+            .checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+            .peopleCount(2).petCount(1).totalPrice(30000L).createdAt(LocalDateTime.now())
+            .hasVehicle(true).build(),
 
-    Reservation r3 = Reservation.builder().id(3L).status(ReservationStatus.COMPLETED).user(user)
-        .room(room3).checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2).petCount(1).totalPrice(30000L).hasVehicle(true)
-        .createdAt(LocalDateTime.now()).build();
+        Reservation.builder().id(4L).status(ReservationStatus.RESERVED).user(user2).room(room3)
+            .checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+            .peopleCount(2).petCount(1).totalPrice(30000L).createdAt(LocalDateTime.now())
+            .hasVehicle(false).build());
 
-    Reservation r4 = Reservation.builder().id(3L).status(ReservationStatus.COMPLETED).user(user2)
-        .room(room3).checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2).petCount(1).totalPrice(30000L).hasVehicle(true)
-        .createdAt(LocalDateTime.now()).build();
+    List<Reservation> filteredList = list.stream().filter(
+        reservation -> reservation.getStatus() == status && reservation.getRoom().getAccommodation()
+            .getHost().getId().equals(hostId)).toList();
 
-    list.add(r1);
-    list.add(r2);
-    list.add(r3);
-    list.add(r4);
+    Page<Reservation> reservationPage = new PageImpl<>(filteredList, pageable, filteredList.size());
 
-    when(reservationRepository.findByHostIdAndStatus(host.getId(), cursorId, size + 1,
-        String.valueOf(status))).thenReturn(list.stream().filter(
-            reservation -> reservation.getStatus() == status && Objects.equals(
-                reservation.getRoom().getAccommodation().getHost().getId(), host.getId()))
-        .collect(Collectors.toList()));
+    when(reservationRepository.findByHostIdAndStatus(hostId, status, pageable)).thenReturn(
+        reservationPage);
 
-    CustomReservationResponse<HostReservationResponse> response = reservationService.getHostReservation(
-        host.getId(), cursorId, size, status);
+    PageResponse<HostReservationResponse> response = reservationService.getHostReservation(hostId,
+        pageable, status);
 
-    assertEquals(3, response.getContent().size());
-    assertFalse(response.isHasNext());
+    assertEquals(3, response.content().size());
+    assertEquals(false, response.content().get(0).isHasVehicle());
+    assertEquals(true, response.content().get(1).isHasVehicle());
+    assertEquals(false, response.content().get(2).isHasVehicle());
   }
 }
