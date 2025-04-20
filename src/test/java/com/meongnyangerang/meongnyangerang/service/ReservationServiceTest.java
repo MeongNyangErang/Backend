@@ -22,6 +22,7 @@ import com.meongnyangerang.meongnyangerang.dto.HostReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -49,6 +50,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationServiceTest {
@@ -83,49 +88,30 @@ class ReservationServiceTest {
     final String TEST_ACCOMMODATION_NAME = "테스트 숙소 이름";
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
-    ReservationRequest request = ReservationRequest.builder()
-        .roomId(roomId)
-        .checkInDate(checkInDate)
-        .checkOutDate(checkOutDate)
-        .build();
+    ReservationRequest request = ReservationRequest.builder().roomId(roomId)
+        .checkInDate(checkInDate).checkOutDate(checkOutDate).build();
 
-    User user = User.builder()
-        .id(userId)
-        .build();
+    User user = User.builder().id(userId).build();
 
-    Host host = Host.builder()
-        .id(1L)
-        .build();
+    Host host = Host.builder().id(1L).build();
 
-    Accommodation accommodation = Accommodation.builder()
-        .id(1L)
-        .host(host)
-        .name(TEST_ACCOMMODATION_NAME)
-        .build();
+    Accommodation accommodation = Accommodation.builder().id(1L).host(host)
+        .name(TEST_ACCOMMODATION_NAME).build();
 
-    Room room = Room.builder()
-        .id(roomId)
-        .accommodation(accommodation)
-        .build();
+    Room room = Room.builder().id(roomId).accommodation(accommodation).build();
 
-    Reservation reservation = Reservation.builder()
-        .id(1L)
-        .user(user)
-        .room(room)
-        .accommodationName(TEST_ACCOMMODATION_NAME)
-        .checkInDate(request.getCheckInDate())
-        .checkOutDate(request.getCheckOutDate())
-        .build();
+    Reservation reservation = Reservation.builder().id(1L).user(user).room(room)
+        .accommodationName(TEST_ACCOMMODATION_NAME).checkInDate(request.getCheckInDate())
+        .checkOutDate(request.getCheckOutDate()).build();
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
-    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(
-        roomId, checkInDate, checkOutDate.minusDays(1), true))
-        .thenReturn(false);
-    when(reservationSlotRepository.findByRoomIdAndReservedDate(
-        roomId, checkInDate)).thenReturn(Optional.empty());
-    when(reservationSlotRepository.findByRoomIdAndReservedDate(
-        roomId, checkOutDate.minusDays(1))).thenReturn(Optional.empty());
+    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(roomId,
+        checkInDate, checkOutDate.minusDays(1), true)).thenReturn(false);
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate)).thenReturn(
+        Optional.empty());
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId,
+        checkOutDate.minusDays(1))).thenReturn(Optional.empty());
 
     ArgumentCaptor<Reservation> reservationArgumentCaptor = ArgumentCaptor.forClass(
         Reservation.class);
@@ -140,8 +126,8 @@ class ReservationServiceTest {
     assertNotNull(response.getOrderNumber());
     assertTrue(response.getOrderNumber().matches("^[a-f0-9-]{36}$"));
 
-    verify(notificationService).sendReservationNotification(
-        reservation.getId(), accommodation.getName(), user, host);
+    verify(notificationService).sendReservationNotification(reservation.getId(),
+        accommodation.getName(), user, host);
   }
 
   @Test
@@ -152,19 +138,15 @@ class ReservationServiceTest {
     Long roomId = 101L;
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
-    ReservationRequest request = ReservationRequest.builder()
-        .roomId(roomId)
-        .checkInDate(checkInDate)
-        .checkOutDate(checkOutDate)
-        .build();
+    ReservationRequest request = ReservationRequest.builder().roomId(roomId)
+        .checkInDate(checkInDate).checkOutDate(checkOutDate).build();
 
     when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
     // when & then
-    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
-        () -> {
-          reservationService.createReservation(userId, request);
-        });
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reservationService.createReservation(userId, request);
+    });
 
     assertEquals(ErrorCode.USER_NOT_FOUND, e.getErrorCode());
   }
@@ -177,24 +159,18 @@ class ReservationServiceTest {
     Long roomId = 101L;
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
-    ReservationRequest request = ReservationRequest.builder()
-        .roomId(roomId)
-        .checkInDate(checkInDate)
-        .checkOutDate(checkOutDate)
-        .build();
+    ReservationRequest request = ReservationRequest.builder().roomId(roomId)
+        .checkInDate(checkInDate).checkOutDate(checkOutDate).build();
 
-    User user = User.builder()
-        .id(userId)
-        .build();
+    User user = User.builder().id(userId).build();
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
 
     // when & then
-    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
-        () -> {
-          reservationService.createReservation(userId, request);
-        });
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reservationService.createReservation(userId, request);
+    });
 
     assertEquals(ErrorCode.ROOM_NOT_FOUND, e.getErrorCode());
   }
@@ -207,30 +183,22 @@ class ReservationServiceTest {
     Long roomId = 101L;
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
-    ReservationRequest request = ReservationRequest.builder()
-        .roomId(roomId)
-        .checkInDate(checkInDate)
-        .checkOutDate(checkOutDate)
-        .build();
+    ReservationRequest request = ReservationRequest.builder().roomId(roomId)
+        .checkInDate(checkInDate).checkOutDate(checkOutDate).build();
 
-    User user = User.builder()
-        .id(userId)
-        .build();
+    User user = User.builder().id(userId).build();
 
-    Room room = Room.builder()
-        .id(roomId)
-        .build();
+    Room room = Room.builder().id(roomId).build();
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
-    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(
-        roomId, checkInDate, checkOutDate.minusDays(1), true)).thenReturn(true);
+    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(roomId,
+        checkInDate, checkOutDate.minusDays(1), true)).thenReturn(true);
 
     // when & then
-    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
-        () -> {
-          reservationService.createReservation(userId, request);
-        });
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reservationService.createReservation(userId, request);
+    });
 
     assertEquals(ErrorCode.ROOM_ALREADY_RESERVED, e.getErrorCode());
   }
@@ -243,34 +211,26 @@ class ReservationServiceTest {
     Long roomId = 101L;
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
-    ReservationRequest request = ReservationRequest.builder()
-        .roomId(roomId)
-        .checkInDate(checkInDate)
-        .checkOutDate(checkOutDate)
-        .build();
+    ReservationRequest request = ReservationRequest.builder().roomId(roomId)
+        .checkInDate(checkInDate).checkOutDate(checkOutDate).build();
 
-    User user = User.builder()
-        .id(userId)
-        .build();
+    User user = User.builder().id(userId).build();
 
-    Room room = Room.builder()
-        .id(roomId)
-        .build();
+    Room room = Room.builder().id(roomId).build();
 
     ReservationSlot existingSlot = new ReservationSlot(room, checkInDate, true);
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
-    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(
-        roomId, checkInDate, checkOutDate.minusDays(1), true)).thenReturn(false);
-    when(reservationSlotRepository.findByRoomIdAndReservedDate(
-        roomId, checkInDate)).thenReturn(Optional.of(existingSlot));
+    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(roomId,
+        checkInDate, checkOutDate.minusDays(1), true)).thenReturn(false);
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate)).thenReturn(
+        Optional.of(existingSlot));
 
     // when & then
-    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
-        () -> {
-          reservationService.createReservation(userId, request);
-        });
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reservationService.createReservation(userId, request);
+    });
 
     assertEquals(ErrorCode.ROOM_ALREADY_RESERVED, e.getErrorCode());
   }
@@ -283,29 +243,22 @@ class ReservationServiceTest {
     Long roomId = 101L;
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
-    ReservationRequest request = ReservationRequest.builder()
-        .roomId(roomId)
-        .checkInDate(checkInDate)
-        .checkOutDate(checkOutDate)
-        .build();
+    ReservationRequest request = ReservationRequest.builder().roomId(roomId)
+        .checkInDate(checkInDate).checkOutDate(checkOutDate).build();
 
-    User user = User.builder()
-        .id(userId)
-        .build();
+    User user = User.builder().id(userId).build();
 
-    Room room = Room.builder()
-        .id(roomId)
-        .build();
+    Room room = Room.builder().id(roomId).build();
 
     // 예약 슬롯 객체 생성 -> 이 객실만 조회되게 해서 1개인 걸 가정해서 충돌 발생시키기
     ReservationSlot reservationSlot = new ReservationSlot(room, checkInDate, false);
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
-    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(
-        roomId, checkInDate, checkOutDate.minusDays(1), true)).thenReturn(false);
-    when(reservationSlotRepository.findByRoomIdAndReservedDate(
-        roomId, checkInDate)).thenReturn(Optional.of(reservationSlot));
+    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(roomId,
+        checkInDate, checkOutDate.minusDays(1), true)).thenReturn(false);
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate)).thenReturn(
+        Optional.of(reservationSlot));
 
     ExecutorService executorService = Executors.newFixedThreadPool(3);  // 3개의 스레드 실행
     CountDownLatch latch = new CountDownLatch(3); // 3개의 예약이 끝날 때까지 대기
@@ -341,99 +294,59 @@ class ReservationServiceTest {
   @DisplayName("해당 유저가 예약한 내역만 볼 수 있고 상태에 따라 조회를 할 수 있다.")
   void getUserReservation_success() {
     Long userId = 1L;
-    Long cursorId = 0L;
+    int page = 0;
     int size = 20;
+    Pageable pageable = PageRequest.of(page, size);
     ReservationStatus status = ReservationStatus.RESERVED;
 
     User user = User.builder().id(1L).build();
     User user2 = User.builder().id(2L).build();
     Host host = Host.builder().id(1L).build();
     Accommodation accommodation = Accommodation.builder().id(1L).host(host).build();
-    Room room1 = Room.builder().id(101L).accommodation(accommodation).name("room").
-        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
-    Room room2 = Room.builder().id(102L).accommodation(accommodation).name("room").
-        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
-    Room room3 = Room.builder().id(103L).accommodation(accommodation).name("room").
-        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room1 = Room.builder().id(101L).accommodation(accommodation).name("room")
+        .checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room2 = Room.builder().id(102L).accommodation(accommodation).name("room")
+        .checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room3 = Room.builder().id(103L).accommodation(accommodation).name("room")
+        .checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
 
-    List<Reservation> list = new ArrayList<>();
+    List<Reservation> list = List.of(
+        Reservation.builder().id(1L).status(ReservationStatus.RESERVED).user(user).room(room1)
+            .checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+            .peopleCount(2).petCount(1).totalPrice(30000L).createdAt(LocalDateTime.now()).build(),
 
-    Reservation r1 = Reservation.builder()
-        .id(1L)
-        .status(ReservationStatus.RESERVED)
-        .user(user)
-        .room(room1)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .createdAt(LocalDateTime.now())
-        .build();
+        Reservation.builder().id(2L).status(ReservationStatus.RESERVED).user(user).room(room2)
+            .checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+            .peopleCount(2).petCount(1).totalPrice(30000L).createdAt(LocalDateTime.now()).build(),
 
-    Reservation r2 = Reservation.builder()
-        .id(2L)
-        .status(ReservationStatus.RESERVED)
-        .user(user)
-        .room(room2)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .createdAt(LocalDateTime.now())
-        .build();
+        Reservation.builder().id(3L).status(ReservationStatus.COMPLETED).user(user).room(room3)
+            .checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+            .peopleCount(2).petCount(1).totalPrice(30000L).createdAt(LocalDateTime.now()).build(),
 
-    Reservation r3 = Reservation.builder()
-        .id(3L)
-        .status(ReservationStatus.COMPLETED)
-        .user(user)
-        .room(room3)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .createdAt(LocalDateTime.now())
-        .build();
+        Reservation.builder().id(4L).status(ReservationStatus.RESERVED).user(user2).room(room3)
+            .checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+            .peopleCount(2).petCount(1).totalPrice(30000L).createdAt(LocalDateTime.now()).build());
 
-    Reservation r4 = Reservation.builder()
-        .id(3L)
-        .status(ReservationStatus.RESERVED)
-        .user(user2)
-        .room(room3)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .createdAt(LocalDateTime.now())
-        .build();
+    List<Reservation> filteredList = list.stream().filter(
+        reservation -> reservation.getStatus() == status && reservation.getUser().getId()
+            .equals(userId)).toList();
 
-    list.add(r1);
-    list.add(r2);
-    list.add(r3);
-    list.add(r4);
+    Page<Reservation> reservationPage = new PageImpl<>(filteredList, pageable, filteredList.size());
 
-    when(reservationRepository.findByUserIdAndStatus(userId, cursorId, size + 1,
-        String.valueOf(status)))
-        .thenReturn(list.stream()
-            .filter(reservation -> reservation.getStatus() == status &&
-                reservation.getUser().getId().equals(userId))
-            .toList());
+    when(reservationRepository.findByUserIdAndStatus(userId, status, pageable)).thenReturn(
+        reservationPage);
 
-    when(reviewRepository.existsByReservationId(r1.getId())).thenReturn(false);
-    when(reviewRepository.existsByReservationId(r2.getId())).thenReturn(true);
+    when(reviewRepository.existsByReservationId(1L)).thenReturn(false);
+    when(reviewRepository.existsByReservationId(2L)).thenReturn(true);
 
-    CustomReservationResponse<UserReservationResponse> response = reservationService.getUserReservations(
-        userId, cursorId, size,
-        status);
+    PageResponse<UserReservationResponse> response = reservationService.getUserReservations(userId,
+        pageable, status);
 
-    assertEquals(2, response.getContent().size());
-    assertFalse(response.isHasNext());
-    assertEquals(accommodation.getId(), response.getContent().get(0).getAccommodationId());
-    assertEquals(false, response.getContent().get(0).isReviewWritten());
-    assertEquals(true, response.getContent().get(1).isReviewWritten());
+    assertEquals(2, response.content().size());
+    assertEquals(accommodation.getId(), response.content().get(0).getAccommodationId());
+    assertEquals(accommodation.getId(), response.content().get(1).getAccommodationId());
+    assertFalse(response.content().get(0).isReviewWritten());
+    assertTrue(response.content().get(1).isReviewWritten());
   }
 
   @Test
@@ -443,18 +356,10 @@ class ReservationServiceTest {
     User user = User.builder().id(1L).build();
     Room room = Room.builder().id(1L).build();
 
-    Reservation reservation = Reservation.builder()
-        .id(1L)
-        .status(ReservationStatus.RESERVED)
-        .user(user)
-        .room(room)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .createdAt(LocalDateTime.now())
-        .build();
+    Reservation reservation = Reservation.builder().id(1L).status(ReservationStatus.RESERVED)
+        .user(user).room(room).checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3)).peopleCount(2).petCount(1).totalPrice(30000L)
+        .createdAt(LocalDateTime.now()).build();
 
     ReservationSlot slot1 = new ReservationSlot(room, reservation.getCheckInDate(), true);
     ReservationSlot slot2 = new ReservationSlot(room, reservation.getCheckInDate().plusDays(1),
@@ -466,8 +371,8 @@ class ReservationServiceTest {
 
     when(reservationRepository.findById(reservation.getId())).thenReturn(Optional.of(reservation));
     when(reservationSlotRepository.findByRoomAndReservedDateBetween(reservation.getRoom(),
-        reservation.getCheckInDate(), reservation.getCheckOutDate().minusDays(1)))
-        .thenReturn(slots);
+        reservation.getCheckInDate(), reservation.getCheckOutDate().minusDays(1))).thenReturn(
+        slots);
 
     // when
     reservationService.cancelReservation(user.getId(), reservation.getId());
@@ -487,24 +392,16 @@ class ReservationServiceTest {
     User user = User.builder().id(1L).build();
     Room room = Room.builder().id(1L).build();
 
-    Reservation reservation = Reservation.builder()
-        .id(1L)
-        .status(ReservationStatus.RESERVED)
-        .user(user)
-        .room(room)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .createdAt(LocalDateTime.now())
-        .build();
+    Reservation reservation = Reservation.builder().id(1L).status(ReservationStatus.RESERVED)
+        .user(user).room(room).checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3)).peopleCount(2).petCount(1).totalPrice(30000L)
+        .createdAt(LocalDateTime.now()).build();
 
     when(reservationRepository.findById(reservation.getId())).thenReturn(Optional.empty());
 
     // when
-    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
-        reservationService.cancelReservation(user.getId(), reservation.getId()));
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> reservationService.cancelReservation(user.getId(), reservation.getId()));
 
     // then
     assertEquals(ErrorCode.RESERVATION_NOT_FOUND, e.getErrorCode());
@@ -517,24 +414,16 @@ class ReservationServiceTest {
     User user = User.builder().id(1L).build();
     Room room = Room.builder().id(1L).build();
 
-    Reservation reservation = Reservation.builder()
-        .id(1L)
-        .status(ReservationStatus.RESERVED)
-        .user(user)
-        .room(room)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .createdAt(LocalDateTime.now())
-        .build();
+    Reservation reservation = Reservation.builder().id(1L).status(ReservationStatus.RESERVED)
+        .user(user).room(room).checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3)).peopleCount(2).petCount(1).totalPrice(30000L)
+        .createdAt(LocalDateTime.now()).build();
 
     when(reservationRepository.findById(reservation.getId())).thenReturn(Optional.of(reservation));
 
     // when
-    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
-        reservationService.cancelReservation(100L, reservation.getId()));
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> reservationService.cancelReservation(100L, reservation.getId()));
 
     // then
     assertEquals(ErrorCode.INVALID_AUTHORIZED, e.getErrorCode());
@@ -547,24 +436,16 @@ class ReservationServiceTest {
     User user = User.builder().id(1L).build();
     Room room = Room.builder().id(1L).build();
 
-    Reservation reservation = Reservation.builder()
-        .id(1L)
-        .status(ReservationStatus.CANCELED)
-        .user(user)
-        .room(room)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .createdAt(LocalDateTime.now())
-        .build();
+    Reservation reservation = Reservation.builder().id(1L).status(ReservationStatus.CANCELED)
+        .user(user).room(room).checkInDate(LocalDate.of(2025, 1, 1))
+        .checkOutDate(LocalDate.of(2025, 1, 3)).peopleCount(2).petCount(1).totalPrice(30000L)
+        .createdAt(LocalDateTime.now()).build();
 
     when(reservationRepository.findById(reservation.getId())).thenReturn(Optional.of(reservation));
 
     // when
-    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
-        reservationService.cancelReservation(user.getId(), reservation.getId()));
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class,
+        () -> reservationService.cancelReservation(user.getId(), reservation.getId()));
 
     // then
     assertEquals(ErrorCode.RESERVATION_ALREADY_CANCELED, e.getErrorCode());
@@ -581,70 +462,34 @@ class ReservationServiceTest {
     User user2 = User.builder().id(2L).build();
     Host host = Host.builder().id(1L).build();
     Accommodation accommodation = Accommodation.builder().id(1L).host(host).build();
-    Room room1 = Room.builder().id(101L).accommodation(accommodation).name("room").
-        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
-    Room room2 = Room.builder().id(102L).accommodation(accommodation).name("room").
-        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
-    Room room3 = Room.builder().id(103L).accommodation(accommodation).name("room").
-        checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room1 = Room.builder().id(101L).accommodation(accommodation).name("room")
+        .checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room2 = Room.builder().id(102L).accommodation(accommodation).name("room")
+        .checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
+    Room room3 = Room.builder().id(103L).accommodation(accommodation).name("room")
+        .checkInTime(LocalTime.parse("11:00")).checkOutTime(LocalTime.parse("15:00")).build();
 
     List<Reservation> list = new ArrayList<>();
 
-    Reservation r1 = Reservation.builder()
-        .id(1L)
-        .status(ReservationStatus.RESERVED)
-        .user(user)
-        .room(room1)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .hasVehicle(true)
-        .totalPrice(30000L)
-        .createdAt(LocalDateTime.now())
-        .build();
+    Reservation r1 = Reservation.builder().id(1L).status(ReservationStatus.RESERVED).user(user)
+        .room(room1).checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2).petCount(1).hasVehicle(true).totalPrice(30000L)
+        .createdAt(LocalDateTime.now()).build();
 
-    Reservation r2 = Reservation.builder()
-        .id(2L)
-        .status(ReservationStatus.COMPLETED)
-        .user(user)
-        .room(room2)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .hasVehicle(false)
-        .createdAt(LocalDateTime.now())
-        .build();
+    Reservation r2 = Reservation.builder().id(2L).status(ReservationStatus.COMPLETED).user(user)
+        .room(room2).checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2).petCount(1).totalPrice(30000L).hasVehicle(false)
+        .createdAt(LocalDateTime.now()).build();
 
-    Reservation r3 = Reservation.builder()
-        .id(3L)
-        .status(ReservationStatus.COMPLETED)
-        .user(user)
-        .room(room3)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .hasVehicle(true)
-        .createdAt(LocalDateTime.now())
-        .build();
+    Reservation r3 = Reservation.builder().id(3L).status(ReservationStatus.COMPLETED).user(user)
+        .room(room3).checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2).petCount(1).totalPrice(30000L).hasVehicle(true)
+        .createdAt(LocalDateTime.now()).build();
 
-    Reservation r4 = Reservation.builder()
-        .id(3L)
-        .status(ReservationStatus.COMPLETED)
-        .user(user2)
-        .room(room3)
-        .checkInDate(LocalDate.of(2025, 1, 1))
-        .checkOutDate(LocalDate.of(2025, 1, 3))
-        .peopleCount(2)
-        .petCount(1)
-        .totalPrice(30000L)
-        .hasVehicle(true)
-        .createdAt(LocalDateTime.now())
-        .build();
+    Reservation r4 = Reservation.builder().id(3L).status(ReservationStatus.COMPLETED).user(user2)
+        .room(room3).checkInDate(LocalDate.of(2025, 1, 1)).checkOutDate(LocalDate.of(2025, 1, 3))
+        .peopleCount(2).petCount(1).totalPrice(30000L).hasVehicle(true)
+        .createdAt(LocalDateTime.now()).build();
 
     list.add(r1);
     list.add(r2);
@@ -652,16 +497,13 @@ class ReservationServiceTest {
     list.add(r4);
 
     when(reservationRepository.findByHostIdAndStatus(host.getId(), cursorId, size + 1,
-        String.valueOf(status)))
-        .thenReturn(list.stream()
-            .filter(reservation -> reservation.getStatus() == status &&
-                Objects.equals(reservation.getRoom().getAccommodation().getHost().getId(),
-                    host.getId()))
-            .collect(Collectors.toList()));
+        String.valueOf(status))).thenReturn(list.stream().filter(
+            reservation -> reservation.getStatus() == status && Objects.equals(
+                reservation.getRoom().getAccommodation().getHost().getId(), host.getId()))
+        .collect(Collectors.toList()));
 
     CustomReservationResponse<HostReservationResponse> response = reservationService.getHostReservation(
-        host.getId(), cursorId, size,
-        status);
+        host.getId(), cursorId, size, status);
 
     assertEquals(3, response.getContent().size());
     assertFalse(response.isHasNext());
