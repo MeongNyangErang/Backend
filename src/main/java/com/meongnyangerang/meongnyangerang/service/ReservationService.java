@@ -6,7 +6,6 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationSlot;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
-import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
@@ -119,24 +118,17 @@ public class ReservationService {
     reservation.setStatus(ReservationStatus.CANCELED);
   }
 
-  public CustomReservationResponse<HostReservationResponse> getHostReservation(Long hostId,
-      Long cursorId, int size,
+  public PageResponse<HostReservationResponse> getHostReservation(Long hostId, Pageable pageable,
       ReservationStatus status) {
     // 자신의 숙소 예약 내역만 조회
-    List<Reservation> reservationList = reservationRepository.findByHostIdAndStatus(hostId,
-        cursorId, size + 1, status.name());
+    Page<Reservation> reservationList = reservationRepository.findByHostIdAndStatus(hostId, status,
+        pageable);
 
     // 예약 정보 -> DTO 변환
-    List<HostReservationResponse> content = reservationList.stream()
-        .limit(size)
-        .map(this::mapToHostReservationResponse)
-        .toList();
+    Page<HostReservationResponse> responsePage = reservationList.map(
+        this::mapToHostReservationResponse);
 
-    // 다음 데이터 존재 여부 확인
-    boolean hasNext = reservationList.size() > size;
-    Long cursor = hasNext ? reservationList.get(size).getId() : null;
-
-    return new CustomReservationResponse<>(content, cursor, hasNext);
+    return PageResponse.from(responsePage);
   }
 
   /**

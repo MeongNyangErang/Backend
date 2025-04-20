@@ -14,31 +14,24 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
-  Page<Reservation> findByUserIdAndStatus(Long user_id, ReservationStatus status, Pageable pageable);
+  Page<Reservation> findByUserIdAndStatus(Long user_id, ReservationStatus status,
+      Pageable pageable);
 
-  @Query(value = "SELECT r.* FROM reservation r " +
-      "JOIN room rm ON r.room_id = rm.id " +
-      "JOIN accommodation a ON rm.accommodation_id = a.id " +
-      "JOIN host h ON a.host_id = h.id " +
-      "WHERE h.id = :userId " +
-      "AND r.status = :status " +
-      "AND (:cursorId = 0 OR r.id <= :cursorId) " +
-      "ORDER BY r.created_at DESC LIMIT :size",
-      nativeQuery = true)
-  List<Reservation> findByHostIdAndStatus(
-      @Param("userId") Long userId,
-      @Param("cursorId") Long cursorId,
-      @Param("size") int size,
-      @Param("status") String status);
+  @Query("SELECT r FROM Reservation r " +
+      "WHERE r.room.accommodation.host.id = :hostId " +
+      "AND r.status = :status")
+  Page<Reservation> findByHostIdAndStatus(@Param("hostId") Long hostId,
+      @Param("status") ReservationStatus status,
+      Pageable pageable);
 
   boolean existsByUserIdAndStatus(Long userId, ReservationStatus status);
 
   @Query("""
-        SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
-        FROM Reservation r
-        WHERE r.room.accommodation.host.id = :hostId
-        AND r.status = :status
-    """)
+          SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
+          FROM Reservation r
+          WHERE r.room.accommodation.host.id = :hostId
+          AND r.status = :status
+      """)
   boolean existsByHostIdAndStatus(Long hostId, ReservationStatus status);
 
   List<Reservation> findByCheckOutDate(LocalDate checkOutDate);
