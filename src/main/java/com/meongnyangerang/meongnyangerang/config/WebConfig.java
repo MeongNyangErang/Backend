@@ -1,15 +1,20 @@
 package com.meongnyangerang.meongnyangerang.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+  @Value("${cors.allowed-origins}")
+  private String allowedOrigins;
+
   @Override
   public void addCorsMappings(CorsRegistry registry) {
     registry.addMapping("/**")
-        .allowedOrigins("http://localhost:5173/") // 또는 프론트엔드 실제 주소만
+        .allowedOrigins(allowedOrigins.split(","))
         .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
         .allowCredentials(true);
   }
