@@ -9,21 +9,25 @@ import static org.mockito.Mockito.when;
 import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
-import com.meongnyangerang.meongnyangerang.dto.CustomApplicationResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostDetailResponse;
+import com.meongnyangerang.meongnyangerang.dto.PendingHostListResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class AdminServiceTest {
@@ -41,22 +45,29 @@ class AdminServiceTest {
   @DisplayName("관리자는 호스트 가입 신청 목록을 조회할 수 있다.")
   void getPendingHostList_success() {
     // given
+    Pageable pageable = PageRequest.of(0, 20);
+
     List<Host> hosts = List.of(
         Host.builder().id(1L).status(HostStatus.PENDING).createdAt(LocalDateTime.now()).build(),
-        Host.builder().id(2L).status(HostStatus.ACTIVE).createdAt(LocalDateTime.now()).build(),
         Host.builder().id(3L).status(HostStatus.PENDING).createdAt(LocalDateTime.now()).build()
     );
 
-    when(hostRepository.findAllByStatus(0L, 5 + 1, HostStatus.PENDING.name()))
-        .thenReturn(hosts.stream().filter(host -> host.getStatus() == HostStatus.PENDING)
-            .collect(Collectors.toList()));
+    Page<Host> hostPage = new PageImpl<>(hosts, pageable, hosts.size());
+
+    when(hostRepository.findAllByStatus(HostStatus.PENDING, pageable))
+        .thenReturn(hostPage);
 
     // when
-    CustomApplicationResponse response = adminService.getPendingHostList(0L, 5);
+    PageResponse<PendingHostListResponse> response = adminService.getPendingHostList(pageable);
 
     // then
-    assertEquals(2, response.getContent().size());
-    assertEquals(1L, response.getContent().get(0).getHostId());
+    assertEquals(2, response.content().size());
+
+    PendingHostListResponse first = response.content().get(0);
+    assertEquals(1L, first.getHostId());
+
+    PendingHostListResponse second = response.content().get(1);
+    assertEquals(3L, second.getHostId());
   }
 
   @Test
