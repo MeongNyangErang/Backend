@@ -455,76 +455,61 @@ class ReviewServiceTest {
   @DisplayName("유저는 자신의 리뷰만 조회가 가능하다.")
   void getUserReviews_success() {
     // given
-    User user = User.builder().id(1L).build();
+    Long userId = 1L;
+    int page = 0;
+    int size = 5;
+    Pageable pageable = PageRequest.of(page, size);
 
-    Accommodation accommodation = Accommodation.builder().id(1L).build();
+    User user = User.builder().id(userId).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).name("테스트 숙소").build();
 
     Review review1 = Review.builder()
-        .id(1L)
-        .accommodation(accommodation)
-        .user(user)
-        .content("content")
-        .userRating(3.0)
-        .petFriendlyRating(4.0)
-        .createdAt(LocalDateTime.now())
+        .id(1L).user(user).accommodation(accommodation)
+        .content("첫 번째 리뷰").userRating(3.0).petFriendlyRating(4.0)
+        .createdAt(LocalDateTime.of(2025, 4, 20, 12, 0))
         .reportCount(0)
         .build();
-
-    ReviewImage reviewImage1 = ReviewImage.builder().id(1L).review(review1)
-        .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
 
     Review review2 = Review.builder()
-        .id(2L)
-        .accommodation(accommodation)
-        .user(user)
-        .content("content")
-        .userRating(3.0)
-        .petFriendlyRating(4.0)
-        .createdAt(LocalDateTime.now())
+        .id(2L).user(user).accommodation(accommodation)
+        .content("두 번째 리뷰").userRating(4.0).petFriendlyRating(5.0)
+        .createdAt(LocalDateTime.of(2025, 4, 19, 12, 0))
         .reportCount(0)
         .build();
 
-    ReviewImage reviewImage2 = ReviewImage.builder().id(2L).review(review2)
-        .imageUrl("https://test.com/images/image.jpg").createdAt(LocalDateTime.now()).build();
+    List<Review> reviewList = List.of(review1, review2);
+    Page<Review> reviewPage = new PageImpl<>(reviewList, pageable, reviewList.size());
 
-    List<ReviewImageResponse> list1 = List.of(
-        new ReviewImageResponse(reviewImage1.getId(), reviewImage1.getImageUrl())
-    );
+    ReviewImage reviewImage1 = ReviewImage.builder()
+        .id(1L).review(review1).imageUrl("https://test.com/images/image1.jpg")
+        .createdAt(LocalDateTime.now()).build();
 
-    MyReviewResponse expectedResponse1 = MyReviewResponse.builder()
-        .accommodationName(review1.getAccommodation().getName())
-        .reviewImages(list1)
-        .totalRating(3.5)
-        .content(review1.getContent())
-        .createdAt(review1.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-        .build();
+    ReviewImage reviewImage2 = ReviewImage.builder()
+        .id(2L).review(review2).imageUrl("https://test.com/images/image2.jpg")
+        .createdAt(LocalDateTime.now()).build();
 
-    when(reviewRepository.findByUserId(user.getId(), 0L, 5 + 1)).thenAnswer(
-        invocation -> Stream.of(review1, review2)
-            .filter(review -> review.getReportCount() < 20)
-            .toList()
-    );
-    when(reviewImageRepository.findAllByReviewId(review1.getId()))
-        .thenReturn(List.of(reviewImage1));
-
-    when(reviewImageRepository.findAllByReviewId(review2.getId()))
-        .thenReturn(List.of(reviewImage2));
+    when(reviewRepository.findByUserId(userId, pageable)).thenReturn(reviewPage);
+    when(reviewImageRepository.findAllByReviewId(review1.getId())).thenReturn(List.of(reviewImage1));
+    when(reviewImageRepository.findAllByReviewId(review2.getId())).thenReturn(List.of(reviewImage2));
 
     // when
-    CustomReviewResponse<MyReviewResponse> customResponse = reviewService.getUsersReviews(
-        user.getId(), 0L, 5);
+    PageResponse<MyReviewResponse> response = reviewService.getUsersReviews(userId, pageable);
 
     // then
-    assertEquals(expectedResponse1.getAccommodationName(),
-        customResponse.getContent().get(0).getAccommodationName());
-    assertEquals(expectedResponse1.getTotalRating(),
-        customResponse.getContent().get(0).getTotalRating());
-    assertEquals(expectedResponse1.getReviewImages().get(0).getImageUrl(),
-        customResponse.getContent().get(0).getReviewImages().get(0).getImageUrl());
-    assertEquals(reviewImage2.getId(),
-        customResponse.getContent().get(1).getReviewImages().get(0).getImageId());
-    assertNull(customResponse.getCursor());
-    assertFalse(customResponse.isHasNext());
+    assertEquals(2, response.content().size());
+
+    MyReviewResponse firstReview = response.content().get(0);
+    MyReviewResponse secondReview = response.content().get(1);
+
+    assertEquals("테스트 숙소", firstReview.getAccommodationName());
+    assertEquals("첫 번째 리뷰", firstReview.getContent());
+    assertEquals(3.5, firstReview.getTotalRating());
+    assertEquals("https://test.com/images/image1.jpg", firstReview.getReviewImages().get(0).getImageUrl());
+
+    assertEquals("테스트 숙소", secondReview.getAccommodationName());
+    assertEquals("두 번째 리뷰", secondReview.getContent());
+    assertEquals(4.5, secondReview.getTotalRating());
+    assertEquals("https://test.com/images/image2.jpg", secondReview.getReviewImages().get(0).getImageUrl());
   }
 
   @Test
