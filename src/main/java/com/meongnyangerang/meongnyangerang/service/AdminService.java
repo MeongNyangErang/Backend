@@ -7,11 +7,10 @@ import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
-import com.meongnyangerang.meongnyangerang.domain.user.Role;
-import com.meongnyangerang.meongnyangerang.dto.CustomApplicationResponse;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostListResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
@@ -19,8 +18,9 @@ import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import jakarta.validation.Valid;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,17 +54,12 @@ public class AdminService {
   }
 
   // 가입 신청 목록 조회
-  public CustomApplicationResponse getPendingHostList(Long cursorId, int size) {
-    List<Host> pendingHosts = hostRepository.findAllByStatus(cursorId, size + 1,
-        HostStatus.PENDING.name());
+  public PageResponse<PendingHostListResponse> getPendingHostList(Pageable pageable) {
+    Page<Host> pendingHosts = hostRepository.findAllByStatus(HostStatus.PENDING, pageable);
 
-    List<PendingHostListResponse> content = pendingHosts.stream().limit(size)
-        .map(this::mapToPendingHostList).toList();
+    Page<PendingHostListResponse> responsePage = pendingHosts.map(this::mapToPendingHostList);
 
-    boolean hasNext = pendingHosts.size() > size;
-    Long cursor = hasNext ? pendingHosts.get(size).getId() : null;
-
-    return new CustomApplicationResponse(content, cursor, hasNext);
+    return PageResponse.from(responsePage);
   }
 
   private PendingHostListResponse mapToPendingHostList(Host host) {

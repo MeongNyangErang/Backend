@@ -5,9 +5,9 @@ import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -21,13 +21,7 @@ public interface HostRepository extends JpaRepository<Host, Long> {
 
   List<Host> findAllByStatusAndDeletedAtBefore(HostStatus status, LocalDateTime cutoff);
 
-  @Query(value = "SELECT * FROM Host h " +
-      "WHERE h.status = :status " +
-      "AND (:cursorId = 0 OR h.id >= :cursorId) " +
-      "ORDER BY h.created_at ASC LIMIT :size",
-      nativeQuery = true)
-  List<Host> findAllByStatus(@Param("cursorId") Long cursorId, @Param("size") int size,
-      @Param("status") String status);
+  Page<Host> findAllByStatus(HostStatus status, Pageable pageable);
 
   Optional<Host> findByIdAndStatus(Long id, HostStatus status);
 
