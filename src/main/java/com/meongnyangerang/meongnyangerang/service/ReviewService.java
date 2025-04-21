@@ -5,6 +5,7 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
@@ -20,6 +21,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewImageProjection;
 import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import java.time.LocalDate;
@@ -47,8 +49,10 @@ public class ReviewService {
   private final ReviewImageRepository reviewImageRepository;
   private final AccommodationRepository accommodationRepository;
   private final NotificationService notificationService;
+  private final AccommodationRoomSearchService accommodationRoomSearchService;
 
   private static final int VISIBLE_REVIEW_REPORT_THRESHOLD = 20;
+  private final RoomRepository roomRepository;
 
   @Transactional
   public void createReview(Long userId, ReviewRequest request, List<MultipartFile> images) {
@@ -70,6 +74,11 @@ public class ReviewService {
     // 숙소 총 평점 업데이트
     updateAccommodationRating(reservation.getRoom().getAccommodation(), 0, review.getUserRating(),
         review.getPetFriendlyRating());
+
+    // elasticsearch 색인 업데이트
+    Accommodation accommodation = savedReview.getAccommodation();
+    accommodationRoomSearchService.updateAllRooms(accommodation,
+        roomRepository.findAllByAccommodationId(accommodation.getId()));
 
     notificationService.sendReviewNotification(savedReview); // 알림 발송
   }
