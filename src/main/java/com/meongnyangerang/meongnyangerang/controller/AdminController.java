@@ -1,11 +1,14 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.domain.review.ReviewReport;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostListResponse;
+import com.meongnyangerang.meongnyangerang.dto.ReviewReportResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.service.AdminService;
+import com.meongnyangerang.meongnyangerang.service.ReviewReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminController {
 
   private final AdminService adminService;
+  private final ReviewReportService reviewReportService;
 
   // 관리자 로그인 API
   @PostMapping("/login")
@@ -65,5 +69,12 @@ public class AdminController {
     adminService.rejectHost(hostId);
 
     return ResponseEntity.ok().build();
+  }
+
+  @GetMapping("/reports/review")
+  public ResponseEntity<PageResponse<ReviewReportResponse>> getReviews(
+      @PageableDefault(size = 20, sort = "createdAt", direction = Direction.ASC) Pageable pageable
+  ) {
+    return ResponseEntity.ok(reviewReportService.getReviews(pageable));
   }
 }

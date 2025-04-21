@@ -5,6 +5,7 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
+import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
@@ -20,6 +21,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewImageProjection;
 import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import java.time.LocalDate;
@@ -47,8 +49,10 @@ public class ReviewService {
   private final ReviewImageRepository reviewImageRepository;
   private final AccommodationRepository accommodationRepository;
   private final NotificationService notificationService;
+  private final AccommodationRoomSearchService accommodationRoomSearchService;
 
   private static final int VISIBLE_REVIEW_REPORT_THRESHOLD = 20;
+  private final RoomRepository roomRepository;
 
   @Transactional
   public void createReview(Long userId, ReviewRequest request, List<MultipartFile> images) {
@@ -70,6 +74,9 @@ public class ReviewService {
     // 숙소 총 평점 업데이트
     updateAccommodationRating(reservation.getRoom().getAccommodation(), 0, review.getUserRating(),
         review.getPetFriendlyRating());
+
+    // elasticsearch 색인 업데이트
+    updateElasticsearchDocument(savedReview.getAccommodation());
 
     notificationService.sendReviewNotification(savedReview); // 알림 발송
   }
@@ -113,6 +120,9 @@ public class ReviewService {
     // 숙소 총 평점 업데이트
     updateAccommodationRatingOnDelete(accommodation, userRating,
         petFriendlyRating);
+
+    // elasticsearch 색인 업데이트
+    updateElasticsearchDocument(accommodation);
   }
 
   @Transactional
@@ -138,6 +148,9 @@ public class ReviewService {
     // 숙소 총 평점 업데이트
     updateAccommodationRating(review.getAccommodation(), oldRating, request.getUserRating(),
         request.getPetFriendlyRating());
+
+    // elasticsearch 색인 업데이트
+    updateElasticsearchDocument(review.getAccommodation());
   }
 
   /**
@@ -254,6 +267,7 @@ public class ReviewService {
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     return AccommodationReviewResponse.builder()
+        .reviewId(review.getId())
         .roomName(review.getReservation().getRoom().getName())
         .profileImageUrl(review.getUser().getProfileImage())
         .reviewImages(reviewImages.stream().map(ReviewImage::getImageUrl).toList())
@@ -370,5 +384,12 @@ public class ReviewService {
 
   private double calculateReviewRating(double userRating, double petFriendlyRating) {
     return Math.round(((userRating + petFriendlyRating) / 2) * 10) / 10.0;
+  }
+
+  private void updateElasticsearchDocument(Accommodation accommodation) {
+    accommodationRoomSearchService.updateAllRooms(accommodation,
+        roomRepository.findAllByAccommodationId(accommodation.getId()));
+    accommodationRoomSearchService.updateAccommodationTotalRating(accommodation,
+        accommodation.getTotalRating());
   }
 }

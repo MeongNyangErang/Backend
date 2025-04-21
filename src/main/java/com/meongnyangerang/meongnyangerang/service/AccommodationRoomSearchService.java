@@ -141,29 +141,39 @@ public class AccommodationRoomSearchService {
     }
   }
 
-  // 추가 객실 등록 또는 숙소/객실 수정, 객실 삭제 시, 최소 가격과 반려동물 편의시설을 기존 문서에 업데이트
+  // 추가 객실 등록 또는 숙소/객실 수정, 객실 삭제 시, 기존 문서에 업데이트
   public void updateAccommodationDocument(Accommodation accommodation) {
     List<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId());
-
-    if (rooms.isEmpty()) {
-      return;
-    }
+    if (rooms.isEmpty()) return;
 
     Set<String> updatedAccommodationPetFacilities = getAccommodationPetFacilities(accommodation);
     Set<String> updatedRoomPetFacilities = collectRoomPetFacilities(rooms);
     long minPrice = calculateMinRoomPrice(rooms);
 
     Map<String, Object> doc = Map.of(
+        "name", accommodation.getName(),
+        "thumbnailUrl", accommodation.getThumbnailUrl(),
         "price", minPrice,
         "accommodationPetFacilities", updatedAccommodationPetFacilities,
-        "roomPetFacilities", updatedRoomPetFacilities
+        "roomPetFacilities", updatedRoomPetFacilities,
+        "allowedPetTypes", getAllowedPetTypes(accommodation)
     );
 
+    updateFields(accommodation.getId(), doc);
+  }
+
+  // 리뷰 등록/수정/삭제 시 기존 문서에 업데이트
+  public void updateAccommodationTotalRating(Accommodation accommodation, Double totalRating) {
+    Map<String, Object> doc = Map.of("totalRating", totalRating);
+    updateFields(accommodation.getId(), doc);
+  }
+
+  private void updateFields(Long accommodationId, Map<String, Object> fields) {
     try {
       elasticsearchClient.update(
           u -> u.index("accommodations")
-              .id(accommodation.getId().toString())
-              .doc(doc),
+              .id(accommodationId.toString())
+              .doc(fields),
           AccommodationDocument.class
       );
     } catch (IOException e) {
