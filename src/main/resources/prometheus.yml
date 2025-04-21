@@ -1,0 +1,9 @@
+# Prometheus가 어떤 대상(Spring Boot 앱)을 모니터링하고 얼마나 자주 메트릭을 수집할지 정의하는 설정 파일
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'spring-boot'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
