@@ -49,14 +49,6 @@ public class ReviewReport {
   @CreatedDate
   @Column(nullable = false)
   private LocalDateTime createdAt;
-
-  enum ReporterType {
-    USER, HOST;
-  }
-
-  enum ReportStatus {
-    PENDING, COMPLETED;
-  }
 }
 
 
