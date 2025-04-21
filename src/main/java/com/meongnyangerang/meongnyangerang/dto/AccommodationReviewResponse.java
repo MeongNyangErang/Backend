@@ -8,6 +8,7 @@ import lombok.Getter;
 @Builder
 public class AccommodationReviewResponse {
 
+  private Long reviewId;
   private String roomName;
   private String nickname;
   private String profileImageUrl;
