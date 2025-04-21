@@ -151,6 +151,11 @@ public class ReviewService {
     // 숙소 총 평점 업데이트
     updateAccommodationRating(review.getAccommodation(), oldRating, request.getUserRating(),
         request.getPetFriendlyRating());
+
+    // elasticsearch 색인 업데이트
+    Accommodation accommodation = review.getAccommodation();
+    accommodationRoomSearchService.updateAllRooms(accommodation,
+        roomRepository.findAllByAccommodationId(accommodation.getId()));
   }
 
   /**
