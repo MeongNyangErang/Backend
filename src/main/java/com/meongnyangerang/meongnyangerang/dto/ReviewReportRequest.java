@@ -6,6 +6,7 @@ import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewReport;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,6 +18,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ReviewReportRequest {
 
+  @NotBlank
   private String reason;
 
   public ReviewReport toEntity(UserDetailsImpl userDetails, Review review,

@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.controller;
 import com.meongnyangerang.meongnyangerang.dto.ReviewReportRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReviewReportService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,7 +25,7 @@ public class ReviewReportController {
   @PostMapping("/reviews/{reviewId}/report")
   public ResponseEntity<Void> reportReview(
       @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long reviewId,
-      @RequestPart ReviewReportRequest request,
+      @RequestPart @Valid ReviewReportRequest request,
       @RequestPart(required = false) MultipartFile evidenceImage) {
 
     reviewReportService.createReport(userDetails, reviewId, request, evidenceImage);
