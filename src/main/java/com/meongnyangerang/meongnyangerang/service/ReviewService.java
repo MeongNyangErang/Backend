@@ -272,6 +272,7 @@ public class ReviewService {
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     return AccommodationReviewResponse.builder()
+        .reviewId(review.getId())
         .roomName(review.getReservation().getRoom().getName())
         .profileImageUrl(review.getUser().getProfileImage())
         .reviewImages(reviewImages.stream().map(ReviewImage::getImageUrl).toList())

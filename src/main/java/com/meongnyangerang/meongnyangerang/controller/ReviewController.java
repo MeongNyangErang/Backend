@@ -104,7 +104,7 @@ public class ReviewController {
   }
 
   // 최신 리뷰 10개 조회
-  @GetMapping("users/latest-reviews")
+  @GetMapping("/users/latest-reviews")
   public ResponseEntity<List<LatestReviewResponse>> getLatestReviews() {
 
     return ResponseEntity.ok(reviewService.getLatestReviews());

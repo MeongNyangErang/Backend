@@ -30,8 +30,9 @@ public enum ErrorCode {
   MAX_PET_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "반려동물은 최대 10마리까지 등록할 수 있습니다."),
   ALREADY_REGISTERED_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "이미 등록된 전화번호입니다."),
   DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "이미 사용 중인 전화번호입니다."),
-  ALREADY_REGISTERED_NAME(HttpStatus.BAD_REQUEST,"이미 등록된 이름입니다."),
+  ALREADY_REGISTERED_NAME(HttpStatus.BAD_REQUEST, "이미 등록된 이름입니다."),
   ALREADY_REGISTERED_NICKNAME(HttpStatus.BAD_REQUEST, "기존 닉네임과 동일합니다."),
+  REVIEW_REPORT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 신고된 리뷰입니다."),
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
   INVALID_JWT_FORMAT(HttpStatus.BAD_REQUEST, "JWT 형식이 올바르지 않습니다."),
@@ -52,7 +53,7 @@ public enum ErrorCode {
   NOTIFICATION_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "알림 발송 권한이 없음"),
   WEBSOCKET_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "WebSocket 권한 없음"),
 
-  // 404  NOT FOUND
+  // 404 NOT FOUND
   NOT_EXIST_ACCOUNT(HttpStatus.BAD_REQUEST, "해당 계정은 존재하지 않습니다."),
   NOT_EXISTS_HOST(HttpStatus.NOT_FOUND, "존재하지 않는 호스트입니다."),
   FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일이 존재하지 않습니다."),
@@ -91,8 +92,7 @@ public enum ErrorCode {
   SEARCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "숙소 검색 중 오류가 발생했습니다."),
   USER_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 맞춤 추천 조회 중 오류가 발생했습니다."),
   ELASTICSEARCH_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "인덱스에 문서를 저장하는 도중 오류가 발생했습니다."),
-  DOCUMENT_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "해당 문서를 업데이트 하는 도중 오류가 발생했습니다.")
-  ;
+  DOCUMENT_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "해당 문서를 업데이트 하는 도중 오류가 발생했습니다.");
 
   private final HttpStatus status;
   private final String description;

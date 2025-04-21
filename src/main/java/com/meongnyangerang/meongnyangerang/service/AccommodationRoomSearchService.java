@@ -141,7 +141,7 @@ public class AccommodationRoomSearchService {
     }
   }
 
-  // 추가 객실 등록 또는 숙소/객실 수정, 객실 삭제 시, 최소 가격과 반려동물 편의시설을 기존 문서에 업데이트
+  // 추가 객실 등록 또는 숙소/객실 수정, 객실 삭제 시, 기존 문서에 업데이트
   public void updateAccommodationDocument(Accommodation accommodation) {
     List<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId());
 
@@ -154,9 +154,12 @@ public class AccommodationRoomSearchService {
     long minPrice = calculateMinRoomPrice(rooms);
 
     Map<String, Object> doc = Map.of(
+        "name", accommodation.getName(),
+        "thumbnailUrl", accommodation.getThumbnailUrl(),
         "price", minPrice,
         "accommodationPetFacilities", updatedAccommodationPetFacilities,
-        "roomPetFacilities", updatedRoomPetFacilities
+        "roomPetFacilities", updatedRoomPetFacilities,
+        "allowedPetTypes", getAllowedPetTypes(accommodation)
     );
 
     try {
