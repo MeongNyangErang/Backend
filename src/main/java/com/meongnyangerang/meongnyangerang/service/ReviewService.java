@@ -6,7 +6,6 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewImage;
 import com.meongnyangerang.meongnyangerang.dto.AccommodationReviewResponse;
-import com.meongnyangerang.meongnyangerang.dto.CustomReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.LatestReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.MyReviewResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewContent;
@@ -32,10 +31,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -77,38 +74,26 @@ public class ReviewService {
     notificationService.sendReviewNotification(savedReview); // 알림 발송
   }
 
-  public CustomReviewResponse<MyReviewResponse> getUsersReviews(Long userId, Long cursorId,
-      Integer size) {
+  public PageResponse<MyReviewResponse> getUsersReviews(Long userId, Pageable pageable) {
     // 해당 유저의 리뷰 내역만 조회 (리뷰 신고 수 20개 이상이면 조회 X)
-    List<Review> reviews = reviewRepository.findByUserId(userId, cursorId, size + 1);
+    Page<Review> reviews = reviewRepository.findByUserId(userId, pageable);
 
-    List<MyReviewResponse> content = reviews.stream()
-        .limit(size)
-        .map(this::mapToMyReviewResponse)
-        .toList();
+    Page<MyReviewResponse> responsePage = reviews.map(this::mapToMyReviewResponse);
 
-    boolean hasNext = reviews.size() > size;
-    Long cursor = hasNext ? reviews.get(size).getId() : null;
-
-    return new CustomReviewResponse<>(content, cursor, hasNext);
+    return PageResponse.from(responsePage);
   }
 
-  public CustomReviewResponse<AccommodationReviewResponse> getAccommodationReviews(
+  public PageResponse<AccommodationReviewResponse> getAccommodationReviews(
       Long accommodationId,
-      Long cursorId, Integer size) {
+      Pageable pageable) {
     // 해당 숙소의 리뷰 내역만 조회 (리뷰 신고 수 20개 이상이면 조회 X)
-    List<Review> reviews = reviewRepository.findByAccommodationId(accommodationId, cursorId,
-        size + 1);
+    Page<Review> reviews = reviewRepository.findByAccommodationIdAndReportCountLessThan(
+        accommodationId, 20, pageable);
 
-    List<AccommodationReviewResponse> content = reviews.stream()
-        .limit(size)
-        .map(this::mapToAccommodationReviewResponse)
-        .toList();
+    Page<AccommodationReviewResponse> responsePage = reviews.map(
+        this::mapToAccommodationReviewResponse);
 
-    boolean hasNext = reviews.size() > size;
-    Long cursor = hasNext ? reviews.get(size).getId() : null;
-
-    return new CustomReviewResponse<>(content, cursor, hasNext);
+    return PageResponse.from(responsePage);
   }
 
   @Transactional
@@ -271,7 +256,7 @@ public class ReviewService {
     return AccommodationReviewResponse.builder()
         .roomName(review.getReservation().getRoom().getName())
         .profileImageUrl(review.getUser().getProfileImage())
-        .reviewImageUrl(reviewImages.stream().map(ReviewImage::getImageUrl).toList())
+        .reviewImages(reviewImages.stream().map(ReviewImage::getImageUrl).toList())
         .totalRating(totalRating)
         .content(review.getContent())
         .createdAt(review.getCreatedAt().format(dateFormatter))

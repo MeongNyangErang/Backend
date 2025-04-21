@@ -9,6 +9,7 @@ public class UserReservationResponse {
 
   private Long reservationId;
   private String reservationDate;
+  private Long accommodationId;
   private String accommodationName;
   private String roomName;
   private String checkInDate;

@@ -1,16 +1,18 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
-import com.meongnyangerang.meongnyangerang.dto.CustomReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.validator.constraints.Range;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,15 +43,13 @@ public class ReservationController {
   }
 
   @GetMapping("/users/reservations")
-  public ResponseEntity<CustomReservationResponse<UserReservationResponse>> getUserReservation(
+  public ResponseEntity<PageResponse<UserReservationResponse>> getUserReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
-      @RequestParam(defaultValue = "0") Long cursor,
-      @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Direction.DESC) Pageable pageable,
       @RequestParam ReservationStatus status) {
 
     return ResponseEntity.ok(reservationService.getUserReservations(
-        userDetails.getId(), cursor, size,
-        status));
+        userDetails.getId(), pageable, status));
   }
 
   @PatchMapping("/users/reservations/{reservationId}/cancel")
@@ -63,14 +63,12 @@ public class ReservationController {
   }
 
   @GetMapping("/hosts/reservations")
-  public ResponseEntity<CustomReservationResponse<HostReservationResponse>> getHostReservation(
+  public ResponseEntity<PageResponse<HostReservationResponse>> getHostReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
-      @RequestParam(defaultValue = "0") Long cursor,
-      @RequestParam(defaultValue = "20") @Range(min = 1, max = 100) int size,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Direction.DESC) Pageable pageable,
       @RequestParam ReservationStatus status) {
 
     return ResponseEntity.ok(reservationService.getHostReservation(
-        userDetails.getId(), cursor, size,
-        status));
+        userDetails.getId(), pageable, status));
   }
 }
