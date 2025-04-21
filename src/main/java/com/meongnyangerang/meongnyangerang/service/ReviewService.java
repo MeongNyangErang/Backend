@@ -122,6 +122,10 @@ public class ReviewService {
     // 숙소 총 평점 업데이트
     updateAccommodationRatingOnDelete(accommodation, userRating,
         petFriendlyRating);
+
+    // elasticsearch 색인 업데이트
+    accommodationRoomSearchService.updateAllRooms(accommodation,
+        roomRepository.findAllByAccommodationId(accommodation.getId()));
   }
 
   @Transactional
