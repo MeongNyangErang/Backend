@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.Wishlist;
-import com.meongnyangerang.meongnyangerang.dto.CustomWishlistResponse;
 import com.meongnyangerang.meongnyangerang.dto.WishlistResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;

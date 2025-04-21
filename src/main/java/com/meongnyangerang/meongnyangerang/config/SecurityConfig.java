@@ -3,13 +3,16 @@ package com.meongnyangerang.meongnyangerang.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meongnyangerang.meongnyangerang.jwt.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,6 +32,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
+  @Value("${CORS_ALLOWED_ORIGINS}")
+  private String allowedOrigins;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
   @Bean
@@ -40,6 +45,7 @@ public class SecurityConfig {
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             // 인증 없이 접근 허용할 엔드포인트
             .requestMatchers(
                 "/api/v1/email/**",
@@ -51,10 +57,12 @@ public class SecurityConfig {
                 "/api/v1/admin/login",
                 "/api/v1/recommendations/default/**",
                 "/ws/**",
+                "/ws/info",
                 "/api/v1/accommodations/{accommodationId}/reviews",
                 "/api/v1/search/accommodations",
                 "/api/v1/accommodations/{accommodationId}",
-                "/api/v1/rooms/{roomId}"
+                "/api/v1/rooms/{roomId}",
+                "/health"
             ).permitAll()
             .requestMatchers("/api/v1/users/**").hasAuthority("ROLE_USER")
             .requestMatchers("/api/v1/chats/users/create").hasAuthority("ROLE_USER")
@@ -98,7 +106,7 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOriginPatterns(List.of("http://localhost:5173"));
+    config.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     config.setAllowedHeaders(List.of("*"));
     config.setAllowCredentials(true);
