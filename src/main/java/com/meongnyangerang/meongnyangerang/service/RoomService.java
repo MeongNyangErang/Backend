@@ -17,6 +17,8 @@ import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.HashtagRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
@@ -42,6 +44,8 @@ public class RoomService {
   private final RoomFacilityRepository roomFacilityRepository;
   private final RoomPetFacilityRepository roomPetFacilityRepository;
   private final HashtagRepository hashtagRepository;
+  private final ReservationRepository reservationRepository;
+  private final ReservationSlotRepository reservationSlotRepository;
   private final ImageService imageService;
   private final AccommodationRoomSearchService searchService;
 
@@ -136,6 +140,9 @@ public class RoomService {
   public void deleteRoom(Long hostId, Long roomId) {
     Room room = getAuthorizedRoom(hostId, roomId);
 
+    validateExistsReservation(roomId);
+    reservationSlotRepository.deleteAllByRoomId(roomId);
+
     hashtagRepository.deleteAllByRoomId(roomId);
     roomPetFacilityRepository.deleteAllByRoomId(roomId);
     roomFacilityRepository.deleteAllByRoomId(roomId);
@@ -228,6 +235,12 @@ public class RoomService {
   private void validateRoomAuthorization(Accommodation accommodation, Room room) {
     if (!accommodation.getId().equals(room.getAccommodation().getId())) {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+    }
+  }
+
+  private void validateExistsReservation(Long roomId) {
+    if (reservationRepository.existsByRoom_Id(roomId)) {
+      throw new MeongnyangerangException(ErrorCode.EXISTS_RESERVATION);
     }
   }
 }
