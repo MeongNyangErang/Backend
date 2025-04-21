@@ -263,6 +263,7 @@ public class ReservationService {
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     return HostReservationResponse.builder()
+        .reservationId(reservation.getId())
         .reservationDate(reservation.getCreatedAt().format(dateFormatter))
         .reserverName(reservation.getReserverName())
         .reserverPhoneNumber(reservation.getReserverPhoneNumber())
