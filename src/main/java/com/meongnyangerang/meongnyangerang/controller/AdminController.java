@@ -5,6 +5,7 @@ import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostListResponse;
+import com.meongnyangerang.meongnyangerang.dto.ReviewReportResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.service.AdminService;
 import com.meongnyangerang.meongnyangerang.service.ReviewReportService;
@@ -70,8 +71,8 @@ public class AdminController {
     return ResponseEntity.ok().build();
   }
 
-  @GetMapping("reports/review")
-  public ResponseEntity<PageResponse<ReviewReport>> getReviews(
+  @GetMapping("/reports/review")
+  public ResponseEntity<PageResponse<ReviewReportResponse>> getReviews(
       @PageableDefault(size = 20, sort = "createdAt", direction = Direction.DESC) Pageable pageable
   ) {
     return ResponseEntity.ok(reviewReportService.getReviews(pageable));

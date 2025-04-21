@@ -7,10 +7,12 @@ import static org.mockito.Mockito.when;
 import com.meongnyangerang.meongnyangerang.domain.review.ReportStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.ReporterType;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewReport;
+import com.meongnyangerang.meongnyangerang.dto.ReviewReportResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.repository.ReviewReportRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,7 +44,8 @@ class ReviewReportServiceTest {
   }
 
   @Test
-  public void testGetReviews() {
+  @DisplayName("관리자 - 리뷰 목록 조회 성공")
+  public void getReviewsSuccess() {
     ReviewReport report1 = ReviewReport.builder()
         .id(1L)
         .reporterId(10L)
@@ -65,7 +68,7 @@ class ReviewReportServiceTest {
     when(reviewReportRepository.findAll(pageable)).thenReturn(page);
 
     // Then: 서비스 메서드 호출 후 결과 검증
-    PageResponse<ReviewReport> response = reviewReportService.getReviews(pageable);
+    PageResponse<ReviewReportResponse> response = reviewReportService.getReviews(pageable);
 
     // 페이지 내용 검증
     assertEquals(2, response.content().size());
