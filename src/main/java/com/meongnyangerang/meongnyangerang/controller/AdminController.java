@@ -73,7 +73,7 @@ public class AdminController {
 
   @GetMapping("/reports/review")
   public ResponseEntity<PageResponse<ReviewReportResponse>> getReviews(
-      @PageableDefault(size = 20, sort = "createdAt", direction = Direction.DESC) Pageable pageable
+      @PageableDefault(size = 20, sort = "createdAt", direction = Direction.ASC) Pageable pageable
   ) {
     return ResponseEntity.ok(reviewReportService.getReviews(pageable));
   }
