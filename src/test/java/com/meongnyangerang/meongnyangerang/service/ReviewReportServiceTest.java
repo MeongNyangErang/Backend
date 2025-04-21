@@ -59,13 +59,13 @@ class ReviewReportServiceTest {
         .reporterId(20L)
         .type(ReporterType.HOST)
         .reason("광고")
-        .status(ReportStatus.COMPLETED)
+        .status(ReportStatus.PENDING)
         .build();
 
     List<ReviewReport> reviewReports = List.of(report1, report2);
     Page<ReviewReport> page = new PageImpl<>(reviewReports, pageable, reviewReports.size());
 
-    when(reviewReportRepository.findAll(pageable)).thenReturn(page);
+    when(reviewReportRepository.findAllByStatus(pageable, ReportStatus.PENDING)).thenReturn(page);
 
     // Then: 서비스 메서드 호출 후 결과 검증
     PageResponse<ReviewReportResponse> response = reviewReportService.getReviews(pageable);
