@@ -27,6 +27,8 @@ import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
+import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.HashtagRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
@@ -74,6 +76,12 @@ class RoomServiceTest {
 
   @Mock
   private AccommodationRepository accommodationRepository;
+
+  @Mock
+  private ReservationRepository reservationRepository;
+
+  @Mock
+  private ReservationSlotRepository reservationSlotRepository;
 
   @Mock
   private ImageService imageService;
@@ -661,6 +669,7 @@ class RoomServiceTest {
 
     when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(accommodation));
     when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationRepository.existsByRoom_Id(roomId)).thenReturn(false);
 
     // when
     roomService.deleteRoom(host.getId(), roomId);
@@ -668,6 +677,8 @@ class RoomServiceTest {
     // then
     verify(accommodationRepository, times(1)).findByHostId(hostId);
     verify(roomRepository, times(1)).findById(roomId);
+    verify(reservationRepository, times(1)).existsByRoom_Id(roomId);
+    verify(reservationSlotRepository, times(1)).deleteAllByRoomId(roomId);
     verify(hashtagRepository, times(1)).deleteAllByRoomId(roomId);
     verify(petFacilityRepository, times(1)).deleteAllByRoomId(roomId);
     verify(facilityRepository, times(1)).deleteAllByRoomId(roomId);
@@ -691,6 +702,8 @@ class RoomServiceTest {
 
     verify(accommodationRepository, times(1)).findByHostId(hostId);
     verify(roomRepository, never()).findById(roomId);
+    verify(reservationRepository, never()).existsByRoom_Id(roomId);
+    verify(reservationSlotRepository, never()).deleteAllByRoomId(roomId);
     verify(hashtagRepository, never()).deleteAllByRoomId(roomId);
     verify(petFacilityRepository, never()).deleteAllByRoomId(roomId);
     verify(facilityRepository, never()).deleteAllByRoomId(roomId);
@@ -715,6 +728,8 @@ class RoomServiceTest {
 
     verify(accommodationRepository, times(1)).findByHostId(hostId);
     verify(roomRepository, times(1)).findById(roomId);
+    verify(reservationRepository, never()).existsByRoom_Id(roomId);
+    verify(reservationSlotRepository, never()).deleteAllByRoomId(roomId);
     verify(hashtagRepository, never()).deleteAllByRoomId(roomId);
     verify(petFacilityRepository, never()).deleteAllByRoomId(roomId);
     verify(facilityRepository, never()).deleteAllByRoomId(roomId);
@@ -741,6 +756,35 @@ class RoomServiceTest {
 
     verify(accommodationRepository, times(1)).findByHostId(hostId);
     verify(roomRepository, times(1)).findById(roomId);
+    verify(reservationRepository, never()).existsByRoom_Id(roomId);
+    verify(reservationSlotRepository, never()).deleteAllByRoomId(roomId);
+    verify(hashtagRepository, never()).deleteAllByRoomId(roomId);
+    verify(petFacilityRepository, never()).deleteAllByRoomId(roomId);
+    verify(facilityRepository, never()).deleteAllByRoomId(roomId);
+    verify(roomRepository, never()).delete(room);
+  }
+
+  @Test
+  @DisplayName("객실 삭제 실패 - 예약 존재")
+  void deleteRoom_ExistsReservation_ThrowsException() {
+    // given
+    Long hostId = host.getId();
+    Long roomId = room.getId();
+
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(accommodation));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationRepository.existsByRoom_Id(roomId)).thenReturn(true);
+
+    // when
+    // then
+    assertThatThrownBy(() -> roomService.deleteRoom(hostId, roomId))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.EXISTS_RESERVATION);
+
+    verify(accommodationRepository, times(1)).findByHostId(hostId);
+    verify(roomRepository, times(1)).findById(roomId);
+    verify(reservationRepository, times(1)).existsByRoom_Id(roomId);
+    verify(reservationSlotRepository, never()).deleteAllByRoomId(roomId);
     verify(hashtagRepository, never()).deleteAllByRoomId(roomId);
     verify(petFacilityRepository, never()).deleteAllByRoomId(roomId);
     verify(facilityRepository, never()).deleteAllByRoomId(roomId);
