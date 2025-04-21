@@ -76,9 +76,7 @@ public class ReviewService {
         review.getPetFriendlyRating());
 
     // elasticsearch 색인 업데이트
-    Accommodation accommodation = savedReview.getAccommodation();
-    accommodationRoomSearchService.updateAllRooms(accommodation,
-        roomRepository.findAllByAccommodationId(accommodation.getId()));
+    updateElasticsearchDocument(savedReview.getAccommodation());
 
     notificationService.sendReviewNotification(savedReview); // 알림 발송
   }
@@ -124,8 +122,7 @@ public class ReviewService {
         petFriendlyRating);
 
     // elasticsearch 색인 업데이트
-    accommodationRoomSearchService.updateAllRooms(accommodation,
-        roomRepository.findAllByAccommodationId(accommodation.getId()));
+    updateElasticsearchDocument(accommodation);
   }
 
   @Transactional
@@ -153,9 +150,7 @@ public class ReviewService {
         request.getPetFriendlyRating());
 
     // elasticsearch 색인 업데이트
-    Accommodation accommodation = review.getAccommodation();
-    accommodationRoomSearchService.updateAllRooms(accommodation,
-        roomRepository.findAllByAccommodationId(accommodation.getId()));
+    updateElasticsearchDocument(review.getAccommodation());
   }
 
   /**
@@ -389,5 +384,12 @@ public class ReviewService {
 
   private double calculateReviewRating(double userRating, double petFriendlyRating) {
     return Math.round(((userRating + petFriendlyRating) / 2) * 10) / 10.0;
+  }
+
+  private void updateElasticsearchDocument(Accommodation accommodation) {
+    accommodationRoomSearchService.updateAllRooms(accommodation,
+        roomRepository.findAllByAccommodationId(accommodation.getId()));
+    accommodationRoomSearchService.updateAccommodationTotalRating(accommodation,
+        accommodation.getTotalRating());
   }
 }
