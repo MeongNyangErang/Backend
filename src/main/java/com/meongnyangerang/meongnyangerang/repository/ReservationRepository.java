@@ -38,4 +38,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
   List<Reservation> findByCheckInDateAndStatus(
       LocalDate date, ReservationStatus reservationStatus);
+
+  boolean existsByRoom_Id(Long roomId);
 }
