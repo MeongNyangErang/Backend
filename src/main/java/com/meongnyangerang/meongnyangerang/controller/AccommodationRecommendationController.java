@@ -64,9 +64,10 @@ public class AccommodationRecommendationController {
 
   // 많은 사람들이 관심을 가진 숙소 추천
   @GetMapping("/most-viewed")
-  public ResponseEntity<List<RecommendationResponse>> getPopularRecommendations() {
+  public ResponseEntity<List<RecommendationResponse>> getPopularRecommendations(
+      @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-    return ResponseEntity.ok(recommendationService.getMostViewedRecommendations());
+    return ResponseEntity.ok(recommendationService.getMostViewedRecommendations(userDetails.getId()));
   }
 
 }
