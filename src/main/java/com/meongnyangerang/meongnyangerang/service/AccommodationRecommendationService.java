@@ -167,8 +167,9 @@ public class AccommodationRecommendationService {
   }
 
   // 많은 사람들이 관심을 가진 숙소 추천
-  public List<RecommendationResponse> getMostViewedRecommendations() {
+  public List<RecommendationResponse> getMostViewedRecommendations(Long userId) {
     List<Accommodation> accommodations = accommodationRepository.findTop10ByOrderByViewCountDescTotalRatingDesc();
+    Set<Long> wishlistedIds = new HashSet<>(wishlistRepository.findAccommodationIdsByUserId(userId));
 
     return accommodations.stream()
         .map(accommodation -> {
@@ -181,6 +182,7 @@ public class AccommodationRecommendationService {
               .price(room.getPrice())
               .totalRating(accommodation.getTotalRating())
               .thumbnailUrl(accommodation.getThumbnailUrl())
+              .isWishlisted(wishlistedIds.contains(accommodation.getId()))
               .build();
         })
         .toList();
