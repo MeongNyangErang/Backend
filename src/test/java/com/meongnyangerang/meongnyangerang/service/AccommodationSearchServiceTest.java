@@ -1,6 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.SEARCH_FAILED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,9 +16,9 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationTyp
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
+import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -40,6 +40,9 @@ class AccommodationSearchServiceTest {
   @Mock
   private ReservationSlotRepository reservationSlotRepository;
 
+  @Mock
+  private WishlistRepository wishlistRepository;
+
   @InjectMocks
   private AccommodationSearchService searchService;
 
@@ -47,6 +50,7 @@ class AccommodationSearchServiceTest {
   @DisplayName("숙소 목록 조회(필터) - 성공")
   void searchAccommodation_Success_MultipleHits() throws Exception {
     // given
+    Long userId = 1L;
     AccommodationSearchRequest request = new AccommodationSearchRequest(
         "서울",
         LocalDate.of(2025, 4, 18),
@@ -125,17 +129,22 @@ class AccommodationSearchServiceTest {
         request.getCheckInDate(), request.getCheckOutDate().minusDays(1)))
         .willReturn(List.of());
 
+    given(wishlistRepository.findAccommodationIdsByUserId(userId))
+        .willReturn(List.of(1L));
+
     given(elasticsearchClient.search(any(Function.class), eq(AccommodationRoomDocument.class)))
         .willReturn(mockResponse);
 
     // when
     PageResponse<AccommodationSearchResponse> response =
-        searchService.searchAccommodation(request, PageRequest.of(0, 20));
+        searchService.searchAccommodation(userId, request, PageRequest.of(0, 20));
 
     // then
     assertThat(response.content()).hasSize(2);
     assertThat(response.content()).extracting("accommodationId")
         .containsExactlyInAnyOrder(1L, 2L);
+    assertThat(response.content()).extracting("isWishlisted")
+        .containsExactlyInAnyOrder(true, false);
   }
 
   @Test
@@ -165,7 +174,7 @@ class AccommodationSearchServiceTest {
         .willThrow(new IOException("Elasticsearch 연결 실패"));
 
     // when & then
-    assertThatThrownBy(() -> searchService.searchAccommodation(request, PageRequest.of(0, 20)))
+    assertThatThrownBy(() -> searchService.searchAccommodation(1L, request, PageRequest.of(0, 20)))
         .isInstanceOf(MeongnyangerangException.class)
         .extracting("errorCode")
         .isEqualTo(SEARCH_FAILED);
