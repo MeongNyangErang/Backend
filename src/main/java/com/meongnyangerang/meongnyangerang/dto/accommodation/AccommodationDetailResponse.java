@@ -40,7 +40,8 @@ public class AccommodationDetailResponse {
       List<AccommodationPetFacility> petFacilities,
       List<AllowPet> allowPets,
       List<Review> reviews,
-      List<Room> rooms
+      List<Room> rooms,
+      boolean isWishlisted
   ) {
     return AccommodationDetailResponse.builder()
         .accommodationId(accommodation.getId())
@@ -48,6 +49,7 @@ public class AccommodationDetailResponse {
         .description(accommodation.getDescription())
         .address(accommodation.getAddress())
         .detailedAddress(accommodation.getDetailedAddress())
+        .isWishlisted(isWishlisted)
         .type(accommodation.getType().getValue())
         .thumbnailUrl(accommodation.getThumbnailUrl())
         .accommodationImageUrls(images.stream().map(AccommodationImage::getImageUrl).toList())
