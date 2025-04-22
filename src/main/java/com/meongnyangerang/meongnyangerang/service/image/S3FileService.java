@@ -21,6 +21,8 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -40,7 +42,6 @@ public class S3FileService implements ImageStorage {
 
   /**
    * 단일 파일 업로드
-   *
    * @return 업로드된 파일의 URL
    */
   @Override
@@ -131,6 +132,33 @@ public class S3FileService implements ImageStorage {
       log.error("다중 파일 삭제 중 에러 발생: {}", e.getMessage());
       throw new MeongnyangerangException(ErrorCode.AMAZON_SERVICE_ERROR);
     }
+  }
+
+  /**
+   * S3에 저장된 모든 이미지 URL 가져오기
+   */
+  public List<String> getAllImageUrls() {
+    // S3 버킷에 있는 객체 목록을 가져오기 위한 요청 객체 생성
+    ListObjectsV2Request request = ListObjectsV2Request.builder()
+        .bucket(bucket)
+        .build();
+
+    ListObjectsV2Response response = s3Client.listObjectsV2(request); // 객체 목록 결과
+
+    if (response.keyCount() < 1){
+      throw new MeongnyangerangException(ErrorCode.NOT_FOUND_IMAGE);
+    }
+
+    return response.contents().stream()
+        .filter(obj -> isImage(obj.key()))
+        .map(obj -> generateFileUrl(obj.key()))
+        .toList();
+  }
+
+  private boolean isImage(String key) {
+    return key.endsWith(".jpg") ||
+        key.endsWith(".jpeg") ||
+        key.endsWith(".png");
   }
 
   /**
