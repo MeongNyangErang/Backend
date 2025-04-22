@@ -1139,6 +1139,7 @@ public class DummyDataCreateService {
     // ES에 색인할 모든 문서를 모으는 부분
     List<BulkOperation> operations = new ArrayList<>();
 
+    // 1. 모든 객실 정보를 모은 후 accommodations 인덱스 문서 생성
     for (Accommodation accommodation : accommodations) {
       Long accommodationId = accommodation.getId();
       List<Room> accRooms = roomsByAccommodationId.getOrDefault(
@@ -1148,30 +1149,38 @@ public class DummyDataCreateService {
         continue;
       }
 
-      // 첫 번째 객실 기준으로 숙소 문서 생성
-      Room firstRoom = accRooms.get(0);
+      // 모든 객실 중 최저가 찾기
+      long minPrice = accRooms.stream()
+          .mapToLong(Room::getPrice)
+          .min()
+          .orElse(0);
 
-      // 1. accommodation 인덱스에 저장할 문서 생성
+      // 모든 객실의 반려동물 편의시설 수집
+      Set<String> allRoomPetFacilities = accRooms.stream()
+          .flatMap(room -> roomPetFacilitiesByRoomId
+              .getOrDefault(room.getId(), Collections.emptyList())
+              .stream())
+          .map(facility -> facility.getType().name())
+          .collect(Collectors.toSet());
+
+      // 숙소 관련 정보 수집
       Set<String> allowedPetTypes = getAllowedPetTypesFromMap(allowPetsByAccId, accommodationId);
       Set<String> accommodationPetFacilities = getAccommodationPetFacilitiesFromMap(
           accPetFacilitiesByAccId, accommodationId);
-      Set<String> firstRoomPetFacilities = getRoomPetFacilitiesFromMap(roomPetFacilitiesByRoomId,
-          firstRoom.getId());
 
-      // searchService의 toDocument 메서드를 직접 호출하기 어려울 수 있어서
-      // 새로운 문서 객체를 생성합니다
+      // AccommodationDocument 생성 시 추가 필드 포함
       AccommodationDocument accommodationDoc = AccommodationDocument.builder()
           .id(accommodation.getId())
           .name(accommodation.getName())
           .thumbnailUrl(accommodation.getThumbnailUrl())
-          .price(firstRoom.getPrice())
+          .price(minPrice) // 최저가 사용
           .totalRating(accommodation.getTotalRating())
           .accommodationPetFacilities(accommodationPetFacilities)
           .allowedPetTypes(allowedPetTypes)
-          .roomPetFacilities(firstRoomPetFacilities)
+          .roomPetFacilities(allRoomPetFacilities) // 모든 객실의 반려동물 편의시설
           .build();
 
-      // accommodation 인덱스에 추가할 문서 작업 추가
+      // accommodations 인덱스에 추가
       operations.add(new BulkOperation.Builder()
           .index(idx -> idx
               .index("accommodations")
@@ -1179,7 +1188,7 @@ public class DummyDataCreateService {
               .document(accommodationDoc)
           ).build());
 
-      // 2. 각 객실별 accommodation_rooms 인덱스 문서 생성
+      // 2. 각 객실별 accommodation_room 인덱스 문서 생성
       for (Room room : accRooms) {
         Long roomId = room.getId();
 
@@ -1205,14 +1214,14 @@ public class DummyDataCreateService {
         // accommodation_rooms 인덱스에 추가할 문서 작업 추가
         operations.add(new BulkOperation.Builder()
             .index(idx -> idx
-                .index("accommodation_rooms")
+                .index("accommodation_room")
                 .id(accommodationId + "_" + roomId)
                 .document(accRoomDoc)
             ).build());
       }
     }
 
-    // 벌크 요청 실행
+    // 3. 벌크 요청 실행
     try {
       if (!operations.isEmpty()) {
         BulkRequest bulkRequest = new BulkRequest.Builder()
