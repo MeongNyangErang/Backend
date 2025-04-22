@@ -337,7 +337,8 @@ class RoomServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
 
-    verify(accommodationRepository).findByHostId(host.getId());
+    verify(accommodationRepository, times(1)).findByHostId(host.getId());
+    verify(roomRepository, never()).countByAccommodationId(accommodation.getId());
   }
 
   @Test
@@ -353,8 +354,8 @@ class RoomServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ROOM_COUNT_LIMIT_EXCEEDED);
 
-    verify(accommodationRepository).findByHostId(host.getId());
-    verify(roomRepository).countByAccommodationId(accommodation.getId());
+    verify(accommodationRepository, times(1)).findByHostId(host.getId());
+    verify(roomRepository, times(1)).countByAccommodationId(accommodation.getId());
   }
 
   @Test
