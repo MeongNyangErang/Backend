@@ -20,6 +20,7 @@ public class AccommodationDetailResponse {
   private String description;
   private String address;
   private String detailedAddress;
+  private boolean isWishlisted;
   private String type;
   private String thumbnailUrl;
   private List<String> accommodationImageUrls;
