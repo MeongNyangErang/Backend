@@ -9,6 +9,7 @@ import lombok.Getter;
 @AllArgsConstructor
 @Builder
 public class UserProfileResponse {
+
   private String nickname;
   private String profileImageUrl;
 

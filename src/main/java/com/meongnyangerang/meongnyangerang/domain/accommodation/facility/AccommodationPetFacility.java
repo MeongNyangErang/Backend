@@ -37,7 +37,7 @@ public class AccommodationPetFacility {
   private Accommodation accommodation;
 
   @Enumerated(EnumType.STRING)
-  @Column( nullable = false)
+  @Column(nullable = false)
   private AccommodationPetFacilityType type;
 
   @CreatedDate

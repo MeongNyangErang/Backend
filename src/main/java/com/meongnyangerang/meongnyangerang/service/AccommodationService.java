@@ -23,6 +23,7 @@ import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
+import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
@@ -52,6 +53,7 @@ public class AccommodationService {
   private final RoomRepository roomRepository;
   private final AccommodationRoomSearchService searchService;
   private final ReviewRepository reviewRepository;
+  private final WishlistRepository wishlistRepository;
 
   private static final int MAX_ADDITIONAL_IMAGE_COUNT = 3;
 
@@ -140,7 +142,7 @@ public class AccommodationService {
    * 숙소 상세 조회(비로그인 사용자, 일반 사용자, 호스트 모두 접근 가능한 API)
    */
   @Transactional
-  public AccommodationDetailResponse getAccommodationDetail(Long accommodationId) {
+  public AccommodationDetailResponse getAccommodationDetail(Long accommodationId, Long userId) {
     Accommodation accommodation = accommodationRepository.findById(accommodationId)
         .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
 
@@ -166,10 +168,16 @@ public class AccommodationService {
     List<Review> reviews = reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(
         accommodationId);
 
+    // 찜 여부 확인(UserId 확인)
+    boolean isWishlisted = false;
+    if (userId != null) {
+      isWishlisted = wishlistRepository.existsByUserIdAndAccommodationId(userId, accommodationId);
+    }
+
     accommodationRepository.incrementViewCount(accommodationId);
 
     return AccommodationDetailResponse.of(accommodation, images, facilities, petFacilities,
-        allowPets, reviews, rooms);
+        allowPets, reviews, rooms, isWishlisted);
   }
 
   private void saveAccommodationWithRelatedEntities(

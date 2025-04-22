@@ -1,9 +1,9 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
-import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomUpdateRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.RoomService;
@@ -86,7 +86,7 @@ public class RoomController {
   public ResponseEntity<Void> deleteRoom(
       @AuthenticationPrincipal UserDetailsImpl userDetail,
       @PathVariable Long roomId
-  ){
+  ) {
     roomService.deleteRoom(userDetail.getId(), roomId);
     return ResponseEntity.ok().build();
   }

@@ -21,16 +21,18 @@ import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
+import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import java.io.IOException;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +47,7 @@ public class AccommodationRecommendationService {
   private final UserPetRepository userPetRepository;
   private final AccommodationRepository accommodationRepository;
   private final RoomRepository roomRepository;
+  private final WishlistRepository wishlistRepository;
 
   private static final String INDEX_NAME = "accommodations";
   private static final int SIZE = 6;
@@ -106,14 +109,15 @@ public class AccommodationRecommendationService {
   // 사용자가 등록한 반려동물 기반 추천
   public List<PetRecommendationGroup> getUserPetRecommendations(Long userId) {
     List<UserPet> userPets = userPetRepository.findAllByUserId(userId);
-    List<PetRecommendationGroup> result = new ArrayList<>();
+    Set<Long> wishlistedIds = new HashSet<>(
+        wishlistRepository.findAccommodationIdsByUserId(userId));
 
-    for (UserPet pet : userPets) {
-      List<RecommendationResponse> recommendations = searchByUserPet(pet);
-      result.add(new PetRecommendationGroup(pet.getId(), pet.getName(), recommendations));
-    }
-
-    return result;
+    return userPets.stream()
+        .map(pet -> new PetRecommendationGroup(
+            pet.getId(),
+            pet.getName(),
+            searchByUserPet(pet, wishlistedIds)))
+        .toList();
   }
 
   // 사용자가 등록한 반려동물 기반 추천 더보기
@@ -126,6 +130,8 @@ public class AccommodationRecommendationService {
 
     Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
     Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
+    Set<Long> wishlistedIds = new HashSet<>(
+        wishlistRepository.findAccommodationIdsByUserId(userId));
 
     // 해당 반려동물 유형 필터링 쿼리
     Query query = buildPetTypeQuery(pet.getType().name());
@@ -139,7 +145,7 @@ public class AccommodationRecommendationService {
 
       // 점수 계산 및 정렬
       List<RecommendationResponse> content = calculateScoreAndSort(response, accScoreMap,
-          roomScoreMap);
+          roomScoreMap, wishlistedIds);
 
       long totalElements = response.hits().total().value();
       int totalPages = (int) Math.ceil((double) totalElements / pageable.getPageSize());
@@ -162,8 +168,10 @@ public class AccommodationRecommendationService {
   }
 
   // 많은 사람들이 관심을 가진 숙소 추천
-  public List<RecommendationResponse> getMostViewedRecommendations() {
+  public List<RecommendationResponse> getMostViewedRecommendations(Long userId) {
     List<Accommodation> accommodations = accommodationRepository.findTop10ByOrderByViewCountDescTotalRatingDesc();
+    Set<Long> wishlistedIds = new HashSet<>(
+        wishlistRepository.findAccommodationIdsByUserId(userId));
 
     return accommodations.stream()
         .map(accommodation -> {
@@ -176,6 +184,7 @@ public class AccommodationRecommendationService {
               .price(room.getPrice())
               .totalRating(accommodation.getTotalRating())
               .thumbnailUrl(accommodation.getThumbnailUrl())
+              .isWishlisted(wishlistedIds.contains(accommodation.getId()))
               .build();
         })
         .toList();
@@ -204,7 +213,7 @@ public class AccommodationRecommendationService {
   }
 
   // 사용자 반려동물 정보를 바탕으로 맞춤 추천 수행
-  private List<RecommendationResponse> searchByUserPet(UserPet pet) {
+  private List<RecommendationResponse> searchByUserPet(UserPet pet, Set<Long> wishlistedIds) {
     // 반려동물 성향에 따른 시설 점수 맵 생성
     Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
     Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
@@ -221,7 +230,7 @@ public class AccommodationRecommendationService {
           elasticsearchClient.search(request, AccommodationDocument.class);
 
       // 각 문서에 대해 점수 계산 후 정렬하여 RecommendationResponse로 변환
-      return calculateScoreAndSort(response, accScoreMap, roomScoreMap);
+      return calculateScoreAndSort(response, accScoreMap, roomScoreMap, wishlistedIds);
     } catch (IOException e) {
       throw new MeongnyangerangException(ErrorCode.USER_RECOMMENDATION_FAILED);
     }
@@ -311,7 +320,8 @@ public class AccommodationRecommendationService {
   private List<RecommendationResponse> calculateScoreAndSort(
       SearchResponse<AccommodationDocument> response,
       Map<AccommodationPetFacilityType, Integer> accScoreMap,
-      Map<RoomPetFacilityType, Integer> roomScoreMap) {
+      Map<RoomPetFacilityType, Integer> roomScoreMap,
+      Set<Long> wishlistedIds) {
 
     return response.hits().hits().stream()
         .map(Hit::source)
@@ -319,7 +329,7 @@ public class AccommodationRecommendationService {
         .map(doc -> new AbstractMap.SimpleEntry<>(calculateScore(doc, accScoreMap, roomScoreMap),
             doc))
         .sorted((a, b) -> Integer.compare(b.getKey(), a.getKey()))
-        .map(entry -> mapToResponse(entry.getValue()))
+        .map(entry -> mapToResponse(entry.getValue(), wishlistedIds))
         .toList();
   }
 
@@ -331,6 +341,18 @@ public class AccommodationRecommendationService {
         .price(doc.getPrice())
         .totalRating(doc.getTotalRating())
         .thumbnailUrl(doc.getThumbnailUrl())
+        .build();
+  }
+
+  // 기존 메서드 오버로딩: 찜 여부 포함
+  private RecommendationResponse mapToResponse(AccommodationDocument doc, Set<Long> wishlistedIds) {
+    return RecommendationResponse.builder()
+        .id(doc.getId())
+        .name(doc.getName())
+        .price(doc.getPrice())
+        .totalRating(doc.getTotalRating())
+        .thumbnailUrl(doc.getThumbnailUrl())
+        .isWishlisted(wishlistedIds.contains(doc.getId()))
         .build();
   }
 

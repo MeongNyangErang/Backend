@@ -10,5 +10,6 @@ public class HealthCheckController {
 
   @GetMapping("/health")
   @ResponseStatus(HttpStatus.OK)
-  public void healthCheck() { }
+  public void healthCheck() {
+  }
 }

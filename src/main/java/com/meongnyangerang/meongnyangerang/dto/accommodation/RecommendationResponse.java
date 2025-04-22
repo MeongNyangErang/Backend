@@ -21,4 +21,6 @@ public class RecommendationResponse {
 
   private String thumbnailUrl;
 
+  private boolean isWishlisted;
+
 }

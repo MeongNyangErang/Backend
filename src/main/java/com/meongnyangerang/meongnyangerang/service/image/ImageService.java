@@ -49,7 +49,7 @@ public class ImageService {
    */
   @Async
   public void deleteImagesAsync(List<String> imageUrls) {
-    try{
+    try {
       List<String> validUrls = validateImageUrls(imageUrls);
       imageStorage.deleteFiles(validUrls);
       log.info("다중 이미지 비동기 삭제 완료: {}", imageUrls);
