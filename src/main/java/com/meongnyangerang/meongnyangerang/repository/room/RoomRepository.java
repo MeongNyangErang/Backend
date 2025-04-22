@@ -18,4 +18,6 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
   List<Room> findAllByAccommodationIdOrderByPriceAsc(Long accommodationId);
 
   Room findFirstByAccommodationOrderByPriceAsc(Accommodation accommodation);
+
+  long countByAccommodationId(Long accommodationId);
 }
