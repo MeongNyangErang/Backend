@@ -73,7 +73,7 @@ public class DummyDataDeleteService {
 
   private void clearAllElasticsearchIndices() {
     try {
-      List<String> indicesToClear = Arrays.asList("accommodations", "accommodation_rooms");
+      List<String> indicesToClear = Arrays.asList("accommodations", "accommodation_room");
 
       for (String index : indicesToClear) {
         try {
