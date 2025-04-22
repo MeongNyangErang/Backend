@@ -130,6 +130,7 @@ public class AccommodationRecommendationService {
 
     Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
     Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
+    Set<Long> wishlistedIds = new HashSet<>(wishlistRepository.findAccommodationIdsByUserId(userId));
 
     // 해당 반려동물 유형 필터링 쿼리
     Query query = buildPetTypeQuery(pet.getType().name());
@@ -143,7 +144,7 @@ public class AccommodationRecommendationService {
 
       // 점수 계산 및 정렬
       List<RecommendationResponse> content = calculateScoreAndSort(response, accScoreMap,
-          roomScoreMap);
+          roomScoreMap, wishlistedIds);
 
       long totalElements = response.hits().total().value();
       int totalPages = (int) Math.ceil((double) totalElements / pageable.getPageSize());
@@ -315,7 +316,8 @@ public class AccommodationRecommendationService {
   private List<RecommendationResponse> calculateScoreAndSort(
       SearchResponse<AccommodationDocument> response,
       Map<AccommodationPetFacilityType, Integer> accScoreMap,
-      Map<RoomPetFacilityType, Integer> roomScoreMap) {
+      Map<RoomPetFacilityType, Integer> roomScoreMap,
+      Set<Long> wishlistedIds) {
 
     return response.hits().hits().stream()
         .map(Hit::source)
@@ -323,7 +325,7 @@ public class AccommodationRecommendationService {
         .map(doc -> new AbstractMap.SimpleEntry<>(calculateScore(doc, accScoreMap, roomScoreMap),
             doc))
         .sorted((a, b) -> Integer.compare(b.getKey(), a.getKey()))
-        .map(entry -> mapToResponse(entry.getValue()))
+        .map(entry -> mapToResponse(entry.getValue(), wishlistedIds))
         .toList();
   }
 
