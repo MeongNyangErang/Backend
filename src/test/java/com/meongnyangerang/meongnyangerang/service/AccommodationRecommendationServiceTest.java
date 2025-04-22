@@ -24,6 +24,7 @@ import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.PetRecommendationGroup;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
+import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import java.io.IOException;
@@ -53,6 +54,9 @@ class AccommodationRecommendationServiceTest {
 
   @Mock
   private RoomRepository roomRepository;
+
+  @Mock
+  private WishlistRepository wishlistRepository;
 
   @InjectMocks
   private AccommodationRecommendationService recommendationService;
@@ -235,6 +239,9 @@ class AccommodationRecommendationServiceTest {
   @DisplayName("조회수가 가장 높은 숙소 10개를 추천 - 성공")
   void getMostViewedRecommendations_success() {
     // given
+    Long userId = 1L;
+    List<Long> wishlisted = List.of(1L, 3L, 5L); // 찜한 숙소 ID
+
     List<Accommodation> accommodations = new ArrayList<>();
     for (int i = 1; i <= 11; i++) {
       accommodations.add(Accommodation.builder()
@@ -265,8 +272,10 @@ class AccommodationRecommendationServiceTest {
           .thenReturn(room);
     }
 
+    when(wishlistRepository.findAccommodationIdsByUserId(userId)).thenReturn(wishlisted);
+
     // when
-    List<RecommendationResponse> result = recommendationService.getMostViewedRecommendations();
+    List<RecommendationResponse> result = recommendationService.getMostViewedRecommendations(userId);
 
     // then
     assertEquals(10, result.size());
@@ -280,8 +289,10 @@ class AccommodationRecommendationServiceTest {
       assertEquals(expected.getName(), res.getName());
       assertEquals(expected.getThumbnailUrl(), res.getThumbnailUrl());
       assertEquals(expected.getTotalRating(), res.getTotalRating());
+      assertEquals(wishlisted.contains(expected.getId()), res.isWishlisted());
 
       verify(accommodationRepository, times(1)).findTop10ByOrderByViewCountDescTotalRatingDesc();
+      verify(wishlistRepository, times(1)).findAccommodationIdsByUserId(userId);
       for (Accommodation a : top10) {
         verify(roomRepository).findFirstByAccommodationOrderByPriceAsc(a);
       }
