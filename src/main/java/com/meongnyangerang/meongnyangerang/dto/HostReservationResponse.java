@@ -7,6 +7,7 @@ import lombok.Getter;
 @Builder
 public class HostReservationResponse {
 
+  private Long reservationId;
   private String reservationDate;
   private String reserverName;
   private String reserverPhoneNumber;
