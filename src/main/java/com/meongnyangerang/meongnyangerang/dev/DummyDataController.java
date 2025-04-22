@@ -34,9 +34,7 @@ public class DummyDataController {
    */
   @DeleteMapping
   public ResponseEntity<Map<String, Object>> clearDummyData() {
-    // 더미 데이터 삭제
     Map<String, Object> result = dummyDataDeleteService.clearData();
-
     return ResponseEntity.ok(result);
   }
 
@@ -46,12 +44,13 @@ public class DummyDataController {
   @GetMapping
   public ResponseEntity<Map<String, Object>> getDummyDataStatus() {
     Map<String, Object> status = Map.of(
+        "users", dataCreateService.getUserCount(),
         "hosts", dataCreateService.getHostCount(),
         "accommodations", dataCreateService.getAccommodationCount(),
         "rooms", dataCreateService.getRoomCount(),
-        "users", dataCreateService.getUserCount(),
         "reservations", dataCreateService.getReservationCount(),
-        "reviews", dataCreateService.getReviewCount()
+        "reviews", dataCreateService.getReviewCount(),
+        "report", dataCreateService.getReportCount()
     );
     return ResponseEntity.ok(status);
   }

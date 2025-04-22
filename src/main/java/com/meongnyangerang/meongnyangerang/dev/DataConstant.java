@@ -8,15 +8,6 @@ import java.util.Map;
  */
 public class DataConstant {
 
-  // 이미지 URL 목록 - 실제 서비스에서는 S3에 있는 이미지 URL로 대체
-  public static final List<String> IMAGE_URLS = List.of(
-      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/72015682-b942-44da-825d-89d3b0004b99.png.",
-      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/ef298fbb-d4f6-4510-9861-0465fc4ac4b6.png",
-      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/199836da-d9fa-4053-a080-62600c350404.png",
-      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/199836da-d9fa-4053-a080-62600c350404.png",
-      "https://s3.ap-northeast-2.amazonaws.com/jjae-3.3-storage/image/f6706acc-97be-4be5-9f84-9331cc604ebd.png"
-  );
-
   // 지역 정보
   public static final List<String> AREAS = List.of(
       "서울", "부산", "제주", "인천", "대구", "광주", "대전", "울산", "경기", "강원");
@@ -236,7 +227,15 @@ public class DataConstant {
       "반려동물과 함께 묵기에 적합하지 않은 곳이에요."
   );
 
-  // 비밀번호 상수
+  public static final List<String> REPORT_REASON = List.of(
+      "욕설이 포함되어 있어요.",
+      "리뷰가 사실과 달라요.",
+      "부적절한 사진이 있어요.",
+      "광고/홍보 목적의 리뷰 같아요.",
+      "혼내주세요.",
+      "기타"
+  );
+
   public static final String USER_PASSWORD = "!User123";
   public static final String HOST_PASSWORD = "!Host123";
   public static final String LOCALE = "ko";

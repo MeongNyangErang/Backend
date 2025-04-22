@@ -32,6 +32,7 @@ public enum ErrorCode {
   DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "이미 사용 중인 전화번호입니다."),
   ALREADY_REGISTERED_NAME(HttpStatus.BAD_REQUEST, "이미 등록된 이름입니다."),
   ALREADY_REGISTERED_NICKNAME(HttpStatus.BAD_REQUEST, "기존 닉네임과 동일합니다."),
+  EXISTS_RESERVATION(HttpStatus.BAD_REQUEST, "예약이 존재하는 객실은 삭제할 수 없습니다."),
   REVIEW_REPORT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 신고된 리뷰입니다."),
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
@@ -67,6 +68,7 @@ public enum ErrorCode {
   NOT_EXIST_WISHLIST(HttpStatus.NOT_FOUND, "존재하지 않는 찜 목록입니다."),
   NOT_EXIST_NOTICE(HttpStatus.NOT_FOUND, "존재하지 않는 공지사항입니다."),
   NOT_EXIST_CHAT_ROOM(HttpStatus.NOT_FOUND, "채팅방이 존재하지 않습니다."),
+  NOT_FOUND_IMAGE(HttpStatus.NOT_FOUND, "버킷에서 가져올 이미지가 없습니다."),
 
 
   // 409 Conflict

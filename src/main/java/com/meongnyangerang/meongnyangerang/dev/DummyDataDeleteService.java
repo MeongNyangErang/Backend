@@ -1,63 +1,24 @@
 package com.meongnyangerang.meongnyangerang.dev;
 
-import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
-import com.meongnyangerang.meongnyangerang.repository.HostRepository;
-import com.meongnyangerang.meongnyangerang.repository.NotificationRepository;
-import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
-import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
-import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
-import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
-import com.meongnyangerang.meongnyangerang.repository.UserRepository;
-import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
-import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationFacilityRepository;
-import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationImageRepository;
-import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
-import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
-import com.meongnyangerang.meongnyangerang.repository.accommodation.AllowPetRepository;
-import com.meongnyangerang.meongnyangerang.repository.chat.ChatMessageRepository;
-import com.meongnyangerang.meongnyangerang.repository.chat.ChatReadStatusRepository;
-import com.meongnyangerang.meongnyangerang.repository.chat.ChatRoomRepository;
-import com.meongnyangerang.meongnyangerang.repository.room.HashtagRepository;
-import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepository;
-import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
-import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DummyDataDeleteService {
 
-  private final HostRepository hostRepository;
-  private final UserRepository userRepository;
-  private final AuthenticationCodeRepository authenticationCodeRepository;
-  private final WishlistRepository wishlistRepository;
-
-  private final AccommodationRepository accommodationRepository;
-  private final AccommodationImageRepository accommodationImageRepository;
-  private final AllowPetRepository allowPetRepository;
-  private final AccommodationFacilityRepository accommodationFacilityRepository;
-  private final AccommodationPetFacilityRepository accommodationPetFacilityRepository;
-
-  private final RoomRepository roomRepository;
-  private final HashtagRepository hashtagRepository;
-  private final RoomFacilityRepository roomFacilityRepository;
-  private final RoomPetFacilityRepository roomPetFacilityRepository;
-
-  private final ReservationRepository reservationRepository;
-  private final ReservationSlotRepository reservationSlotRepository;
-
-  private final ReviewRepository reviewRepository;
-  private final ReviewImageRepository reviewImageRepository;
-
-  private final ChatRoomRepository chatRoomRepository;
-  private final ChatMessageRepository chatMessageRepository;
-  private final ChatReadStatusRepository chatReadStatusRepository;
-
-  private final NotificationRepository notificationRepository;
+  private final JdbcTemplate jdbcTemplate;
+  private final ElasticsearchClient elasticsearchClient;
 
   /**
    * 관계 순서를 고려하여 역순으로 삭제 admin, notice는 삭제하지 않습니다. (필요하다면 추가)
@@ -67,37 +28,40 @@ public class DummyDataDeleteService {
     Map<String, Object> result = new HashMap<>();
 
     try {
-      notificationRepository.deleteAll();
+      jdbcTemplate.execute("DELETE FROM notification");
+      jdbcTemplate.execute("DELETE FROM chat_read_status");
+      jdbcTemplate.execute("DELETE FROM chat_message");
+      jdbcTemplate.execute("DELETE FROM chat_room");
 
-      chatReadStatusRepository.deleteAll();
-      chatMessageRepository.deleteAll();
-      chatRoomRepository.deleteAll();
+      jdbcTemplate.execute("DELETE FROM review_report");
+      jdbcTemplate.execute("DELETE FROM review_image");
+      jdbcTemplate.execute("DELETE FROM review");
 
-      // 신고 기능 추가 시, 리뷰 신고 제거도 필요
-      reviewImageRepository.deleteAll();
-      reviewRepository.deleteAll();
+      jdbcTemplate.execute("DELETE FROM reservation_slot");
+      jdbcTemplate.execute("DELETE FROM reservation");
 
-      reservationSlotRepository.deleteAll();
-      reservationRepository.deleteAll();
+      jdbcTemplate.execute("DELETE FROM room_pet_facility");
+      jdbcTemplate.execute("DELETE FROM room_facility");
+      jdbcTemplate.execute("DELETE FROM hashtag");
+      jdbcTemplate.execute("DELETE FROM room");
 
-      roomPetFacilityRepository.deleteAll();
-      roomFacilityRepository.deleteAll();
-      hashtagRepository.deleteAll();
-      roomRepository.deleteAll();
+      jdbcTemplate.execute("DELETE FROM accommodation_pet_facility");
+      jdbcTemplate.execute("DELETE FROM accommodation_facility");
+      jdbcTemplate.execute("DELETE FROM allow_pet");
+      jdbcTemplate.execute("DELETE FROM accommodation_image");
+      jdbcTemplate.execute("DELETE FROM accommodation");
 
-      accommodationPetFacilityRepository.deleteAll();
-      accommodationFacilityRepository.deleteAll();
-      allowPetRepository.deleteAll();
-      accommodationImageRepository.deleteAll();
-      accommodationRepository.deleteAll();
+      jdbcTemplate.execute("DELETE FROM wishlist");
+      jdbcTemplate.execute("DELETE FROM authentication_code");
+      jdbcTemplate.execute("DELETE FROM user");
+      jdbcTemplate.execute("DELETE FROM host");
 
-      wishlistRepository.deleteAll();
-      authenticationCodeRepository.deleteAll();
-      userRepository.deleteAll();
-      hostRepository.deleteAll();
+      clearAllElasticsearchIndices(); // ES 인덱스 삭제
 
       result.put("success", true);
       result.put("message", "모든 더미 데이터가 삭제되었습니다.");
+
+      log.info("모든 데이터 삭제 작업 완료");
     } catch (Exception e) {
       result.put("success", false);
       result.put("error", e.getMessage());
@@ -105,5 +69,26 @@ public class DummyDataDeleteService {
       throw new RuntimeException("더미 데이터 삭제 실패", e);
     }
     return result;
+  }
+
+  private void clearAllElasticsearchIndices() {
+    try {
+      List<String> indicesToClear = Arrays.asList("accommodations", "accommodation_room");
+
+      for (String index : indicesToClear) {
+        try {
+          // 각 인덱스 삭제
+          DeleteIndexRequest request = DeleteIndexRequest.of(r -> r.index(index));
+          elasticsearchClient.indices().delete(request);
+          log.info("인덱스 삭제 완료: {}", index);
+        } catch (Exception e) {
+          log.warn("인덱스 {} 삭제 중 오류 발생: {}", index, e.getMessage());
+        }
+      }
+      log.info("모든 인덱스 삭제 작업 완료");
+    } catch (Exception e) {
+      log.error("Elasticsearch 인덱스 삭제 중 오류 발생", e);
+      throw new RuntimeException("Elasticsearch 인덱스 삭제 실패", e);
+    }
   }
 }
