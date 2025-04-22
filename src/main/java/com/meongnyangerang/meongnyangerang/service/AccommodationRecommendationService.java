@@ -21,6 +21,7 @@ import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
+import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import java.io.IOException;
@@ -45,6 +46,7 @@ public class AccommodationRecommendationService {
   private final UserPetRepository userPetRepository;
   private final AccommodationRepository accommodationRepository;
   private final RoomRepository roomRepository;
+  private final WishlistRepository wishlistRepository;
 
   private static final String INDEX_NAME = "accommodations";
   private static final int SIZE = 6;
@@ -324,13 +326,14 @@ public class AccommodationRecommendationService {
   }
 
   // AccommodationDocument를 응답 객체로 변환
-  private RecommendationResponse mapToResponse(AccommodationDocument doc) {
+  private RecommendationResponse mapToResponse(AccommodationDocument doc, boolean isWishlisted) {
     return RecommendationResponse.builder()
         .id(doc.getId())
         .name(doc.getName())
         .price(doc.getPrice())
         .totalRating(doc.getTotalRating())
         .thumbnailUrl(doc.getThumbnailUrl())
+        .isWishlisted(isWishlisted)
         .build();
   }
 
