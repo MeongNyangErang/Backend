@@ -59,7 +59,6 @@ import com.meongnyangerang.meongnyangerang.repository.room.HashtagRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
-import com.meongnyangerang.meongnyangerang.service.AccommodationRoomSearchService;
 import com.meongnyangerang.meongnyangerang.service.image.S3FileService;
 import java.io.IOException;
 import java.util.function.Function;
@@ -1253,14 +1252,6 @@ public class DummyDataCreateService {
     return map.getOrDefault(accommodationId, Collections.emptyList())
         .stream().map(AccommodationPetFacility::getType).map(Enum::name)
         .collect(Collectors.toSet());
-  }
-
-  private Set<String> getRoomPetFacilitiesFromMap(
-      Map<Long, List<RoomPetFacility>> map,
-      Long roomId
-  ) {
-    return map.getOrDefault(roomId, Collections.emptyList())
-        .stream().map(RoomPetFacility::getType).map(Enum::name).collect(Collectors.toSet());
   }
 
   // AccommodationRoomDocument 생성
