@@ -3,7 +3,6 @@ package com.meongnyangerang.meongnyangerang.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -21,7 +20,6 @@ import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
-import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
@@ -52,11 +50,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -293,14 +286,20 @@ class RoomServiceTest {
   @DisplayName("객실 생성 성공")
   void createRoom_Success() {
     // given
-    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
+    Long hostId = host.getId();
+    Long accommodationId = accommodation.getId();
+
+    when(accommodationRepository.findByHostId(hostId)).thenReturn(Optional.of(accommodation));
+    when(roomRepository.countByAccommodationId(accommodationId)).thenReturn(10L);
     when(imageService.storeImage(image)).thenReturn(imageUrl);
 
     // when
-    roomService.createRoom(host.getId(), roomCreateRequest, image);
+    roomService.createRoom(hostId, roomCreateRequest, image);
 
     // then
-    verify(accommodationRepository, times(1)).findByHostId(1L);
+    verify(accommodationRepository, times(1)).findByHostId(hostId);
+    verify(roomRepository, times(1))
+        .countByAccommodationId(accommodationId);
     verify(imageService, times(1)).storeImage(image);
 
     ArgumentCaptor<Room> roomCaptor = ArgumentCaptor.forClass(Room.class);
@@ -327,8 +326,8 @@ class RoomServiceTest {
   }
 
   @Test
-  @DisplayName("숙소를 찾을 수 없을 때 예외 발생")
-  void createRoom_AccommodationNotFound() {
+  @DisplayName("객실 생성 실패 - 숙소 없음")
+  void createRoom_AccommodationNotFound_throwsException() {
     // given
     when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.empty());
 
@@ -338,63 +337,67 @@ class RoomServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
 
-    verify(accommodationRepository).findByHostId(1L);
+    verify(accommodationRepository).findByHostId(host.getId());
+  }
+
+  @Test
+  @DisplayName("객실 생성 실패 - 숙소 개수 제한")
+  void createRoom_RoomCountLimitExceeded_throwException() {
+    // given
+    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
+    when(roomRepository.countByAccommodationId(accommodation.getId())).thenReturn(20L);
+
+    // when
+    // then
+    assertThatThrownBy(() -> roomService.createRoom(host.getId(), roomCreateRequest, image))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ROOM_COUNT_LIMIT_EXCEEDED);
+
+    verify(accommodationRepository).findByHostId(host.getId());
+    verify(roomRepository).countByAccommodationId(accommodation.getId());
   }
 
   @Test
   @DisplayName("객실 목록 조회 성공")
   void getRoomList_Success() {
     // given
-    int pageSize = 5;
-    Pageable pageable = PageRequest.of(
-        0, pageSize, Sort.by("createdAt").descending());
-    Page<Room> pagedReviews = new PageImpl<>(rooms, pageable, rooms.size());
-
-    when(accommodationRepository.findByHostId(host.getId())).thenReturn(
-        Optional.of(accommodation));
-    when(roomRepository.findAllByAccommodationId(accommodation.getId(), pageable))
-        .thenReturn(pagedReviews);
+    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
+    when(roomRepository.findAllByAccommodationId(accommodation.getId())).thenReturn(rooms);
 
     // when
-    PageResponse<RoomSummaryResponse> response = roomService.getRoomList(host.getId(), pageable);
+    List<RoomSummaryResponse> response = roomService.getRoomList(host.getId());
 
     // then
-    assertThat(response.content()).hasSize(5);
-    assertThat(response.page()).isEqualTo(0);
-    assertThat(response.size()).isEqualTo(5);
-    assertThat(response.totalElements()).isEqualTo(5);
-    assertThat(response.totalPages()).isEqualTo(1);
-    assertTrue(response.first());
-    assertTrue(response.last());
+    assertThat(response).hasSize(5);
 
     // 모든 객실 포함되었는지 검증
-    List<Long> returnedIds = response.content().stream()
+    List<Long> returnedIds = response.stream()
         .map(RoomSummaryResponse::roomId)
         .toList();
     assertThat(returnedIds).containsExactly(1L, 2L, 3L, 4L, 5L);
 
     // 첫 번째 객실 검증
-    RoomSummaryResponse firstRoom = response.content().get(0);
+    RoomSummaryResponse firstRoom = response.get(0);
     assertThat(firstRoom.roomId()).isEqualTo(1L);
     assertThat(firstRoom.name()).isEqualTo("객실 1");
 
     // 두 번째 객실 검증
-    RoomSummaryResponse secondRoom = response.content().get(1);
+    RoomSummaryResponse secondRoom = response.get(1);
     assertThat(secondRoom.roomId()).isEqualTo(2L);
     assertThat(secondRoom.name()).isEqualTo("객실 2");
 
     // 세 번째 객실 검증
-    RoomSummaryResponse thirdRoom = response.content().get(2);
+    RoomSummaryResponse thirdRoom = response.get(2);
     assertThat(thirdRoom.roomId()).isEqualTo(3L);
     assertThat(thirdRoom.name()).isEqualTo("객실 3");
 
     // 네 번째 객실 검증
-    RoomSummaryResponse fourthRoom = response.content().get(3);
+    RoomSummaryResponse fourthRoom = response.get(3);
     assertThat(fourthRoom.roomId()).isEqualTo(4L);
     assertThat(fourthRoom.name()).isEqualTo("객실 4");
 
     // 다섯 번째 객실 검증
-    RoomSummaryResponse fifthRoom = response.content().get(4);
+    RoomSummaryResponse fifthRoom = response.get(4);
     assertThat(fifthRoom.roomId()).isEqualTo(5L);
     assertThat(fifthRoom.name()).isEqualTo("객실 5");
   }
@@ -403,15 +406,11 @@ class RoomServiceTest {
   @DisplayName("객실 목록 조회 실패 - 숙소를 찾을 수 없음")
   void getRoomList_AccommodationNotFound_ThrowsException() {
     // given
-    int pageSize = 5;
-    Pageable pageable = PageRequest.of(
-        10, pageSize, Sort.by("createdAt").descending());
-
     when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.empty());
 
     // when
     // then
-    assertThatThrownBy(() -> roomService.getRoomList(host.getId(), pageable))
+    assertThatThrownBy(() -> roomService.getRoomList(host.getId()))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.ACCOMMODATION_NOT_FOUND);
   }
