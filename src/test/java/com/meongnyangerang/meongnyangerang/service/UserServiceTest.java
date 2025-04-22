@@ -1,6 +1,9 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NICKNAME;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_NICKNAME;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -8,8 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
@@ -24,7 +25,6 @@ import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
@@ -140,7 +140,8 @@ class UserServiceTest {
         .build();
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    when(reservationRepository.existsByUserIdAndStatus(userId, ReservationStatus.RESERVED)).thenReturn(false);
+    when(reservationRepository.existsByUserIdAndStatus(userId,
+        ReservationStatus.RESERVED)).thenReturn(false);
 
     // when
     userService.deleteUser(userId);
@@ -157,7 +158,8 @@ class UserServiceTest {
     Long userId = 1L;
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(new User()));
-    when(reservationRepository.existsByUserIdAndStatus(userId, ReservationStatus.RESERVED)).thenReturn(true);
+    when(reservationRepository.existsByUserIdAndStatus(userId,
+        ReservationStatus.RESERVED)).thenReturn(true);
 
     // when & then
     assertThrows(MeongnyangerangException.class, () -> userService.deleteUser(userId));
@@ -310,7 +312,8 @@ class UserServiceTest {
         .build();
 
     given(userRepository.findById(userId)).willReturn(Optional.of(user));
-    willThrow(new MeongnyangerangException(DUPLICATE_NICKNAME)).given(authService).checkNickname("duplicateNick");
+    willThrow(new MeongnyangerangException(DUPLICATE_NICKNAME)).given(authService)
+        .checkNickname("duplicateNick");
 
     // when & then
     assertThatThrownBy(() -> userService.updateNickname(userId, "duplicateNick"))

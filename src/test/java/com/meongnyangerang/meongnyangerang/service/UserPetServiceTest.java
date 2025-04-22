@@ -204,6 +204,7 @@ public class UserPetServiceTest {
     assertThrows(MeongnyangerangException.class, () ->
         userPetService.deletePet(userId, petId));
   }
+
   @Test
   @DisplayName("사용자 반려동물 전체 조회 성공")
   void getUserPetsSuccess() {

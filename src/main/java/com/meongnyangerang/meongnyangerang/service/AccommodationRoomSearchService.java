@@ -24,12 +24,10 @@ import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepositor
 import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -144,7 +142,9 @@ public class AccommodationRoomSearchService {
   // 추가 객실 등록 또는 숙소/객실 수정, 객실 삭제 시, 기존 문서에 업데이트
   public void updateAccommodationDocument(Accommodation accommodation) {
     List<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId());
-    if (rooms.isEmpty()) return;
+    if (rooms.isEmpty()) {
+      return;
+    }
 
     Set<String> updatedAccommodationPetFacilities = getAccommodationPetFacilities(accommodation);
     Set<String> updatedRoomPetFacilities = collectRoomPetFacilities(rooms);

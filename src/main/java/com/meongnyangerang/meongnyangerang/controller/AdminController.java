@@ -1,6 +1,5 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
-import com.meongnyangerang.meongnyangerang.domain.review.ReviewReport;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostDetailResponse;

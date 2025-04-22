@@ -1,6 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.SEARCH_FAILED;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -14,15 +14,18 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationTyp
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
+import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -33,8 +36,10 @@ public class AccommodationSearchService {
 
   private final ElasticsearchClient elasticsearchClient;
   private final ReservationSlotRepository reservationSlotRepository;
+  private final WishlistRepository wishlistRepository;
 
-  public PageResponse<AccommodationSearchResponse> searchAccommodation(AccommodationSearchRequest request,
+  public PageResponse<AccommodationSearchResponse> searchAccommodation(Long userId,
+      AccommodationSearchRequest request,
       Pageable pageable) {
 
     List<Query> mustQueries = new ArrayList<>();
@@ -63,7 +68,8 @@ public class AccommodationSearchService {
 
     // terms 필터들
     applyTermsFilter(mustQueries, "accommodationFacilities", request.getAccommodationFacilities());
-    applyTermsFilter(mustQueries, "accommodationPetFacilities", request.getAccommodationPetFacilities());
+    applyTermsFilter(mustQueries, "accommodationPetFacilities",
+        request.getAccommodationPetFacilities());
     applyTermsFilter(mustQueries, "roomFacilities", request.getRoomFacilities());
     applyTermsFilter(mustQueries, "roomPetFacilities", request.getRoomPetFacilities());
     applyTermsFilter(mustQueries, "hashtags", request.getHashtags());
@@ -97,8 +103,14 @@ public class AccommodationSearchService {
         }
       }
 
+      // 사용자가 찜한 숙소의 id를 Set에 저장
+      Set<Long> wishlistedIds =
+          (userId != null) ? new HashSet<>(wishlistRepository.findAccommodationIdsByUserId(userId))
+              : Collections.emptySet();
+
       List<AccommodationSearchResponse> content = unique.values().stream()
-          .map(AccommodationSearchResponse::fromDocument)
+          .map(doc -> AccommodationSearchResponse.fromDocument(doc,
+              wishlistedIds.contains(doc.getAccommodationId())))
           .toList();
 
       // total count 가져오는 방식은 정확도에 따라 다름 (지금은 hits.total.value 사용)
@@ -162,8 +174,12 @@ public class AccommodationSearchService {
       mustQueries.add(Query.of(q -> q
           .range(r -> {
             r.field("price");
-            if (minPrice != null) r.gte(JsonData.of(minPrice));
-            if (maxPrice != null) r.lte(JsonData.of(maxPrice));
+            if (minPrice != null) {
+              r.gte(JsonData.of(minPrice));
+            }
+            if (maxPrice != null) {
+              r.lte(JsonData.of(maxPrice));
+            }
             return r;
           })
       ));
@@ -179,7 +195,8 @@ public class AccommodationSearchService {
     }
   }
 
-  private void applyReservedRoomFilter(List<Query> mustNotQueries, LocalDate checkInDate, LocalDate checkOutDate) {
+  private void applyReservedRoomFilter(List<Query> mustNotQueries, LocalDate checkInDate,
+      LocalDate checkOutDate) {
     List<Long> reservedRoomIds = reservationSlotRepository.findReservedRoomIdsBetweenDates(
         checkInDate, checkOutDate.minusDays(1));
 

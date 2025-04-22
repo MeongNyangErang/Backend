@@ -2,11 +2,11 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
-import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.chat.SendImageRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
@@ -35,8 +35,7 @@ public class ChatController {
   private final ChatService chatService;
 
   /**
-   * 채팅방 생성 API
-   * 채팅방이 이미 존재하면 존재하는 채팅방의 ID 반환
+   * 채팅방 생성 API 채팅방이 이미 존재하면 존재하는 채팅방의 ID 반환
    */
   @PostMapping("users/create")
   public ResponseEntity<ChatCreateResponse> createChatRoom(

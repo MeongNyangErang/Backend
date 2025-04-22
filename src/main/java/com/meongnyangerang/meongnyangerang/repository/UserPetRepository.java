@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UserPetRepository extends JpaRepository<UserPet, Long> {
+
   long countByUserId(Long userId);
 
   List<UserPet> findAllByUserId(Long userId);

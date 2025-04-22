@@ -45,13 +45,15 @@ public class AccommodationRoomMapper {
         .standardPetCount(room.getStandardPetCount())
         .maxPetCount(room.getMaxPetCount())
         .accommodationFacilities(extractEnumNames(accFacilities, AccommodationFacility::getType))
-        .accommodationPetFacilities(extractEnumNames(accPetFacilities, AccommodationPetFacility::getType))
+        .accommodationPetFacilities(
+            extractEnumNames(accPetFacilities, AccommodationPetFacility::getType))
         .roomFacilities(extractEnumNames(roomFacilities, RoomFacility::getType))
         .roomPetFacilities(extractEnumNames(roomPetFacilities, RoomPetFacility::getType))
         .hashtags(extractEnumNames(hashtags, Hashtag::getType))
         .allowPets(extractEnumNames(allowPets, AllowPet::getPetType))
         .build();
   }
+
   private <T> List<String> extractEnumNames(List<T> list, Function<T, Enum<?>> extractor) {
 
     if (list == null || list.isEmpty()) {

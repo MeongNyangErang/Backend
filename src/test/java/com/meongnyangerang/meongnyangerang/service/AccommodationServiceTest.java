@@ -29,6 +29,7 @@ import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
+import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
@@ -38,7 +39,6 @@ import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -83,6 +83,9 @@ class AccommodationServiceTest {
 
   @Mock
   private ReviewRepository reviewRepository;
+
+  @Mock
+  private WishlistRepository wishlistRepository;
 
   @Mock
   private AccommodationRoomSearchService searchService;
@@ -461,6 +464,7 @@ class AccommodationServiceTest {
   void getAccommodationDetail_Success() {
     // given
     Long accommodationId = 1L;
+    Long userId = 10L;
 
     Accommodation accommodation = Accommodation.builder()
         .id(accommodationId)
@@ -524,9 +528,12 @@ class AccommodationServiceTest {
         .thenReturn(List.of(room));
     Mockito.when(reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(1L))
         .thenReturn(List.of(review));
+    Mockito.when(wishlistRepository.existsByUserIdAndAccommodationId(userId, accommodationId))
+        .thenReturn(true);
 
     // then
-    AccommodationDetailResponse response = accommodationService.getAccommodationDetail(1L);
+    AccommodationDetailResponse response = accommodationService.getAccommodationDetail(
+        accommodationId, userId);
 
     assertThat(response.getAccommodationId()).isEqualTo(1L);
     assertThat(response.getAccommodationImageUrls()).hasSize(2);
@@ -536,6 +543,7 @@ class AccommodationServiceTest {
     assertThat(response.getRoomDetails()).hasSize(1);
     assertThat(response.getReviews()).hasSize(1);
     assertThat(response.getReviews().get(0).getReviewRating()).isEqualTo(4.5); // (5+4)/2
+    assertThat(response.isWishlisted()).isTrue();
   }
 
   @Test
@@ -547,7 +555,7 @@ class AccommodationServiceTest {
 
     // when
     Throwable thrown = catchThrowable(
-        () -> accommodationService.getAccommodationDetail(accommodationId));
+        () -> accommodationService.getAccommodationDetail(accommodationId, null));
 
     // then
     assertThat(thrown).isInstanceOf(MeongnyangerangException.class);
