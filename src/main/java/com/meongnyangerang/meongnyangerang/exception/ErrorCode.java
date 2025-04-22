@@ -67,6 +67,7 @@ public enum ErrorCode {
   NOT_EXIST_WISHLIST(HttpStatus.NOT_FOUND, "존재하지 않는 찜 목록입니다."),
   NOT_EXIST_NOTICE(HttpStatus.NOT_FOUND, "존재하지 않는 공지사항입니다."),
   NOT_EXIST_CHAT_ROOM(HttpStatus.NOT_FOUND, "채팅방이 존재하지 않습니다."),
+  NOT_FOUND_IMAGE(HttpStatus.NOT_FOUND, "버킷에서 가져올 이미지가 없습니다."),
 
 
   // 409 Conflict
