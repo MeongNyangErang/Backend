@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -109,14 +110,14 @@ public class AccommodationRecommendationService {
   // 사용자가 등록한 반려동물 기반 추천
   public List<PetRecommendationGroup> getUserPetRecommendations(Long userId) {
     List<UserPet> userPets = userPetRepository.findAllByUserId(userId);
-    List<PetRecommendationGroup> result = new ArrayList<>();
+    Set<Long> wishlistedIds = new HashSet<>(wishlistRepository.findAccommodationIdsByUserId(userId));
 
-    for (UserPet pet : userPets) {
-      List<RecommendationResponse> recommendations = searchByUserPet(pet);
-      result.add(new PetRecommendationGroup(pet.getId(), pet.getName(), recommendations));
-    }
-
-    return result;
+    return userPets.stream()
+        .map(pet -> new PetRecommendationGroup(
+            pet.getId(),
+            pet.getName(),
+            searchByUserPet(pet, wishlistedIds)))
+        .toList();
   }
 
   // 사용자가 등록한 반려동물 기반 추천 더보기
