@@ -36,8 +36,6 @@ public class NotificationService {
   private final HostRepository hostRepository;
   private final NotificationAsyncService notificationAsyncSender;
 
-  private static final String RESERVATION_CONFIRMED_CONTENT = "%s 숙소 예약이 확정되었습니다.";
-  private static final String RESERVATION_REGISTERED_CONTENT = "%s 님이 예약하였습니다.";
   private static final String RESERVATION_REMIND_CONTENT = "%s 숙소 체크인이 내일입니다. 체크인 시간은 %s입니다.";
   private static final String WRITE_REVIEW_CONTENT = "%s 님이 리뷰를 남겼습니다.";
 
@@ -56,16 +54,18 @@ public class NotificationService {
   /**
    * 예약 알림 전송
    */
+  @Transactional
   public void sendReservationNotification(
       Long reservationId,
-      String accommodationName,
       User user,
-      Host host
+      Host host,
+      String contentToUser,
+      String contentToHost
   ) {
     // 사용자에게 예약 확정 알림 전송 및 저장
-    sendReservationNotificationToUser(reservationId, accommodationName, user);
+    sendReservationNotificationToUser(reservationId, user, contentToUser);
     // 호스트에게 예약 등록 알림 전송 및 저장
-    sendReservationNotificationToHost(reservationId, user.getNickname(), host);
+    sendReservationNotificationToHost(reservationId, host, contentToHost);
   }
 
   /**
@@ -113,7 +113,6 @@ public class NotificationService {
   /**
    * 예약 리마인드 알림 발송
    */
-  @Transactional
   public void sendReservationReminderNotification(Reservation reservation) {
     User user = reservation.getUser();
     String content = String.format(RESERVATION_REMIND_CONTENT,
@@ -148,34 +147,24 @@ public class NotificationService {
     );
   }
 
-  private void sendReservationNotificationToUser(
-      Long reservationId, String accommodationName, User user
-  ) {
-    String reservationConfirmedContent = String.format(
-        RESERVATION_CONFIRMED_CONTENT, accommodationName);
-    saveNotificationAsUser(
-        user, reservationConfirmedContent, NotificationType.RESERVATION_CONFIRMED);
+  private void sendReservationNotificationToUser(Long reservationId,User user, String content) {
+    saveNotificationAsUser(user, content, NotificationType.RESERVATION_CONFIRMED);
 
     notificationAsyncSender.sendNotification(
         reservationId,
-        reservationConfirmedContent,
+        content,
         user.getId(),
         SenderType.USER,
         NotificationType.RESERVATION_CONFIRMED
     );
   }
 
-  private void sendReservationNotificationToHost(
-      Long reservationId, String userNickName, Host host
-  ) {
-    String reservationRegisteredContent = String.format(
-        RESERVATION_REGISTERED_CONTENT, userNickName);
-    saveNotificationAsHost(
-        host, reservationRegisteredContent, NotificationType.RESERVATION_REGISTERED);
+  private void sendReservationNotificationToHost(Long reservationId, Host host, String content) {
+    saveNotificationAsHost(host, content, NotificationType.RESERVATION_REGISTERED);
 
     notificationAsyncSender.sendNotification(
         reservationId,
-        reservationRegisteredContent,
+        content,
         host.getId(),
         SenderType.HOST,
         NotificationType.RESERVATION_REGISTERED
