@@ -24,12 +24,10 @@ import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepositor
 import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
