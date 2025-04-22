@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -337,14 +338,14 @@ public class AccommodationRecommendationService {
   }
 
   // 기존 메서드 오버로딩: 찜 여부 포함
-  private RecommendationResponse mapToResponse(AccommodationDocument doc, boolean isWishlisted) {
+  private RecommendationResponse mapToResponse(AccommodationDocument doc, Set<Long> wishlistedIds) {
     return RecommendationResponse.builder()
         .id(doc.getId())
         .name(doc.getName())
         .price(doc.getPrice())
         .totalRating(doc.getTotalRating())
         .thumbnailUrl(doc.getThumbnailUrl())
-        .isWishlisted(isWishlisted)
+        .isWishlisted(wishlistedIds.contains(doc.getId()))
         .build();
   }
 
