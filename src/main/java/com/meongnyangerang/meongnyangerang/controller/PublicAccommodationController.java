@@ -1,5 +1,8 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import static com.meongnyangerang.meongnyangerang.domain.user.Role.*;
+
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.AccommodationService;
@@ -24,6 +27,13 @@ public class PublicAccommodationController {
       @AuthenticationPrincipal UserDetailsImpl userDetails,
       @PathVariable Long accommodationId) {
 
-    return ResponseEntity.ok(accommodationService.getAccommodationDetail(accommodationId));
+    Long userId = null;
+
+    // 로그인한 사용자이면서 일반 사용자(ROLE_USER)일 때만 userId 사용
+    if (userDetails != null && userDetails.getRole() == ROLE_USER) {
+      userId = userDetails.getId();
+    }
+
+    return ResponseEntity.ok(accommodationService.getAccommodationDetail(accommodationId, userId));
   }
 }
