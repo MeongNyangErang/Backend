@@ -1,6 +1,10 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NAME;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NICKNAME;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_NICKNAME;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -8,9 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
@@ -79,9 +80,12 @@ class HostServiceTest {
     request.setPassword(password);
     request.setPhoneNumber("010-1234-5678");
 
-    MultipartFile profileImage = new MockMultipartFile("profile", "profile.jpg", "image/jpeg", new byte[0]);
-    MultipartFile businessLicense = new MockMultipartFile("license", "license.jpg", "image/jpeg", new byte[0]);
-    MultipartFile submitDocument = new MockMultipartFile("document", "document.jpg", "image/jpeg", new byte[0]);
+    MultipartFile profileImage = new MockMultipartFile("profile", "profile.jpg", "image/jpeg",
+        new byte[0]);
+    MultipartFile businessLicense = new MockMultipartFile("license", "license.jpg", "image/jpeg",
+        new byte[0]);
+    MultipartFile submitDocument = new MockMultipartFile("document", "document.jpg", "image/jpeg",
+        new byte[0]);
 
     when(hostRepository.existsByEmail(email)).thenReturn(false);
     when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
@@ -90,7 +94,8 @@ class HostServiceTest {
     when(imageService.storeImage(submitDocument)).thenReturn("http://s3.com/document.jpg");
 
     // when
-    assertDoesNotThrow(() -> hostService.registerHost(request, profileImage, businessLicense, submitDocument));
+    assertDoesNotThrow(
+        () -> hostService.registerHost(request, profileImage, businessLicense, submitDocument));
 
     // then
     verify(hostRepository).save(any(Host.class));
@@ -126,7 +131,8 @@ class HostServiceTest {
         .build();
 
     when(hostRepository.findById(hostId)).thenReturn(Optional.of(host));
-    when(reservationRepository.existsByHostIdAndStatus(hostId, ReservationStatus.RESERVED)).thenReturn(false);
+    when(reservationRepository.existsByHostIdAndStatus(hostId,
+        ReservationStatus.RESERVED)).thenReturn(false);
 
     // when
     hostService.deleteHost(hostId);
@@ -143,7 +149,8 @@ class HostServiceTest {
     Long hostId = 1L;
 
     when(hostRepository.findById(hostId)).thenReturn(Optional.of(new Host()));
-    when(reservationRepository.existsByHostIdAndStatus(hostId, ReservationStatus.RESERVED)).thenReturn(true);
+    when(reservationRepository.existsByHostIdAndStatus(hostId,
+        ReservationStatus.RESERVED)).thenReturn(true);
 
     // when & then
     assertThrows(MeongnyangerangException.class, () -> hostService.deleteHost(hostId));
@@ -436,7 +443,8 @@ class HostServiceTest {
         .build();
 
     given(hostRepository.findById(hostId)).willReturn(Optional.of(host));
-    willThrow(new MeongnyangerangException(DUPLICATE_NICKNAME)).given(authService).checkNickname("duplicateNick");
+    willThrow(new MeongnyangerangException(DUPLICATE_NICKNAME)).given(authService)
+        .checkNickname("duplicateNick");
 
     // when & then
     assertThatThrownBy(() -> hostService.updateNickname(hostId, "duplicateNick"))

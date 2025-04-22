@@ -275,7 +275,8 @@ class AccommodationRecommendationServiceTest {
     when(wishlistRepository.findAccommodationIdsByUserId(userId)).thenReturn(wishlisted);
 
     // when
-    List<RecommendationResponse> result = recommendationService.getMostViewedRecommendations(userId);
+    List<RecommendationResponse> result = recommendationService.getMostViewedRecommendations(
+        userId);
 
     // then
     assertEquals(10, result.size());

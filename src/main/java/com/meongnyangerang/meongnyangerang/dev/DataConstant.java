@@ -243,7 +243,7 @@ public class DataConstant {
   public static final int REQUIRE_COUNT = 1;
   public static final int MAX_RESERVATION_FIND_DATE_ATTEMPT_COUNT = 20;
 
-  private DataConstant(){
+  private DataConstant() {
     throw new UnsupportedOperationException("유틸리티 클래스는 인스턴스화할 수 없습니다.");
   }
 }

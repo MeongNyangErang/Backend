@@ -15,6 +15,7 @@ import lombok.Getter;
 @Builder
 @Getter
 public class AccommodationDetailResponse {
+
   private Long accommodationId;
   private String name;
   private String description;
@@ -55,7 +56,8 @@ public class AccommodationDetailResponse {
         .accommodationImageUrls(images.stream().map(AccommodationImage::getImageUrl).toList())
         .totalRating(accommodation.getTotalRating())
         .accommodationFacilities(facilities.stream().map(f -> f.getType().getValue()).toList())
-        .accommodationPetFacilities(petFacilities.stream().map(p -> p.getType().getValue()).toList())
+        .accommodationPetFacilities(
+            petFacilities.stream().map(p -> p.getType().getValue()).toList())
         .allowedPets(allowPets.stream().map(p -> p.getPetType().getValue()).toList())
         .reviews(reviews.stream().map(ReviewSummary::of).toList())
         .roomDetails(rooms.stream().map(RoomDetail::of).toList())
@@ -67,13 +69,15 @@ public class AccommodationDetailResponse {
   @Builder
   @Getter
   public static class ReviewSummary {
+
     private Long reviewId;
     private Double reviewRating;
     private String content;
     private LocalDateTime createdAt;
 
     public static ReviewSummary of(Review review) {
-      double rounded = Math.round((review.getUserRating() + review.getPetFriendlyRating()) / 2.0 * 10) / 10.0;
+      double rounded =
+          Math.round((review.getUserRating() + review.getPetFriendlyRating()) / 2.0 * 10) / 10.0;
       return ReviewSummary.builder()
           .reviewId(review.getId())
           .reviewRating(rounded)
@@ -86,6 +90,7 @@ public class AccommodationDetailResponse {
   @Builder
   @Getter
   public static class RoomDetail {
+
     private Long roomId;
     private String roomName;
     private String roomImageUrl;

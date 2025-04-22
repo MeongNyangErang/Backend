@@ -26,7 +26,6 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import java.io.IOException;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -110,7 +109,8 @@ public class AccommodationRecommendationService {
   // 사용자가 등록한 반려동물 기반 추천
   public List<PetRecommendationGroup> getUserPetRecommendations(Long userId) {
     List<UserPet> userPets = userPetRepository.findAllByUserId(userId);
-    Set<Long> wishlistedIds = new HashSet<>(wishlistRepository.findAccommodationIdsByUserId(userId));
+    Set<Long> wishlistedIds = new HashSet<>(
+        wishlistRepository.findAccommodationIdsByUserId(userId));
 
     return userPets.stream()
         .map(pet -> new PetRecommendationGroup(
@@ -130,7 +130,8 @@ public class AccommodationRecommendationService {
 
     Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
     Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
-    Set<Long> wishlistedIds = new HashSet<>(wishlistRepository.findAccommodationIdsByUserId(userId));
+    Set<Long> wishlistedIds = new HashSet<>(
+        wishlistRepository.findAccommodationIdsByUserId(userId));
 
     // 해당 반려동물 유형 필터링 쿼리
     Query query = buildPetTypeQuery(pet.getType().name());
@@ -169,7 +170,8 @@ public class AccommodationRecommendationService {
   // 많은 사람들이 관심을 가진 숙소 추천
   public List<RecommendationResponse> getMostViewedRecommendations(Long userId) {
     List<Accommodation> accommodations = accommodationRepository.findTop10ByOrderByViewCountDescTotalRatingDesc();
-    Set<Long> wishlistedIds = new HashSet<>(wishlistRepository.findAccommodationIdsByUserId(userId));
+    Set<Long> wishlistedIds = new HashSet<>(
+        wishlistRepository.findAccommodationIdsByUserId(userId));
 
     return accommodations.stream()
         .map(accommodation -> {
@@ -354,7 +356,7 @@ public class AccommodationRecommendationService {
         .build();
   }
 
-    private UserPet validateAndGetUserPet(Long userId, Long petId) {
+  private UserPet validateAndGetUserPet(Long userId, Long petId) {
     Optional<UserPet> petOptional = userPetRepository.findById(petId);
 
     if (petOptional.isEmpty()) {

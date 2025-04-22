@@ -23,11 +23,11 @@ public enum ImageType {
 
   // mimeType 을 key 로 하는 Map 생성
   private static final Map<String, ImageType> MIME_TYPE_MAP = Arrays.stream(values())
-          .collect(Collectors.toMap(ImageType::getMimeType, type -> type));
+      .collect(Collectors.toMap(ImageType::getMimeType, type -> type));
 
   // extension 을 key 로 하는 Map 생성
   private static final Map<String, ImageType> EXTENSION_MAP = Arrays.stream(values())
-          .collect(Collectors.toMap(ImageType::getExtension, type -> type));
+      .collect(Collectors.toMap(ImageType::getExtension, type -> type));
 
   public static boolean isSupported(String mimeType, String filename) {
     String extension = extractExtension(filename);

@@ -7,6 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class PetRecommendationGroup {
+
   private Long petId;
   private String petName;
   private List<RecommendationResponse> recommendations;

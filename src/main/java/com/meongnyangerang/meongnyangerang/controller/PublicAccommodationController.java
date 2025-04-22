@@ -1,8 +1,7 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
-import static com.meongnyangerang.meongnyangerang.domain.user.Role.*;
+import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_USER;
 
-import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationDetailResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.AccommodationService;

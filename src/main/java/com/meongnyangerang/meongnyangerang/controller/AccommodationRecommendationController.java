@@ -67,7 +67,8 @@ public class AccommodationRecommendationController {
   public ResponseEntity<List<RecommendationResponse>> getPopularRecommendations(
       @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-    return ResponseEntity.ok(recommendationService.getMostViewedRecommendations(userDetails.getId()));
+    return ResponseEntity.ok(
+        recommendationService.getMostViewedRecommendations(userDetails.getId()));
   }
 
 }

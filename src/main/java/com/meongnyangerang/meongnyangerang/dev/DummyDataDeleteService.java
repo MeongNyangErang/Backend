@@ -1,8 +1,5 @@
 package com.meongnyangerang.meongnyangerang.dev;
 
-import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
-import com.meongnyangerang.meongnyangerang.domain.review.ReviewReport;
-import com.meongnyangerang.meongnyangerang.dto.ReviewRequest;
 import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.NotificationRepository;
@@ -63,8 +60,7 @@ public class DummyDataDeleteService {
   private final NotificationRepository notificationRepository;
 
   /**
-   * 관계 순서를 고려하여 역순으로 삭제
-   * admin, notice는 삭제하지 않습니다. (필요하다면 추가)
+   * 관계 순서를 고려하여 역순으로 삭제 admin, notice는 삭제하지 않습니다. (필요하다면 추가)
    */
   @Transactional
   public Map<String, Object> clearData() {

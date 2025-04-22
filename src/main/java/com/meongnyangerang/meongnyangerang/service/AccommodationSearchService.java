@@ -1,6 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.SEARCH_FAILED;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -14,7 +14,6 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationTyp
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
@@ -175,8 +174,12 @@ public class AccommodationSearchService {
       mustQueries.add(Query.of(q -> q
           .range(r -> {
             r.field("price");
-            if (minPrice != null) r.gte(JsonData.of(minPrice));
-            if (maxPrice != null) r.lte(JsonData.of(maxPrice));
+            if (minPrice != null) {
+              r.gte(JsonData.of(minPrice));
+            }
+            if (maxPrice != null) {
+              r.lte(JsonData.of(maxPrice));
+            }
             return r;
           })
       ));
@@ -192,7 +195,8 @@ public class AccommodationSearchService {
     }
   }
 
-  private void applyReservedRoomFilter(List<Query> mustNotQueries, LocalDate checkInDate, LocalDate checkOutDate) {
+  private void applyReservedRoomFilter(List<Query> mustNotQueries, LocalDate checkInDate,
+      LocalDate checkOutDate) {
     List<Long> reservedRoomIds = reservationSlotRepository.findReservedRoomIdsBetweenDates(
         checkInDate, checkOutDate.minusDays(1));
 

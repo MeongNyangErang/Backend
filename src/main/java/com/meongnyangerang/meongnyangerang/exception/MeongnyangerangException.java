@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @NoArgsConstructor
 @Builder
-public class MeongnyangerangException extends RuntimeException{
+public class MeongnyangerangException extends RuntimeException {
 
   private ErrorCode errorCode;
 

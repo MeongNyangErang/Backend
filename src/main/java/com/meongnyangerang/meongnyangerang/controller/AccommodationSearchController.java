@@ -2,7 +2,6 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import static com.meongnyangerang.meongnyangerang.domain.user.Role.ROLE_USER;
 
-import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;

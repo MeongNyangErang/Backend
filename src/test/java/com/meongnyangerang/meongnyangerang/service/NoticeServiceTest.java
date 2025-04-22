@@ -250,6 +250,7 @@ public class NoticeServiceTest {
     verify(imageService).deleteImageAsync("https://s3.com/image/notice.jpg");
     verify(noticeRepository).delete(notice);
   }
+
   @Test
   @DisplayName("공지사항 삭제 실패 - 존재하지 않는 관리자")
   void deleteNoticeFailNotExistAdmin() {
@@ -270,7 +271,8 @@ public class NoticeServiceTest {
   void deleteNoticeFailNotExistNotice() {
     // given
     Long adminId = 1L;
-    given(adminRepository.findById(adminId)).willReturn(Optional.of(Admin.builder().id(adminId).build()));
+    given(adminRepository.findById(adminId)).willReturn(
+        Optional.of(Admin.builder().id(adminId).build()));
     given(noticeRepository.findById(99L)).willReturn(Optional.empty());
 
     // when

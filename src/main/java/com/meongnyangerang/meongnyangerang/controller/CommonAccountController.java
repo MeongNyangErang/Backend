@@ -59,7 +59,7 @@ public class CommonAccountController {
   @PatchMapping("/profile-image")
   public ResponseEntity<Void> updateProfileImage(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
-      @RequestPart(value = "newProfileImage")MultipartFile newProfileImage
+      @RequestPart(value = "newProfileImage") MultipartFile newProfileImage
   ) {
     if (userDetails.getRole().equals(Role.ROLE_USER)) {
       userService.updateProfileImage(userDetails.getId(), newProfileImage);

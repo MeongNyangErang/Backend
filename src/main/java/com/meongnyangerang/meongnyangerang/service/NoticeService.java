@@ -45,7 +45,8 @@ public class NoticeService {
 
   // 공지사항 수정
   @Transactional
-  public void updateNotice(Long adminId, Long noticeId, NoticeRequest request, MultipartFile newImage) {
+  public void updateNotice(Long adminId, Long noticeId, NoticeRequest request,
+      MultipartFile newImage) {
     Admin admin = adminRepository.findById(adminId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 

@@ -8,7 +8,6 @@ import static com.meongnyangerang.meongnyangerang.dev.DataGeneratorUtils.generat
 import static com.meongnyangerang.meongnyangerang.dev.DataGeneratorUtils.generateRealisticAccommodationName;
 import static com.meongnyangerang.meongnyangerang.dev.DataGeneratorUtils.generateRealisticRoomDesc;
 import static com.meongnyangerang.meongnyangerang.dev.DataGeneratorUtils.generateRealisticRoomName;
-import static javax.swing.text.html.HTML.Tag.AREA;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationImage;
@@ -52,18 +51,26 @@ import com.meongnyangerang.meongnyangerang.repository.room.RoomFacilityRepositor
 import com.meongnyangerang.meongnyangerang.repository.room.RoomPetFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.AccommodationRoomSearchService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.datafaker.Faker;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.datafaker.Faker;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -521,7 +528,8 @@ public class DummyDataCreateService {
       Set<LocalDate> bookedDates,
       Random random
   ) {
-    for (int attempt = 0; attempt < DataConstant.MAX_RESERVATION_FIND_DATE_ATTEMPT_COUNT; attempt++) {
+    for (int attempt = 0; attempt < DataConstant.MAX_RESERVATION_FIND_DATE_ATTEMPT_COUNT;
+        attempt++) {
       // 최소 날짜(minDate)와 최대 날짜(maxDate) 사이의 일수를 계산
       long daysBetween = ChronoUnit.DAYS.between(minDate, maxDate);
 
@@ -786,7 +794,6 @@ public class DummyDataCreateService {
       String town = towns.get(random.nextInt(towns.size()));
       String detailedAddress = faker.address().streetAddress(); // 무작위 도로명 주소
       String description = generateRealisticAccommodationDescription(name, area, random);
-
 
       // 위치 정보 (위도, 경도)
       Double latitude = 33.0 + random.nextDouble() * 10.0; // 33~43 범위의 위도
