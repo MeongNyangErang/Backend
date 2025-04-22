@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.service;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ROOM_NOT_FOUND;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
+import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.Hashtag;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.HashtagType;
@@ -142,6 +143,7 @@ public class RoomService {
 
     validateExistsReservation(roomId);
     reservationSlotRepository.deleteAllByRoomId(roomId);
+    reservationRepository.deleteAllByRoomId(roomId);
 
     hashtagRepository.deleteAllByRoomId(roomId);
     roomPetFacilityRepository.deleteAllByRoomId(roomId);
@@ -239,7 +241,7 @@ public class RoomService {
   }
 
   private void validateExistsReservation(Long roomId) {
-    if (reservationRepository.existsByRoom_Id(roomId)) {
+    if (reservationRepository.existsByRoom_IdAndStatus(roomId, ReservationStatus.RESERVED)) {
       throw new MeongnyangerangException(ErrorCode.EXISTS_RESERVATION);
     }
   }
