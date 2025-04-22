@@ -47,6 +47,12 @@ public class ReservationService {
   private final ReviewRepository reviewRepository;
   private final NotificationService notificationService;
 
+  private static final String RESERVATION_CONFIRMED_CONTENT = "%s 숙소 예약이 확정되었습니다.";
+  private static final String RESERVATION_REGISTERED_CONTENT = "%s 님이 예약하였습니다.";
+  private static final String RESERVATION_CANCELED_SUCCESS_CONTENT =
+      "%s 숙소 예약이 성공적으로 취소되었습니다.";
+  private static final String RESERVATION_CANCELED_CONTENT = "%s님이 예약을 취소하였습니다.";
+
   /**
    * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드. 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
    *
@@ -72,12 +78,7 @@ public class ReservationService {
     Reservation savedReservation = saveReservation(user, room, request);
 
     // 예약 알림 저장 및 전송 (사용자와 호스트에게 전송)
-    notificationService.sendReservationNotification(
-        savedReservation.getId(),
-        savedReservation.getAccommodationName(),
-        user,
-        room.getAccommodation().getHost()
-    );
+    sendNotificationWhenReservationRegistered(savedReservation);
 
     return new ReservationResponse(UUID.randomUUID().toString());
   }
@@ -116,6 +117,7 @@ public class ReservationService {
 
     // 예약 상태 변경
     reservation.setStatus(ReservationStatus.CANCELED);
+    sendNotificationWhenReservationCanceled(reservation); // 사용자와 호스트에게 알림 발송
   }
 
   public PageResponse<HostReservationResponse> getHostReservation(Long hostId, Pageable pageable,
@@ -232,6 +234,38 @@ public class ReservationService {
     for (ReservationSlot slot : slots) {
       slot.setIsReserved(false);
     }
+  }
+
+  private void sendNotificationWhenReservationRegistered(Reservation reservation) {
+    String reservationConfirmedContent = String.format(
+        RESERVATION_CONFIRMED_CONTENT, reservation.getAccommodationName());
+
+    String reservationRegisteredContent = String.format(
+        RESERVATION_REGISTERED_CONTENT, reservation.getUser().getNickname());
+
+    notificationService.sendReservationNotification(
+        reservation.getId(),
+        reservation.getUser(),
+        reservation.getRoom().getAccommodation().getHost(),
+        reservationConfirmedContent,
+        reservationRegisteredContent
+    );
+  }
+
+  private void sendNotificationWhenReservationCanceled(Reservation reservation) {
+    String reservationConfirmedContent = String.format(
+        RESERVATION_CANCELED_SUCCESS_CONTENT, reservation.getAccommodationName());
+
+    String reservationRegisteredContent = String.format(
+        RESERVATION_CANCELED_CONTENT, reservation.getUser().getNickname());
+
+    notificationService.sendReservationNotification(
+        reservation.getId(),
+        reservation.getUser(),
+        reservation.getRoom().getAccommodation().getHost(),
+        reservationConfirmedContent,
+        reservationRegisteredContent
+    );
   }
 
   private UserReservationResponse mapToUserReservationResponse(Reservation reservation) {

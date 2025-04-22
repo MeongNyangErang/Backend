@@ -76,6 +76,12 @@ class ReservationServiceTest {
   @InjectMocks
   private ReservationService reservationService;
 
+  private static final String RESERVATION_CONFIRMED_CONTENT = "%s 숙소 예약이 확정되었습니다.";
+  private static final String RESERVATION_REGISTERED_CONTENT = "%s 님이 예약하였습니다.";
+  private static final String RESERVATION_CANCELED_SUCCESS_CONTENT =
+      "%s 숙소 예약이 성공적으로 취소되었습니다.";
+  private static final String RESERVATION_CANCELED_CONTENT = "%s님이 예약을 취소하였습니다.";
+
   @Test
   @DisplayName("사용자가 예약 등록 시, 예약 등록에 성공해야 한다.")
   void createReservation_success() {
@@ -123,8 +129,19 @@ class ReservationServiceTest {
     assertNotNull(response.getOrderNumber());
     assertTrue(response.getOrderNumber().matches("^[a-f0-9-]{36}$"));
 
-    verify(notificationService).sendReservationNotification(reservation.getId(),
-        accommodation.getName(), user, host);
+    String reservationConfirmedContent = String.format(
+        RESERVATION_CONFIRMED_CONTENT, reservation.getAccommodationName());
+
+    String reservationRegisteredContent = String.format(
+        RESERVATION_REGISTERED_CONTENT, reservation.getUser().getNickname());
+
+    verify(notificationService).sendReservationNotification(
+        reservation.getId(),
+        user,
+        host,
+        reservationConfirmedContent,
+        reservationRegisteredContent
+    );
   }
 
   @Test
@@ -351,7 +368,17 @@ class ReservationServiceTest {
   void cancelReservation_success() {
     // given
     User user = User.builder().id(1L).build();
-    Room room = Room.builder().id(1L).build();
+    Host host = Host.builder()
+        .id(1L)
+        .build();
+    Accommodation accommodation = Accommodation.builder()
+        .id(1L)
+        .host(host)
+        .build();
+    Room room = Room.builder()
+        .id(1L)
+        .accommodation(accommodation)
+        .build();
 
     Reservation reservation = Reservation.builder().id(1L).status(ReservationStatus.RESERVED)
         .user(user).room(room).checkInDate(LocalDate.of(2025, 1, 1))
@@ -380,6 +407,20 @@ class ReservationServiceTest {
         reservation.getRoom(), reservation.getCheckInDate(),
         reservation.getCheckOutDate().minusDays(1));
     assertEquals(ReservationStatus.CANCELED, reservation.getStatus());
+
+    String reservationConfirmedContent = String.format(
+        RESERVATION_CANCELED_SUCCESS_CONTENT, reservation.getAccommodationName());
+
+    String reservationRegisteredContent = String.format(
+        RESERVATION_CANCELED_CONTENT, reservation.getUser().getNickname());
+
+    verify(notificationService).sendReservationNotification(
+        reservation.getId(),
+        user,
+        room.getAccommodation().getHost(),
+        reservationConfirmedContent,
+        reservationRegisteredContent
+    );
   }
 
   @Test
