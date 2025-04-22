@@ -11,7 +11,7 @@ import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
-import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
@@ -29,8 +29,6 @@ import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -50,15 +48,19 @@ public class RoomService {
   private final ImageService imageService;
   private final AccommodationRoomSearchService searchService;
 
+  private static final int ROOM_CREATION_LIMIT_COUNT = 20;
+
   /**
    * 객실 등록
    */
   @Transactional
   public void createRoom(Long hostId, RoomCreateRequest request, MultipartFile thumbnail) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
-    String thumbnailUrl = imageService.storeImage(thumbnail);
+    validateCreatableCount(accommodation.getId());
 
+    String thumbnailUrl = imageService.storeImage(thumbnail);
     Room room = request.toEntity(accommodation, thumbnailUrl);
+
     roomRepository.save(room);
     saveRoomFacilities(request.facilityTypes(), room);
     saveRoomPetFacilities(request.petFacilityTypes(), room);
@@ -75,12 +77,13 @@ public class RoomService {
   /**
    * 객실 목록 조회
    */
-  public PageResponse<RoomSummaryResponse> getRoomList(Long hostId, Pageable pageable) {
+  public List<RoomSummaryResponse> getRoomList(Long hostId) {
     Accommodation accommodation = findAccommodationByHostId(hostId);
-    Page<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId(), pageable);
-    Page<RoomSummaryResponse> response = rooms.map(RoomSummaryResponse::of);
+    List<Room> rooms = roomRepository.findAllByAccommodationId(accommodation.getId());
 
-    return PageResponse.from(response);
+    return rooms.stream()
+        .map(RoomSummaryResponse::of)
+        .toList();
   }
 
   /**
@@ -243,6 +246,13 @@ public class RoomService {
   private void validateExistsReservation(Long roomId) {
     if (reservationRepository.existsByRoom_IdAndStatus(roomId, ReservationStatus.RESERVED)) {
       throw new MeongnyangerangException(ErrorCode.EXISTS_RESERVATION);
+    }
+  }
+
+  private void validateCreatableCount(Long accommodationId) {
+    long roomCount = roomRepository.countByAccommodationId(accommodationId);
+    if (roomCount >= ROOM_CREATION_LIMIT_COUNT) {
+      throw new MeongnyangerangException(ErrorCode.ROOM_COUNT_LIMIT_EXCEEDED);
     }
   }
 }
