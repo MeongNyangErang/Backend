@@ -9,9 +9,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
-import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import software.amazon.awssdk.core.sync.RequestBody;
 import java.net.MalformedURLException;
@@ -27,14 +26,16 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Utilities;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 @ExtendWith(MockitoExtension.class)
 class S3FileServiceTest {
@@ -48,7 +49,6 @@ class S3FileServiceTest {
   @InjectMocks
   private S3FileService s3FileService;
 
-  private static final String IMAGE_PATH_PREFIX = "image";
   private static final String BUCKET = "test-bucket";
   private static final UUID MOCK_UUID =
       UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
@@ -154,5 +154,35 @@ class S3FileServiceTest {
         .hasSize(expectedKeys.size())
         .extracting(ObjectIdentifier::key)
         .containsExactlyElementsOf(expectedKeys);
+  }
+
+  @Test
+  void getAllImageUrls_Success() throws MalformedURLException {
+    // given
+    when(s3Client.utilities()).thenReturn(s3Utilities);
+    doReturn(new URL(MOCK_FILE_URL)).when(s3Utilities).getUrl(any(GetUrlRequest.class));
+
+    List<S3Object> objects = new ArrayList<>();
+    objects.add(S3Object.builder().key(MOCK_FILE_URL).build());
+    objects.add(S3Object.builder().key("document.pdf").build()); // 이미지가 아닌 객체
+
+    ArgumentCaptor<ListObjectsV2Request> listObjectsV2RequestArgumentCaptor = ArgumentCaptor
+        .forClass(ListObjectsV2Request.class);
+
+    ListObjectsV2Response mockResponse = ListObjectsV2Response.builder()
+        .contents(objects)
+        .keyCount(3)
+        .build();
+
+    when(s3Client.listObjectsV2(listObjectsV2RequestArgumentCaptor.capture()))
+        .thenReturn(mockResponse);
+
+    // when
+    List<String> result = s3FileService.getAllImageUrls();
+
+    // then
+    assertEquals(1, result.size());
+    assertTrue(result.contains(MOCK_FILE_URL));
+    assertFalse(result.contains("https://test-bucket.s3.amazonaws.com/document.pdf"));
   }
 }
