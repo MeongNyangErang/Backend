@@ -208,7 +208,7 @@ public class AccommodationRecommendationService {
   }
 
   // 사용자 반려동물 정보를 바탕으로 맞춤 추천 수행
-  private List<RecommendationResponse> searchByUserPet(UserPet pet) {
+  private List<RecommendationResponse> searchByUserPet(UserPet pet, Set<Long> wishlistedIds) {
     // 반려동물 성향에 따른 시설 점수 맵 생성
     Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
     Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
@@ -225,7 +225,7 @@ public class AccommodationRecommendationService {
           elasticsearchClient.search(request, AccommodationDocument.class);
 
       // 각 문서에 대해 점수 계산 후 정렬하여 RecommendationResponse로 변환
-      return calculateScoreAndSort(response, accScoreMap, roomScoreMap);
+      return calculateScoreAndSort(response, accScoreMap, roomScoreMap, wishlistedIds);
     } catch (IOException e) {
       throw new MeongnyangerangException(ErrorCode.USER_RECOMMENDATION_FAILED);
     }
