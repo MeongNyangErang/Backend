@@ -118,8 +118,10 @@ public class NotificationService {
     String content = String.format(RESERVATION_REMIND_CONTENT,
         reservation.getAccommodationName(), reservation.getCheckInDate());
 
-    saveNotificationAsUser(user, content, NotificationType.RESERVATION_REMINDER);
-    notificationAsyncSender.sendNotification(
+    Notification savedNotification = saveNotificationAsUser(
+        user, content, NotificationType.RESERVATION_REMINDER);
+    notificationAsyncSender.sendReservationNotification(
+        savedNotification.getId(),
         reservation.getId(),
         content,
         user.getId(),
@@ -134,23 +136,24 @@ public class NotificationService {
   public void sendReviewNotification(Review review) {
     User user = review.getUser();
     Host host = review.getAccommodation().getHost();
+
     String content = String.format(WRITE_REVIEW_CONTENT, user.getNickname());
+    Notification savedNotification = saveNotificationAsHost(host, content, NotificationType.REVIEW);
 
-    saveNotificationAsHost(host, content, NotificationType.REVIEW);
-
-    notificationAsyncSender.sendNotification(
+    notificationAsyncSender.sendReviewNotification(
+        savedNotification.getId(),
         review.getId(),
         content,
-        host.getId(),
-        SenderType.HOST,
-        NotificationType.REVIEW
+        host.getId()
     );
   }
 
-  private void sendReservationNotificationToUser(Long reservationId,User user, String content) {
-    saveNotificationAsUser(user, content, NotificationType.RESERVATION_CONFIRMED);
+  private void sendReservationNotificationToUser(Long reservationId, User user, String content) {
+    Notification savedNotification = saveNotificationAsUser(
+        user, content, NotificationType.RESERVATION_CONFIRMED);
 
-    notificationAsyncSender.sendNotification(
+    notificationAsyncSender.sendReservationNotification(
+        savedNotification.getId(),
         reservationId,
         content,
         user.getId(),
@@ -160,9 +163,11 @@ public class NotificationService {
   }
 
   private void sendReservationNotificationToHost(Long reservationId, Host host, String content) {
-    saveNotificationAsHost(host, content, NotificationType.RESERVATION_REGISTERED);
+    Notification savedNotification = saveNotificationAsHost(
+        host, content, NotificationType.RESERVATION_REGISTERED);
 
-    notificationAsyncSender.sendNotification(
+    notificationAsyncSender.sendReservationNotification(
+        savedNotification.getId(),
         reservationId,
         content,
         host.getId(),
@@ -195,8 +200,7 @@ public class NotificationService {
           senderId,
           senderType,
           content,
-          receiverInfo.receiverId(),
-          receiverInfo.receiverType(),
+          receiverInfo,
           NotificationType.MESSAGE
       );
     } catch (Exception e) {
@@ -211,20 +215,24 @@ public class NotificationService {
       String content
   ) {
     if (senderType == SenderType.USER) {
-      saveNotificationAsHost(chatRoom.getHost(), content, NotificationType.MESSAGE);
-      return determineHostReceiverInfo(chatRoom, senderId);
+      Notification savedNotification = saveNotificationAsHost(
+          chatRoom.getHost(), content, NotificationType.MESSAGE);
+      return determineHostReceiverInfo(savedNotification.getId(), chatRoom, senderId);
     } else if (senderType == SenderType.HOST) {
-      saveNotificationAsUser(chatRoom.getUser(), content, NotificationType.MESSAGE);
-      return determineUserReceiverInfo(chatRoom, senderId);
+      Notification notification = saveNotificationAsUser(
+          chatRoom.getUser(), content, NotificationType.MESSAGE);
+      return determineUserReceiverInfo(notification.getId(), chatRoom, senderId);
     } else {
       throw new MeongnyangerangException(ErrorCode.NOTIFICATION_NOT_AUTHORIZED);
     }
   }
 
-  private void saveNotificationAsUser(
-      User user, String content, NotificationType notificationType
+  private Notification saveNotificationAsUser(
+      User user,
+      String content,
+      NotificationType notificationType
   ) {
-    notificationRepository.save(Notification.builder()
+    return notificationRepository.save(Notification.builder()
         .user(user)
         .content(content)
         .type(notificationType)
@@ -233,10 +241,12 @@ public class NotificationService {
     );
   }
 
-  private void saveNotificationAsHost(
-      Host host, String content, NotificationType notificationType
+  private Notification saveNotificationAsHost(
+      Host host,
+      String content,
+      NotificationType notificationType
   ) {
-    notificationRepository.save(Notification.builder()
+    return notificationRepository.save(Notification.builder()
         .host(host)
         .content(content)
         .type(notificationType)
@@ -245,12 +255,17 @@ public class NotificationService {
     );
   }
 
-  private NotificationReceiverInfo determineHostReceiverInfo(ChatRoom chatRoom, Long userId) {
+  private NotificationReceiverInfo determineHostReceiverInfo(
+      Long notificationId,
+      ChatRoom chatRoom,
+      Long userId
+  ) {
     Long hostId = chatRoom.getHostId();
     User sender = findUserById(userId);
     Host receiver = findHostById(hostId);
 
     return new NotificationReceiverInfo(
+        notificationId,
         hostId,
         SenderType.HOST,
         sender,
@@ -258,12 +273,17 @@ public class NotificationService {
     );
   }
 
-  private NotificationReceiverInfo determineUserReceiverInfo(ChatRoom chatRoom, Long hostId) {
+  private NotificationReceiverInfo determineUserReceiverInfo(
+      Long notificationId,
+      ChatRoom chatRoom,
+      Long hostId
+  ) {
     Long userId = chatRoom.getUserId();
     Host sender = findHostById(hostId);
     User receiver = findUserById(userId);
 
     return new NotificationReceiverInfo(
+        notificationId,
         userId,
         SenderType.USER,
         receiver,

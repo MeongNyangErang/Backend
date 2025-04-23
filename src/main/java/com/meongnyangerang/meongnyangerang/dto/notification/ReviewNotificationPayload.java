@@ -4,37 +4,30 @@ import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import java.time.LocalDateTime;
 
-public record MessageNotificationPayload(
+public record ReviewNotificationPayload(
     Long notificationId,
-    Long chatRoomId,
-    Long senderId,
-    SenderType senderType,
+    Long reviewId,
+    String content,
     Long receiverId,
     SenderType receiverType,
-    String content,
     NotificationType notificationType,
     LocalDateTime createdAt
 ) {
 
-  public static MessageNotificationPayload from(
+  public static ReviewNotificationPayload from(
       Long notificationId,
-      Long chatRoomId,
-      Long senderId,
-      SenderType senderType,
-      Long receiverId,
-      SenderType receiverType,
+      Long reviewId,
       String content,
-      NotificationType notificationType
+      Long receiverId,
+      SenderType receiverType
   ) {
-    return new MessageNotificationPayload(
+    return new ReviewNotificationPayload(
         notificationId,
-        chatRoomId,
-        senderId,
-        senderType,
+        reviewId,
+        content,
         receiverId,
         receiverType,
-        content,
-        notificationType,
+        NotificationType.REVIEW,
         LocalDateTime.now()
     );
   }

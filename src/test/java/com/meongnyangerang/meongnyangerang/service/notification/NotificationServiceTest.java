@@ -18,6 +18,7 @@ import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.notification.MessageNotificationRequest;
+import com.meongnyangerang.meongnyangerang.dto.notification.NotificationReceiverInfo;
 import com.meongnyangerang.meongnyangerang.dto.notification.NotificationResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
@@ -88,34 +89,42 @@ class NotificationServiceTest {
   @DisplayName("알림 전송 성공 - 사용자가 발신자인 경우 ")
   void sendNotification_WhenUserIsSender_Success() {
     // given
+    Long senderId = user.getId();
+    Long receiverId = host.getId();
+    Long chatRoomId = chatRoom.getId();
+    Notification notification = createMessageNotification();
+
     MessageNotificationRequest request = new MessageNotificationRequest(
-        chatRoom.getId(),
-        CONTENT
-    );
-    when(chatRoomRepository.findById(chatRoom.getId())).thenReturn(Optional.of(chatRoom));
-    when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-    when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
+        chatRoom.getId(), CONTENT);
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom));
+
     ArgumentCaptor<Notification> notificationArgumentCaptor =
         ArgumentCaptor.forClass(Notification.class);
+    when(notificationRepository.save(notificationArgumentCaptor.capture()))
+        .thenReturn(notification);
+
+    when(userRepository.findById(senderId)).thenReturn(Optional.of(user));
+    when(hostRepository.findById(receiverId)).thenReturn(Optional.of(host));
 
     // when
-    notificationService.sendMessageNotification(request, user.getId(), SenderType.USER);
+    notificationService.sendMessageNotification(request, senderId, SenderType.USER);
 
     // Then
-    verify(notificationRepository).save(notificationArgumentCaptor.capture());
-    Notification notification = notificationArgumentCaptor.getValue();
+    assertEquals(user, notification.getUser());
     assertEquals(host, notification.getHost());
     assertEquals(CONTENT, notification.getContent());
     assertEquals(NotificationType.MESSAGE, notification.getType());
     assertFalse(notification.getIsRead());
 
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+    verify(notificationRepository, times(1))
+        .save(notificationArgumentCaptor.getValue());
     verify(notificationAsyncSender).sendMessageNotification(
         chatRoom.getId(),
         user.getId(),
         SenderType.USER,
         CONTENT,
-        host.getId(),
-        SenderType.HOST,
+        new NotificationReceiverInfo(notification.getId(), receiverId, SenderType.HOST, user, host),
         NotificationType.MESSAGE
     );
   }
@@ -124,34 +133,42 @@ class NotificationServiceTest {
   @DisplayName("알림 전송 성공 - 호스트가 발신자인 경우 ")
   void sendNotification_WhenHostIsSender_Success() {
     // given
+    Long senderId = host.getId();
+    Long receiverId = user.getId();
+    Long chatRoomId = chatRoom.getId();
+    Notification notification = createMessageNotification();
+
     MessageNotificationRequest request = new MessageNotificationRequest(
-        chatRoom.getId(),
-        CONTENT
-    );
-    when(chatRoomRepository.findById(chatRoom.getId())).thenReturn(Optional.of(chatRoom));
-    when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
-    when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        chatRoomId, CONTENT);
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom));
+
     ArgumentCaptor<Notification> notificationArgumentCaptor =
         ArgumentCaptor.forClass(Notification.class);
+    when(notificationRepository.save(notificationArgumentCaptor.capture()))
+        .thenReturn(notification);
+
+    when(hostRepository.findById(senderId)).thenReturn(Optional.of(host));
+    when(userRepository.findById(receiverId)).thenReturn(Optional.of(user));
 
     // when
-    notificationService.sendMessageNotification(request, host.getId(), SenderType.HOST);
+    notificationService.sendMessageNotification(request, senderId, SenderType.HOST);
 
     // Then
-    verify(notificationRepository).save(notificationArgumentCaptor.capture());
-    Notification notification = notificationArgumentCaptor.getValue();
+    assertEquals(host, notification.getHost());
     assertEquals(user, notification.getUser());
     assertEquals(CONTENT, notification.getContent());
     assertEquals(NotificationType.MESSAGE, notification.getType());
     assertFalse(notification.getIsRead());
 
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+    verify(notificationRepository, times(1))
+        .save(notificationArgumentCaptor.getValue());
     verify(notificationAsyncSender).sendMessageNotification(
-        chatRoom.getId(),
-        host.getId(),
+        chatRoomId,
+        senderId,
         SenderType.HOST,
         CONTENT,
-        user.getId(),
-        SenderType.USER,
+        new NotificationReceiverInfo(notification.getId(), receiverId, SenderType.USER, user, host),
         NotificationType.MESSAGE
     );
   }
@@ -338,21 +355,34 @@ class NotificationServiceTest {
     String content = String.format("%s 숙소 체크인이 내일입니다. 체크인 시간은 %s입니다.",
         reservation.getAccommodationName(), reservation.getCheckInDate());
 
+    Notification notification = Notification.builder()
+        .id(10L)
+        .user(user)
+        .content(content)
+        .type(NotificationType.RESERVATION_REMINDER)
+        .isRead(false)
+        .build();
+
+    ArgumentCaptor<Notification> notificationCaptor = ArgumentCaptor.forClass(
+        Notification.class);
+    when(notificationRepository.save(notificationCaptor.capture())).thenReturn(
+        notification);
+
     // when
     notificationService.sendReservationReminderNotification(reservation);
 
     // then
-    ArgumentCaptor<Notification> notificationArgumentCaptor = ArgumentCaptor.forClass(
-        Notification.class);
     verify(notificationRepository, times(1))
-        .save(notificationArgumentCaptor.capture());
+        .save(notificationCaptor.getValue());
     verify(notificationAsyncSender, times(1))
-        .sendNotification(
+        .sendReservationNotification(
+            notification.getId(),
             reservation.getId(),
             content,
             user.getId(),
             SenderType.USER,
-            NotificationType.RESERVATION_REMINDER);
+            NotificationType.RESERVATION_REMINDER
+        );
   }
 
   private Notification createNotificationReceiveByHost(Long id, Host host, String content) {
@@ -374,6 +404,17 @@ class NotificationServiceTest {
         .type(NotificationType.MESSAGE)
         .isRead(false)
         .createdAt(LocalDateTime.now())
+        .build();
+  }
+
+  private Notification createMessageNotification() {
+    return Notification.builder()
+        .id(10L)
+        .user(user)
+        .host(host)
+        .content(CONTENT)
+        .type(NotificationType.MESSAGE)
+        .isRead(false)
         .build();
   }
 }
