@@ -4,6 +4,7 @@ import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagePageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
@@ -70,7 +71,7 @@ public class ChatController {
    * 메시지 이력 조회
    */
   @GetMapping("/{chatRoomId}/messages")
-  public ResponseEntity<PageResponse<ChatMessageResponse>> getChatMessages(
+  public ResponseEntity<ChatMessagePageResponse<ChatMessageResponse>> getChatMessages(
       @PathVariable Long chatRoomId,
       @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
       Pageable pageable,
@@ -80,10 +81,10 @@ public class ChatController {
 
     if (viewerRole == Role.ROLE_USER) {
       return ResponseEntity.ok(
-          chatService.getChatMessages(userDetails.getId(), chatRoomId, pageable, SenderType.USER));
+          chatService.getChatMessagesAsUser(userDetails.getId(), chatRoomId, pageable));
     } else if (viewerRole == Role.ROLE_HOST) {
       return ResponseEntity.ok(
-          chatService.getChatMessages(userDetails.getId(), chatRoomId, pageable, SenderType.HOST));
+          chatService.getChatMessagesAsHost(userDetails.getId(), chatRoomId, pageable));
     } else {
       throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
     }

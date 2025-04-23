@@ -18,6 +18,7 @@ import com.meongnyangerang.meongnyangerang.domain.chat.MessageType;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagePageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
@@ -451,10 +452,11 @@ class ChatServiceTest {
         chatRoomId, userId, senderType)).thenReturn(Optional.of(chatReadStatus));
     when(chatMessageRepository.findByChatRoomId(chatRoomId, pageable))
         .thenReturn(pagedChatRooms);
+    when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
 
     // when
-    PageResponse<ChatMessageResponse> response = chatService.getChatMessages(
-        userId, chatRoomId, pageable, SenderType.USER);
+    ChatMessagePageResponse<ChatMessageResponse> response = chatService.getChatMessagesAsUser(
+        userId, chatRoomId, pageable);
 
     // then
     List<ChatMessageResponse> messages = response.content();
@@ -493,7 +495,7 @@ class ChatServiceTest {
     // when
     // then
     assertThatThrownBy(
-        () -> chatService.getChatMessages(userId, chatRoomId, pageable, SenderType.USER))
+        () -> chatService.getChatMessagesAsUser(userId, chatRoomId, pageable))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
 
@@ -515,8 +517,8 @@ class ChatServiceTest {
 
     // when
     // then
-    assertThatThrownBy(() -> chatService.getChatMessages(
-        notAuthorizedUser.getId(), chatRoomId, pageable, SenderType.USER))
+    assertThatThrownBy(() -> chatService.getChatMessagesAsUser(
+        notAuthorizedUser.getId(), chatRoomId, pageable))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
 
