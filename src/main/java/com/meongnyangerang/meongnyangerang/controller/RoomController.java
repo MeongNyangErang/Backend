@@ -3,7 +3,6 @@ package com.meongnyangerang.meongnyangerang.controller;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomCreateRequest;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomResponse;
-import com.meongnyangerang.meongnyangerang.dto.room.RoomSummaryResponse;
 import com.meongnyangerang.meongnyangerang.dto.room.RoomUpdateRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.RoomService;
