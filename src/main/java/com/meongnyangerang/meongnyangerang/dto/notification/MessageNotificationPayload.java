@@ -5,6 +5,7 @@ import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import java.time.LocalDateTime;
 
 public record MessageNotificationPayload(
+    Long notificationId,
     Long chatRoomId,
     Long senderId,
     SenderType senderType,
@@ -16,6 +17,7 @@ public record MessageNotificationPayload(
 ) {
 
   public static MessageNotificationPayload from(
+      Long notificationId,
       Long chatRoomId,
       Long senderId,
       SenderType senderType,
@@ -25,6 +27,7 @@ public record MessageNotificationPayload(
       NotificationType notificationType
   ) {
     return new MessageNotificationPayload(
+        notificationId,
         chatRoomId,
         senderId,
         senderType,
