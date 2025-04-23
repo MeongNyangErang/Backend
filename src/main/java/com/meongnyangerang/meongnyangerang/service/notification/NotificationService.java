@@ -60,12 +60,13 @@ public class NotificationService {
       User user,
       Host host,
       String contentToUser,
-      String contentToHost
+      String contentToHost,
+      NotificationType notificationType
   ) {
     // 사용자에게 예약 확정 알림 전송 및 저장
-    sendReservationNotificationToUser(reservationId, user, contentToUser);
+    sendReservationNotificationToUser(reservationId, user, contentToUser, notificationType);
     // 호스트에게 예약 등록 알림 전송 및 저장
-    sendReservationNotificationToHost(reservationId, host, contentToHost);
+    sendReservationNotificationToHost(reservationId, host, contentToHost, notificationType);
   }
 
   /**
@@ -148,9 +149,13 @@ public class NotificationService {
     );
   }
 
-  private void sendReservationNotificationToUser(Long reservationId, User user, String content) {
-    Notification savedNotification = saveNotificationAsUser(
-        user, content, NotificationType.RESERVATION_CONFIRMED);
+  private void sendReservationNotificationToUser(
+      Long reservationId,
+      User user,
+      String content,
+      NotificationType notificationType
+  ) {
+    Notification savedNotification = saveNotificationAsUser(user, content, notificationType);
 
     notificationAsyncSender.sendReservationNotification(
         savedNotification.getId(),
@@ -158,13 +163,17 @@ public class NotificationService {
         content,
         user.getId(),
         SenderType.USER,
-        NotificationType.RESERVATION_CONFIRMED
+        notificationType
     );
   }
 
-  private void sendReservationNotificationToHost(Long reservationId, Host host, String content) {
-    Notification savedNotification = saveNotificationAsHost(
-        host, content, NotificationType.RESERVATION_REGISTERED);
+  private void sendReservationNotificationToHost(
+      Long reservationId,
+      Host host,
+      String content,
+      NotificationType notificationType
+  ) {
+    Notification savedNotification = saveNotificationAsHost(host, content, notificationType);
 
     notificationAsyncSender.sendReservationNotification(
         savedNotification.getId(),
@@ -172,7 +181,7 @@ public class NotificationService {
         content,
         host.getId(),
         SenderType.HOST,
-        NotificationType.RESERVATION_REGISTERED
+        notificationType
     );
   }
 

@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
+import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationSlot;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
@@ -248,7 +249,8 @@ public class ReservationService {
         reservation.getUser(),
         reservation.getRoom().getAccommodation().getHost(),
         reservationConfirmedContent,
-        reservationRegisteredContent
+        reservationRegisteredContent,
+        NotificationType.RESERVATION_CONFIRMED
     );
   }
 
@@ -264,7 +266,8 @@ public class ReservationService {
         reservation.getUser(),
         reservation.getRoom().getAccommodation().getHost(),
         reservationConfirmedContent,
-        reservationRegisteredContent
+        reservationRegisteredContent,
+        NotificationType.RESERVATION_CANCELED
     );
   }
 
