@@ -3,7 +3,9 @@ package com.meongnyangerang.meongnyangerang.service.notification;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.dto.notification.MessageNotificationPayload;
-import com.meongnyangerang.meongnyangerang.dto.notification.NotificationPayload;
+import com.meongnyangerang.meongnyangerang.dto.notification.NotificationReceiverInfo;
+import com.meongnyangerang.meongnyangerang.dto.notification.ReservationNotificationPayload;
+import com.meongnyangerang.meongnyangerang.dto.notification.ReviewNotificationPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -25,16 +27,18 @@ public class NotificationAsyncService {
       Long senderId,
       SenderType senderType,
       String content,
-      Long receiverId,
-      SenderType receiverType,
+      NotificationReceiverInfo notificationReceiverInfo,
       NotificationType notificationType
   ) {
     try {
+      Long receiverId = notificationReceiverInfo.receiverId();
+      SenderType receiverType = notificationReceiverInfo.receiverType();
+
       MessageNotificationPayload payload = MessageNotificationPayload.from(
-          chatRoomId, senderId,
-          senderType, receiverId,
-          receiverType, content,
-          notificationType
+          notificationReceiverInfo.notificationId(), chatRoomId,
+          senderId, senderType,
+          receiverId, receiverType,
+          content, notificationType
       );
       String receiverKey = receiverType.name() + "_" + receiverId;
 
@@ -50,18 +54,19 @@ public class NotificationAsyncService {
   }
 
   @Async
-  public void sendNotification(
-      Long id,
+  public void sendReservationNotification(
+      Long notificationId,
+      Long reservationId,
       String content,
       Long receiverId,
       SenderType receiverType,
       NotificationType notificationType
   ) {
     try {
-      NotificationPayload payload = NotificationPayload.from(
-          id, content,
-          receiverId, receiverType,
-          notificationType
+      ReservationNotificationPayload payload = ReservationNotificationPayload.from(
+          notificationId, reservationId,
+          content, receiverId,
+          receiverType, notificationType
       );
       String receiverKey = receiverType.name() + "_" + receiverId;
 
@@ -73,6 +78,33 @@ public class NotificationAsyncService {
       log.debug("WebSocket 비동기 예약 알림 전송 완료 - 수신자: {}", receiverKey);
     } catch (Exception e) {
       log.error("WebSocket 비동기 예약 알림 전송 중 오류 발생", e);
+    }
+  }
+
+  @Async
+  public void sendReviewNotification(
+      Long notificationId,
+      Long reviewId,
+      String content,
+      Long receiverId
+  ) {
+    try {
+      SenderType receiverType = SenderType.HOST;
+      ReviewNotificationPayload payload = ReviewNotificationPayload.from(
+          notificationId, reviewId,
+          content, receiverId,
+          receiverType
+      );
+      String receiverKey = receiverType.name() + "_" + receiverId;
+
+      messagingTemplate.convertAndSendToUser(
+          receiverKey,
+          NOTIFICATION_DESTINATION,
+          payload
+      );
+      log.debug("WebSocket 비동기 리뷰 알림 전송 완료 - 수신자: {}", receiverKey);
+    } catch (Exception e) {
+      log.error("WebSocket 비동기 리뷰 알림 전송 중 오류 발생", e);
     }
   }
 }
