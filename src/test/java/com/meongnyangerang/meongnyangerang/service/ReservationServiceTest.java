@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
+import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationSlot;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
@@ -140,7 +141,8 @@ class ReservationServiceTest {
         user,
         host,
         reservationConfirmedContent,
-        reservationRegisteredContent
+        reservationRegisteredContent,
+        NotificationType.RESERVATION_CONFIRMED
     );
   }
 
@@ -419,7 +421,8 @@ class ReservationServiceTest {
         user,
         room.getAccommodation().getHost(),
         reservationConfirmedContent,
-        reservationRegisteredContent
+        reservationRegisteredContent,
+        NotificationType.RESERVATION_CANCELED
     );
   }
 
