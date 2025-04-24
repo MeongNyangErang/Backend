@@ -16,7 +16,7 @@ public class DummyDataGenerateRequest {
   private int accommodationCount;
 
   @Min(value = 1, message = "최소 객실 수는 1 이상이어야 합니다")
-  @Max(value = 100, message = "최소 100개를 넘을 수 없습니다.")
+  @Max(value = 20, message = "최소 20개를 넘을 수 없습니다.")
   private int roomCount;
 
   @Min(value = 1, message = "예약 수는 1 이상이어야 합니다")
