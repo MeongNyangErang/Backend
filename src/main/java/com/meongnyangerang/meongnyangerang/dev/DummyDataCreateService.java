@@ -1,6 +1,7 @@
 package com.meongnyangerang.meongnyangerang.dev;
 
 import static com.meongnyangerang.meongnyangerang.dev.DataConstant.AREAS;
+import static com.meongnyangerang.meongnyangerang.dev.DataConstant.COORDINATES_BY_AREA;
 import static com.meongnyangerang.meongnyangerang.dev.DataConstant.REPORT_REASON;
 import static com.meongnyangerang.meongnyangerang.dev.DataConstant.REQUIRE_COUNT;
 import static com.meongnyangerang.meongnyangerang.dev.DataConstant.TOWNS_BY_AREA;
@@ -811,10 +812,10 @@ public class DummyDataCreateService {
         String description = generateRealisticRoomDesc(name, random);
 
         // 인원 및 반려동물 수 설정
-        int standardPeopleCount = 1 + random.nextInt(3);
+        int standardPeopleCount = 1 + random.nextInt(5);
         int maxPeopleCount = standardPeopleCount + random.nextInt(3);
 
-        int standardPetCount = 1 + random.nextInt(2);
+        int standardPetCount = 1 + random.nextInt(3);
         int maxPetCount = standardPetCount + random.nextInt(2);
 
         // 이미지 및 가격 설정
@@ -972,9 +973,15 @@ public class DummyDataCreateService {
       String detailedAddress = faker.address().streetAddress(); // 무작위 도로명 주소
       String description = generateRealisticAccommodationDescription(name, area, random);
 
-      // 위치 정보 (위도, 경도)
-      Double latitude = 33.0 + random.nextDouble() * 10.0; // 33~43 범위의 위도
-      Double longitude = 125.0 + random.nextDouble() * 10.0; // 125~135 범위의 경도
+      // 위치 정보 (위도, 경도) - 지역별 좌표 범위를 사용하여 현실적인 값 생성
+      double[] coordinates = COORDINATES_BY_AREA.getOrDefault(area, new double[]{37.56, 126.97, 0.05}); // 기본값은 서울
+      double centerLat = coordinates[0];
+      double centerLng = coordinates[1];
+      double range = coordinates[2];
+
+      // 중심 좌표에서 범위 내 랜덤 값 생성
+      Double latitude = centerLat + (random.nextDouble() * 2 - 1) * range;  // 범위 내에서 +/- 랜덤 값
+      Double longitude = centerLng + (random.nextDouble() * 2 - 1) * range; // 범
 
       AccommodationType type = randomEnum(AccommodationType.class, random); // 무작위 숙소 유형
       String thumbnailUrl = imageUrls.get(random.nextInt(imageUrls.size())); // 썸네일 이미지

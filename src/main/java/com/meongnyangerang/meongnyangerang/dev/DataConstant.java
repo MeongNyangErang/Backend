@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.dev;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -8,9 +9,32 @@ import java.util.Map;
  */
 public class DataConstant {
 
+  // 지역별 좌표 정보 (위도, 경도, 변동 범위)
+  public static final Map<String, double[]> COORDINATES_BY_AREA = createCoordinatesMap();
+
+  private static Map<String, double[]> createCoordinatesMap() {
+    Map<String, double[]> map = new HashMap<>();
+    map.put("서울", new double[]{37.56, 126.97, 0.05});   // 서울
+    map.put("부산", new double[]{35.18, 129.08, 0.05});   // 부산
+    map.put("제주", new double[]{33.50, 126.53, 0.1});    // 제주
+    map.put("인천", new double[]{37.45, 126.70, 0.05});   // 인천
+    map.put("여수", new double[]{34.76, 127.66, 0.04});   // 여수
+    map.put("강릉", new double[]{37.75, 128.89, 0.04});   // 강릉
+    map.put("대구", new double[]{35.87, 128.60, 0.05});   // 대구
+    map.put("전주", new double[]{35.82, 127.15, 0.04});   // 전주
+    map.put("광주", new double[]{35.16, 126.85, 0.05});   // 광주
+    map.put("광릉", new double[]{37.75, 127.17, 0.03});   // 광릉
+    map.put("대전", new double[]{36.35, 127.38, 0.05});   // 대전
+    map.put("울산", new double[]{35.54, 129.31, 0.05});   // 울산
+    map.put("경기", new double[]{37.41, 127.52, 0.3});    // 경기도(넓은 지역이므로 변동 범위 넓게)
+    map.put("강원", new double[]{37.88, 128.20, 0.4});    // 강원도(넓은 지역이므로 변동 범위 넓게)
+    return map;
+  }
+
   // 지역 정보
   public static final List<String> AREAS = List.of(
-      "서울", "부산", "제주", "인천", "대구", "광주", "대전", "울산", "경기", "강원");
+      "서울", "부산", "제주", "인천", "여수", "강릉", "대구", "전주",
+      "광주", "광릉", "대전", "울산", "경기", "강원");
 
   public static final Map<String, List<String>> TOWNS_BY_AREA = Map.of(
       "서울", List.of("강남구", "서초구", "송파구", "마포구", "종로구"),

@@ -19,13 +19,6 @@ public class DataGeneratorUtils {
     String suffix = DataConstant.ACCOMMODATION_NAME_SUFFIXES.get(
         random.nextInt(DataConstant.ACCOMMODATION_NAME_SUFFIXES.size()));
 
-    // 50%의 확률로 지역명을 앞에 추가
-    if (random.nextBoolean()) {
-      String area = DataConstant.AREAS.get(
-          random.nextInt(DataConstant.AREAS.size()));
-      return area + " " + prefix + " " + suffix;
-    }
-
     return prefix + " " + suffix;
   }
 
