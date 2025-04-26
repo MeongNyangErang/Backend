@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,7 +19,8 @@ import com.meongnyangerang.meongnyangerang.domain.chat.MessageType;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
-import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagePageResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageAndReceiverInfoResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageHistoryResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
@@ -455,11 +457,12 @@ class ChatServiceTest {
     when(accommodationRepository.findByHostId(host.getId())).thenReturn(Optional.of(accommodation));
 
     // when
-    ChatMessagePageResponse<ChatMessageResponse> response = chatService.getChatMessagesAsUser(
-        userId, chatRoomId, pageable);
+    ChatMessageHistoryResponse response = chatService.getChatMessages(
+        userId, chatRoomId, pageable, SenderType.USER);
 
     // then
-    List<ChatMessageResponse> messages = response.content();
+    PageResponse<ChatMessageResponse> chatMessagePage = response.chatMessagePage();
+    List<ChatMessageResponse> messages = chatMessagePage.content();
     for (int i = 0; i < messages.size(); i++) {
       ChatMessageResponse message = messages.get(i);
       assertThat(message.chatRoomId()).isEqualTo(chatRoomId);
@@ -469,12 +472,14 @@ class ChatServiceTest {
       assertThat(messages.get(i).messageType())
           .isEqualTo(i % 2 == 0 ? MessageType.MESSAGE : MessageType.IMAGE);
     }
-    assertThat(response.page()).isEqualTo(0);
-    assertThat(response.size()).isEqualTo(10);
-    assertThat(response.totalElements()).isEqualTo(2);
-    assertThat(response.totalPages()).isEqualTo(1);
-    assertTrue(response.first());
-    assertTrue(response.last());
+    assertThat(chatMessagePage.page()).isEqualTo(0);
+    assertThat(chatMessagePage.size()).isEqualTo(10);
+    assertThat(chatMessagePage.totalElements()).isEqualTo(2);
+    assertThat(chatMessagePage.totalPages()).isEqualTo(1);
+    assertTrue(chatMessagePage.first());
+    assertTrue(chatMessagePage.last());
+    assertEquals(response.partnerName(), accommodation.getName());
+    assertEquals(response.partnerImageUrl(), accommodation.getThumbnailUrl());
 
     verify(chatRoomRepository, times(1)).findById(chatRoomId);
     verify(chatReadStatusRepository, times(1))
@@ -495,7 +500,7 @@ class ChatServiceTest {
     // when
     // then
     assertThatThrownBy(
-        () -> chatService.getChatMessagesAsUser(userId, chatRoomId, pageable))
+        () -> chatService.getChatMessages(userId, chatRoomId, pageable, SenderType.USER))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
 
@@ -517,8 +522,8 @@ class ChatServiceTest {
 
     // when
     // then
-    assertThatThrownBy(() -> chatService.getChatMessagesAsUser(
-        notAuthorizedUser.getId(), chatRoomId, pageable))
+    assertThatThrownBy(() -> chatService.getChatMessages(
+        notAuthorizedUser.getId(), chatRoomId, pageable, SenderType.USER))
         .isInstanceOf(MeongnyangerangException.class)
         .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
 
@@ -534,7 +539,8 @@ class ChatServiceTest {
     Long senderId = user.getId();
     SenderType senderType = SenderType.USER;
     ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
+    ChatMessageAndReceiverInfoResponse chatMessageResponse = createChatMessageResponse(
+        chatMessage1, user.getNickname(), user.getProfileImage());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
     when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage1);
@@ -545,9 +551,9 @@ class ChatServiceTest {
     chatService.sendMessage(chatRoomId, content, senderId, senderType);
 
     // then
-    verify(chatRoomRepository).findById(chatRoomId);
-    verify(chatMessageRepository).save(chatRoomArgumentCaptor.capture());
-    verify(chatReadStatusRepository).findByChatRoomIdAndParticipantIdAndParticipantType(
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+    verify(chatMessageRepository, times(1)).save(chatRoomArgumentCaptor.capture());
+    verify(chatReadStatusRepository, times(1)).findByChatRoomIdAndParticipantIdAndParticipantType(
         chatRoomId, senderId, senderType);
     verify(messagingTemplate).convertAndSend(
         CHAT_DESTINATION + chatRoomId, chatMessageResponse);
@@ -564,7 +570,8 @@ class ChatServiceTest {
     ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
     ArgumentCaptor<ChatReadStatus> chatReadStatusArgumentCaptor =
         ArgumentCaptor.forClass(ChatReadStatus.class);
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
+    ChatMessageAndReceiverInfoResponse chatMessageResponse = createChatMessageResponse(
+        chatMessage1, user.getNickname(), user.getProfileImage());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
     when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage1);
@@ -594,7 +601,8 @@ class ChatServiceTest {
     String content = "안녕하세요";
     Long senderId = user.getId();
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
+    ChatMessageAndReceiverInfoResponse chatMessageResponse = createChatMessageResponse(
+        chatMessage1, user.getNickname(), user.getProfileImage());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.empty());
 
@@ -617,7 +625,8 @@ class ChatServiceTest {
     String content = "안녕하세요";
     Long senderId = 3L; // 채팅방에 속하지 않은 사용자
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
+    ChatMessageAndReceiverInfoResponse chatMessageResponse = createChatMessageResponse(
+        chatMessage1, user.getNickname(), user.getProfileImage());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
 
@@ -641,7 +650,8 @@ class ChatServiceTest {
 
     Long senderId = user.getId();
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
+    ChatMessageAndReceiverInfoResponse chatMessageResponse = createChatMessageResponse(
+        chatMessage1, user.getNickname(), user.getProfileImage());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
     ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
@@ -672,7 +682,8 @@ class ChatServiceTest {
     ArgumentCaptor<ChatMessage> chatRoomArgumentCaptor = ArgumentCaptor.forClass(ChatMessage.class);
     ArgumentCaptor<ChatReadStatus> chatReadStatusArgumentCaptor =
         ArgumentCaptor.forClass(ChatReadStatus.class);
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
+    ChatMessageAndReceiverInfoResponse chatMessageResponse = createChatMessageResponse(
+        chatMessage1, user.getNickname(), user.getProfileImage());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
     when(chatMessageRepository.save(chatRoomArgumentCaptor.capture())).thenReturn(chatMessage1);
@@ -702,7 +713,8 @@ class ChatServiceTest {
     Long chatRoomId = 999L;
     Long senderId = user.getId();
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
+    ChatMessageAndReceiverInfoResponse chatMessageResponse = createChatMessageResponse(
+        chatMessage1, user.getNickname(), user.getProfileImage());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.empty());
 
@@ -725,7 +737,8 @@ class ChatServiceTest {
     Long chatRoomId = chatRoom1.getId();
     Long senderId = 3L; // 채팅방에 속하지 않은 사용자
     SenderType senderType = SenderType.USER;
-    ChatMessageResponse chatMessageResponse = createChatMessageResponse(chatMessage1);
+    ChatMessageAndReceiverInfoResponse chatMessageResponse = createChatMessageResponse(
+        chatMessage1, user.getNickname(), user.getProfileImage());
 
     when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
 
@@ -741,9 +754,13 @@ class ChatServiceTest {
     verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
   }
 
-  private static ChatMessageResponse createChatMessageResponse(ChatMessage chatMessage) {
-    return new ChatMessageResponse(
+  private static ChatMessageAndReceiverInfoResponse createChatMessageResponse(
+      ChatMessage chatMessage, String name, String imageUrl
+  ) {
+    return new ChatMessageAndReceiverInfoResponse(
         chatMessage.getId(),
+        name,
+        imageUrl,
         chatMessage.getContent(),
         chatMessage.getSenderType(),
         chatMessage.getMessageType(),
