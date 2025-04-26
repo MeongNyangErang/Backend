@@ -8,11 +8,13 @@ import com.meongnyangerang.meongnyangerang.domain.chat.MessageType;
 import com.meongnyangerang.meongnyangerang.domain.chat.SenderType;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
-import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateResponse;
-import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessagePageResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatCreateResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageHistoryResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatMessageAndReceiverInfoResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.ChatRoomPartnerInfo;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
@@ -68,66 +70,49 @@ public class ChatService {
   }
 
   /**
-   * 일반회원이 채팅방 목록 조회
+   * 일반회원 채팅방 목록 조회
    */
-  public PageResponse<ChatRoomResponse> getChatRoomsAsUser(Long userId, Pageable pageable) {
-    Page<ChatRoom> chatRooms = chatRoomRepository.findAllByUser_Id(userId, pageable);
-    Page<ChatRoomResponse> responses = chatRooms.map(this::createChatRoomResponseAsUser);
+  public PageResponse<ChatRoomResponse> getChatRoomsAsUser(Long viewerId, Pageable pageable) {
+    Page<ChatRoom> chatRooms = chatRoomRepository.findAllByUser_Id(viewerId, pageable);
+    Page<ChatRoomResponse> responses = chatRooms.map(
+        chatRoom -> createChatRoomResponse(viewerId, chatRoom, SenderType.USER));
+
     return PageResponse.from(responses);
   }
 
   /**
-   * 호스트가 채팅방 목록 조회
+   * 호스트 채팅방 목록 조회
    */
-  public PageResponse<ChatRoomResponse> getChatRoomsAsHost(Long hostId, Pageable pageable) {
-    Page<ChatRoom> chatRooms = chatRoomRepository.findAllByHost_Id(hostId, pageable);
-    Page<ChatRoomResponse> response = chatRooms.map(this::createChatRoomResponseAsHost);
-    return PageResponse.from(response);
+  public PageResponse<ChatRoomResponse> getChatRoomsAsHost(Long viewerId, Pageable pageable) {
+    Page<ChatRoom> chatRooms = chatRoomRepository.findAllByHost_Id(viewerId, pageable);
+    Page<ChatRoomResponse> responses = chatRooms.map(
+        chatRoom -> createChatRoomResponse(viewerId, chatRoom, SenderType.HOST));
+
+    return PageResponse.from(responses);
   }
 
   /**
-   * 일반회원이 메시지 이력 조회
+   * 메시지 이력 조회
    */
   @Transactional
-  public ChatMessagePageResponse<ChatMessageResponse> getChatMessagesAsUser(
+  public ChatMessageHistoryResponse getChatMessages(
       Long viewerId,
       Long chatRoomId,
-      Pageable pageable
+      Pageable pageable,
+      SenderType viewerType
   ) {
-    SenderType senderType = SenderType.USER;
-    ChatRoom chatRoom = findAndValidateChatRoom(viewerId, chatRoomId, senderType);
-    updateReadStatus(chatRoom, viewerId, senderType);
-
-    Page<ChatMessageResponse> responses = chatMessageRepository.findByChatRoomId(
-            chatRoomId, pageable)
-        .map(ChatMessageResponse::from);
-    Accommodation accommodation = getAccommodationByHostId(chatRoom.getHostId());
-
-    return ChatMessagePageResponse.from(
-        responses,
-        accommodation.getName(),
-        accommodation.getThumbnailUrl()
-    );
-  }
-
-  /**
-   * 호스트가 메시지 이력 조회
-   */
-  @Transactional
-  public ChatMessagePageResponse<ChatMessageResponse> getChatMessagesAsHost(
-      Long viewerId,
-      Long chatRoomId,
-      Pageable pageable
-  ) {
-    SenderType senderType = SenderType.HOST;
-    ChatRoom chatRoom = findAndValidateChatRoom(viewerId, chatRoomId, senderType);
-    updateReadStatus(chatRoom, viewerId, senderType);
+    ChatRoom chatRoom = findAndValidateChatRoom(viewerId, chatRoomId, viewerType);
+    updateReadStatus(chatRoom, viewerId, viewerType);
 
     Page<ChatMessageResponse> responses = chatMessageRepository.findByChatRoomId(
         chatRoomId, pageable).map(ChatMessageResponse::from);
-    User user = chatRoom.getUser();
+    ChatRoomPartnerInfo chatRoomPartnerInfo = getChatRoomPartnerInfo(chatRoom, viewerType);
 
-    return ChatMessagePageResponse.from(responses, user.getNickname(), user.getProfileImage());
+    return ChatMessageHistoryResponse.of(
+        PageResponse.from(responses),
+        chatRoomPartnerInfo.partnerName(),
+        chatRoomPartnerInfo.partnerImageUrl()
+    );
   }
 
   /**
@@ -142,13 +127,9 @@ public class ChatService {
   ) {
     ChatRoom chatRoom = findAndValidateChatRoom(senderId, chatRoomId, senderType);
     ChatMessage savedMessage = saveMessageAndUpdateChat(
-        content,
-        senderId,
-        chatRoom,
-        senderType,
-        MessageType.MESSAGE
-    );
-    sendWebSocketMessage(chatRoomId, savedMessage);
+        content, senderId, chatRoom, senderType, MessageType.MESSAGE);
+
+    sendWebSocketMessageWithSenderInfo(chatRoomId, senderType, savedMessage, chatRoom);
   }
 
   /**
@@ -165,13 +146,23 @@ public class ChatService {
     String imageUrl = imageService.storeImage(imageFile);
 
     ChatMessage savedMessage = saveMessageAndUpdateChat(
-        imageUrl,
-        senderId,
-        chatRoom,
-        senderType,
-        MessageType.IMAGE
+        imageUrl, senderId, chatRoom, senderType, MessageType.IMAGE);
+    sendWebSocketMessageWithSenderInfo(chatRoomId, senderType, savedMessage, chatRoom);
+  }
+
+  private void sendWebSocketMessageWithSenderInfo(
+      Long chatRoomId,
+      SenderType senderType,
+      ChatMessage savedMessage,
+      ChatRoom chatRoom
+  ) {
+    ChatRoomPartnerInfo chatRoomPartnerInfo = getChatRoomMyInfo(chatRoom, senderType);
+    sendWebSocketMessage(
+        chatRoomId,
+        savedMessage,
+        chatRoomPartnerInfo.partnerName(),
+        chatRoomPartnerInfo.partnerImageUrl()
     );
-    sendWebSocketMessage(chatRoomId, savedMessage);
   }
 
   private ChatRoom createNewChatRoom(User user, Host host) {
@@ -208,25 +199,22 @@ public class ChatService {
     chatReadStatus.updateLastReadTime(LocalDateTime.now());
   }
 
-  private void sendWebSocketMessage(Long chatRoomId, ChatMessage savedMessage) {
-    ChatMessageResponse payload = ChatMessageResponse.from(savedMessage);
+  private void sendWebSocketMessage(
+      Long chatRoomId,
+      ChatMessage savedMessage,
+      String receiverName,
+      String receiverImageUrl
+  ) {
+    ChatMessageAndReceiverInfoResponse payload = ChatMessageAndReceiverInfoResponse.from(
+        savedMessage, receiverName, receiverImageUrl);
     messagingTemplate.convertAndSend(CHAT_DESTINATION + chatRoomId, payload);
-    log.debug("메시지 전송 완료: {}", CHAT_DESTINATION + chatRoomId);
   }
 
-  private ChatRoom findAndValidateChatRoom(Long senderId, Long chatRoomId, SenderType senderType) {
+  private ChatRoom findAndValidateChatRoom(Long viewerId, Long chatRoomId, SenderType senderType) {
     ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_CHAT_ROOM));
-    validateChatRoomAccess(senderId, chatRoom, senderType); // 발신자가 채팅방 참여자인지 확인
+    senderType.validateAccess(chatRoom, viewerId); // 발신자가 채팅방 참여자인지 확인
     return chatRoom;
-  }
-
-  private void validateChatRoomAccess(Long viewerId, ChatRoom chatRoom, SenderType senderType) {
-    if (senderType == SenderType.USER && !chatRoom.getUser().getId().equals(viewerId)) {
-      throw new MeongnyangerangException(ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
-    } else if (senderType == SenderType.HOST && !chatRoom.getHost().getId().equals(viewerId)) {
-      throw new MeongnyangerangException(ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
-    }
   }
 
   private void createReadStatusForParticipants(ChatRoom chatRoom, Long userId, Long hostId) {
@@ -254,55 +242,87 @@ public class ChatService {
         .build();
   }
 
-  private ChatRoomResponse createChatRoomResponseAsUser(ChatRoom chatRoom) {
-    Accommodation accommodation = getAccommodationByHostId(chatRoom.getHostId());
+  private ChatMessage createChatMessage(
+      ChatRoom chatRoom,
+      String content,
+      SenderType senderType,
+      MessageType messageType
+  ) {
+    return ChatMessage.builder()
+        .chatRoom(chatRoom)
+        .content(content)
+        .senderType(senderType)
+        .messageType(messageType)
+        .build();
+  }
+
+  private ChatRoomResponse createChatRoomResponse(
+      Long viewerId, ChatRoom chatRoom, SenderType viewerType
+  ) {
     ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(
         chatRoom.getId()); // 마지막 메시지 정보
+    ChatRoomPartnerInfo chatRoomPartnerInfo = getChatRoomPartnerInfo(chatRoom, viewerType);
 
     int unreadCount = chatMessageRepository.countByChatRoomIdAndSenderTypeAndCreatedAtGreaterThan(
         chatRoom.getId(),
-        SenderType.HOST, // 호스트가 보낸 메시지 중에서
-        getLastReadTime(chatRoom.getId(), chatRoom.getUserId(), SenderType.USER)
-    ); // 읽지 않은 메시지 수
+        chatRoomPartnerInfo.partnerType(),
+        getLastReadTime(chatRoom.getId(), viewerId, viewerType)
+    );
 
     return new ChatRoomResponse(
         chatRoom.getId(),
-        chatRoom.getHostId(),
-        accommodation.getName(),
-        accommodation.getThumbnailUrl(),
+        chatRoomPartnerInfo.partnerId(),
+        chatRoomPartnerInfo.partnerName(),
+        chatRoomPartnerInfo.partnerImageUrl(),
         getLastMessage(lastMessage),
         getLastMessageType(lastMessage),
         getLastMessageTime(lastMessage),
         unreadCount
+    );
+  }
+
+  private ChatRoomPartnerInfo getChatRoomMyInfo(ChatRoom chatRoom, SenderType viewerType) {
+    if (viewerType == SenderType.USER) {
+      User user = chatRoom.getUser();
+      return getChatRoomUserInfo(user);
+    } else if (viewerType == SenderType.HOST) {
+      return getChatRoomHostInfo(chatRoom.getHostId());
+    }
+    throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+  }
+
+  private ChatRoomPartnerInfo getChatRoomPartnerInfo(ChatRoom chatRoom, SenderType viewerType) {
+    if (viewerType == SenderType.USER) {
+      return getChatRoomHostInfo(chatRoom.getHostId());
+    } else if (viewerType == SenderType.HOST) {
+      User user = chatRoom.getUser();
+      return getChatRoomUserInfo(user);
+    }
+    throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+  }
+
+  private ChatRoomPartnerInfo getChatRoomHostInfo(Long hostId) {
+    Accommodation accommodation = getAccommodationByHostId(hostId);
+    return new ChatRoomPartnerInfo(
+        hostId,
+        accommodation.getName(),
+        accommodation.getThumbnailUrl(),
+        SenderType.HOST
+    );
+  }
+
+  private static ChatRoomPartnerInfo getChatRoomUserInfo(User user) {
+    return new ChatRoomPartnerInfo(
+        user.getId(),
+        user.getNickname(),
+        user.getProfileImage(),
+        SenderType.USER
     );
   }
 
   private Accommodation getAccommodationByHostId(Long hostId) {
     return accommodationRepository.findByHostId(hostId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ACCOMMODATION_NOT_FOUND));
-  }
-
-  private ChatRoomResponse createChatRoomResponseAsHost(ChatRoom chatRoom) {
-    ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(
-        chatRoom.getId()); // 마지막 메시지 정보
-
-    User user = chatRoom.getUser();
-    int unreadCount = chatMessageRepository.countByChatRoomIdAndSenderTypeAndCreatedAtGreaterThan(
-        chatRoom.getId(),
-        SenderType.USER, // 일반회원이 보낸 메시지 중에서
-        getLastReadTime(chatRoom.getId(), chatRoom.getHostId(), SenderType.HOST)
-    ); // 읽지 않은 메시지 수
-
-    return new ChatRoomResponse(
-        chatRoom.getId(),
-        user.getId(),
-        user.getNickname(),
-        user.getProfileImage(),
-        getLastMessage(lastMessage),
-        getLastMessageType(lastMessage),
-        getLastMessageTime(lastMessage),
-        unreadCount
-    );
   }
 
   private LocalDateTime getLastReadTime(
@@ -326,19 +346,5 @@ public class ChatService {
 
   private LocalDateTime getLastMessageTime(ChatMessage lastMessage) {
     return lastMessage != null ? lastMessage.getCreatedAt() : null;
-  }
-
-  private ChatMessage createChatMessage(
-      ChatRoom chatRoom,
-      String content,
-      SenderType senderType,
-      MessageType messageType
-  ) {
-    return ChatMessage.builder()
-        .chatRoom(chatRoom)
-        .content(content)
-        .senderType(senderType)
-        .messageType(messageType)
-        .build();
   }
 }
