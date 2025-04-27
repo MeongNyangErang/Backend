@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -752,6 +752,112 @@ class ChatServiceTest {
     verify(imageService, never()).storeImage(imageFile);
     verify(chatMessageRepository, never()).save(chatMessage1);
     verify(messagingTemplate, never()).convertAndSend(chatMessageResponse);
+  }
+
+  @Test
+  @DisplayName("채팅 읽음 처리 성공 - 읽음 생태 존재")
+  void markMessageAsRead_Success_WhenExistsReadStatus() {
+    // given
+    Long userId = user.getId();
+    Long chatRoomId = chatRoom1.getId();
+    SenderType senderType = SenderType.USER;
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+    when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, userId, senderType)).thenReturn(Optional.of(userReadStatus));
+
+    // when
+    chatService.markMessageAsRead(userId, chatRoom1.getId(), SenderType.USER);
+
+    // then
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+    verify(chatReadStatusRepository, times(1))
+        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, userId, senderType);
+    verify(chatReadStatusRepository, never()).save(any(ChatReadStatus.class));
+  }
+
+  @Test
+  @DisplayName("채팅 읽음 처리 성공 - 읽음 생태 없음")
+  void markMessageAsRead_Success_WhenNotExistsReadStatus() {
+    // given
+    Long userId = user.getId();
+    Long chatRoomId = chatRoom1.getId();
+    SenderType senderType = SenderType.USER;
+    ChatReadStatus newChatReadStatus = ChatReadStatus.builder()
+        .id(100L)
+        .chatRoom(chatRoom1)
+        .participantId(userId)
+        .participantType(senderType)
+        .lastReadTime(now)
+        .build();
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(chatRoom1));
+    when(chatReadStatusRepository.findByChatRoomIdAndParticipantIdAndParticipantType(
+        chatRoomId, userId, senderType)).thenReturn(Optional.empty());
+
+    ArgumentCaptor<ChatReadStatus> chatReadStatusCaptor = ArgumentCaptor.forClass(
+        ChatReadStatus.class);
+    when(chatReadStatusRepository.save(chatReadStatusCaptor.capture()))
+        .thenReturn(newChatReadStatus);
+
+    // when
+    chatService.markMessageAsRead(userId, chatRoom1.getId(), SenderType.USER);
+
+    // then
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+    verify(chatReadStatusRepository, times(1))
+        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, userId, senderType);
+
+    verify(chatReadStatusRepository, times(1))
+        .save(chatReadStatusCaptor.getValue());
+  }
+
+  @Test
+  @DisplayName("메시지 읽음 처리 - 채팅방이 존재하지 않을 때")
+  void markMessagesAsRead_ChatRoomNotFound_ThrowsException() {
+    // given
+    Long userId = user.getId();
+    Long chatRoomId = chatRoom1.getId();
+    SenderType senderType = SenderType.USER;
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.empty());
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.markMessageAsRead(userId, chatRoomId, SenderType.USER))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.NOT_EXIST_CHAT_ROOM);
+
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+    verify(chatReadStatusRepository, never())
+        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, userId, senderType);
+    verify(chatReadStatusRepository, never()).save(any(ChatReadStatus.class));
+  }
+
+  @Test
+  @DisplayName("메시지 읽음 처리 - 접근 권한이 없을 때")
+  void markMessagesAsRead_Unauthorized_ThrowsException() {
+    // given
+    Long userId = user.getId();
+    Long chatRoomId = chatRoom1.getId();
+    SenderType senderType = SenderType.USER;
+    User otherUser = User.builder().id(20L).build();
+    ChatRoom unauthorizaedChatRoom = ChatRoom.builder()
+        .user(otherUser)
+        .host(host)
+        .build();
+
+    when(chatRoomRepository.findById(chatRoomId)).thenReturn(Optional.of(unauthorizaedChatRoom));
+
+    // when
+    // then
+    assertThatThrownBy(() -> chatService.markMessageAsRead(userId, chatRoomId, SenderType.USER))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasFieldOrPropertyWithValue("ErrorCode", ErrorCode.CHAT_ROOM_NOT_AUTHORIZED);
+
+    verify(chatRoomRepository, times(1)).findById(chatRoomId);
+    verify(chatReadStatusRepository, never())
+        .findByChatRoomIdAndParticipantIdAndParticipantType(chatRoomId, userId, senderType);
+    verify(chatReadStatusRepository, never()).save(any(ChatReadStatus.class));
   }
 
   private static ChatMessageAndReceiverInfoResponse createChatMessageResponse(

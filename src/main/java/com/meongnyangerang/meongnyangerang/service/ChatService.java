@@ -150,6 +150,15 @@ public class ChatService {
     sendWebSocketMessageWithSenderInfo(chatRoomId, senderType, savedMessage, chatRoom);
   }
 
+  /**
+   * 읽음 상태 갱신
+   */
+  @Transactional
+  public void markMessageAsRead(Long viewerId, Long chatRoomId, SenderType viewerType) {
+    ChatRoom chatRoom = findAndValidateChatRoom(viewerId, chatRoomId, viewerType);
+    updateReadStatus(chatRoom, viewerId, viewerType);
+  }
+
   private void sendWebSocketMessageWithSenderInfo(
       Long chatRoomId,
       SenderType senderType,

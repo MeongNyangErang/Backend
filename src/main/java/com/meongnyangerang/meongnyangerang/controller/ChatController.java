@@ -16,6 +16,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -81,6 +82,16 @@ public class ChatController {
   ) {
     chatService.sendImage(
         request.chatRoomId(), imageFile, userDetails.getId(), userDetails.getRole().toSenderType());
+    return ResponseEntity.ok().build();
+  }
+
+  @PatchMapping("/{chatRoomId}/read")
+  public ResponseEntity<Void> markAsRead(
+      @PathVariable Long chatRoomId,
+      @AuthenticationPrincipal UserDetailsImpl userDetails
+  ) {
+    SenderType viewerType = userDetails.getRole().toSenderType();
+    chatService.markMessageAsRead(userDetails.getId(), chatRoomId, viewerType);
     return ResponseEntity.ok().build();
   }
 }
