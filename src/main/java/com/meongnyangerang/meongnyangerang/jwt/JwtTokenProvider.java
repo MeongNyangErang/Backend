@@ -44,7 +44,8 @@ public class JwtTokenProvider {
   // 암호화 알고리즘
   private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;
 
-  private final long tokenTime = 1000L * 60 * 60; // 1시간
+  private final long accessTokenValidity = 1000L * 60 * 15; // 15분
+  private final long refreshTokenValidity = 1000L * 60 * 60 * 24 * 7; // 7일
 
   // Bean 생성 후 자동 실행 (secretKey를 Key 객체로 변환하여 저장)
   @PostConstruct
