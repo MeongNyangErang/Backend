@@ -49,7 +49,7 @@ public class AdminService {
 
     // 상태 검증은 JwtTokenProvider 내부에서 수행됨
 
-    return jwtTokenProvider.createToken(admin.getId(), admin.getEmail(), admin.getRole().name(),
+    return jwtTokenProvider.createAccessToken(admin.getId(), admin.getEmail(), admin.getRole().name(),
         admin.getStatus());
   }
 

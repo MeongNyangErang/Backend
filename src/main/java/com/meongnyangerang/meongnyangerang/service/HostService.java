@@ -103,7 +103,7 @@ public class HostService {
       throw new MeongnyangerangException(ACCOUNT_PENDING);
     }
 
-    return jwtTokenProvider.createToken(host.getId(), host.getEmail(), host.getRole().name(),
+    return jwtTokenProvider.createAccessToken(host.getId(), host.getEmail(), host.getRole().name(),
         host.getStatus());
   }
 

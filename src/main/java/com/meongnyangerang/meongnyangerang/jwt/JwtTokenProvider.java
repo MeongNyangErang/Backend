@@ -53,10 +53,10 @@ public class JwtTokenProvider {
     key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
   }
 
-  // 토큰 생성
-  public String createToken(Long id, String email, String role, Enum<?> status) {
+  // Access Token 발급
+  public String createAccessToken(Long id, String email, String role, Enum<?> status) {
     Date now = new Date();
-    Date expiryDate = new Date(now.getTime() + tokenTime);
+    Date expiryDate = new Date(now.getTime() + accessTokenValidity);
 
     return Jwts.builder()
         .setSubject(email) // JWT payload의 subject(email)

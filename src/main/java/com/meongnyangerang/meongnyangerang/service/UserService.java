@@ -82,7 +82,7 @@ public class UserService {
       throw new MeongnyangerangException(ACCOUNT_DELETED);
     }
 
-    return jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole().name(),
+    return jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole().name(),
         user.getStatus());
   }
 
