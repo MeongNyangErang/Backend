@@ -249,4 +249,26 @@ class AuthServiceTest {
         .isInstanceOf(MeongnyangerangException.class)
         .hasMessage(ErrorCode.INVALID_REFRESH_TOKEN.getDescription());
   }
+
+  @Test
+  @DisplayName("DB 기준으로 만료된 리프레시 토큰이면 예외 발생")
+  void should_throw_exception_when_refresh_token_expired_in_db() {
+    // given
+    String refreshToken = "expired-in-db";
+    RefreshToken expiredToken = RefreshToken.builder()
+        .refreshToken(refreshToken)
+        .userId(1L)
+        .role(Role.ROLE_USER)
+        .expiryDate(LocalDateTime.now().minusMinutes(1))
+        .build();
+
+    // when
+    Mockito.when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
+    Mockito.when(refreshTokenRepository.findByRefreshToken(refreshToken)).thenReturn(Optional.of(expiredToken));
+
+    // then
+    assertThatThrownBy(() -> authService.reissueAccessToken(refreshToken))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasMessage(ErrorCode.EXPIRED_REFRESH_TOKEN.getDescription());
+  }
 }
