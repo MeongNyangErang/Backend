@@ -69,6 +69,18 @@ public class JwtTokenProvider {
         .compact();
   }
 
+  // Refresh Token 발급
+  public String createRefreshToken() {
+    Date now = new Date();
+    Date expiryDate = new Date(now.getTime() + refreshTokenValidity);
+
+    return Jwts.builder()
+        .setIssuedAt(now)
+        .setExpiration(expiryDate)
+        .signWith(key, signatureAlgorithm)
+        .compact();
+  }
+
   // JWT 토큰 유효성 검사
   public boolean validateToken(String token) {
     try {
