@@ -2,6 +2,8 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.EmailRequest;
 import com.meongnyangerang.meongnyangerang.dto.VerifyCodeRequest;
+import com.meongnyangerang.meongnyangerang.dto.auth.RefreshRequest;
+import com.meongnyangerang.meongnyangerang.dto.auth.RefreshResponse;
 import com.meongnyangerang.meongnyangerang.service.AuthService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -58,5 +60,12 @@ public class AuthController {
       @RequestParam("nickname") @Size(min = 2, max = 20) String nickname) {
     authService.checkNickname(nickname);
     return ResponseEntity.ok().build();
+  }
+
+  // 리프레시 토큰을 이용해 새로운 액세스 토큰을 재발급하는 API
+  @PostMapping("/auth/reissue")
+  public ResponseEntity<RefreshResponse> reissueAccessToken(
+      @RequestBody @Valid RefreshRequest request) {
+    return ResponseEntity.ok(authService.reissueAccessToken(request.refreshToken()));
   }
 }
