@@ -62,6 +62,7 @@ public class SecurityConfig {
                 "/api/v1/search/accommodations",
                 "/api/v1/accommodations/{accommodationId}",
                 "/api/v1/rooms/{roomId}",
+                "api/v1/auth/reissue",
                 "/health"
             ).permitAll()
             .requestMatchers("/api/v1/users/**").hasAuthority("ROLE_USER")
