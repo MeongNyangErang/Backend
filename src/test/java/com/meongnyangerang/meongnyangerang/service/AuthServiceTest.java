@@ -24,6 +24,7 @@ import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.dto.auth.RefreshResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
+import com.meongnyangerang.meongnyangerang.exception.JwtCustomException;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
@@ -270,5 +271,21 @@ class AuthServiceTest {
     assertThatThrownBy(() -> authService.reissueAccessToken(refreshToken))
         .isInstanceOf(MeongnyangerangException.class)
         .hasMessage(ErrorCode.EXPIRED_REFRESH_TOKEN.getDescription());
+  }
+
+  @Test
+  @DisplayName("리프레시 토큰 자체가 유효성 검증 실패하면 예외 발생")
+  void should_throw_exception_when_refresh_token_validation_fails() {
+    // given
+    String invalidRefreshToken = "invalid-refresh-token";
+
+    // when
+    Mockito.when(jwtTokenProvider.validateToken(invalidRefreshToken))
+        .thenThrow(new JwtCustomException(ErrorCode.INVALID_JWT_FORMAT));
+
+    // then
+    assertThatThrownBy(() -> authService.reissueAccessToken(invalidRefreshToken))
+        .isInstanceOf(JwtCustomException.class)
+        .hasMessage(ErrorCode.INVALID_JWT_FORMAT.getDescription());
   }
 }
