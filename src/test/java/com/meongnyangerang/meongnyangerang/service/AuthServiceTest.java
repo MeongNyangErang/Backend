@@ -6,6 +6,7 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EXPIRED_AUTH_CODE;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTH_CODE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -22,6 +23,7 @@ import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.dto.auth.RefreshResponse;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
@@ -230,5 +232,21 @@ class AuthServiceTest {
     // then
     RefreshResponse response = authService.reissueAccessToken(refreshToken);
     assertThat(response.accessToken()).isEqualTo(newAccessToken);
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 리프레시 토큰으로 요청 시 예외 발생")
+  void should_throw_exception_when_refresh_token_not_found_in_db() {
+    // given
+    String refreshToken = "nonexistent-token";
+
+    // when
+    Mockito.when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
+    Mockito.when(refreshTokenRepository.findByRefreshToken(refreshToken)).thenReturn(Optional.empty());
+
+    // then
+    assertThatThrownBy(() -> authService.reissueAccessToken(refreshToken))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasMessage(ErrorCode.INVALID_REFRESH_TOKEN.getDescription());
   }
 }
