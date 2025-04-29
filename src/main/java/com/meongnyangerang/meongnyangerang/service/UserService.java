@@ -95,7 +95,7 @@ public class UserService {
     String refreshToken = jwtTokenProvider.createRefreshToken();
 
     // Refresh Token 저장
-    refreshTokenRepository.deleteByUserId(user.getId()); // 중복 방지
+    refreshTokenRepository.deleteByUserIdAndRole(user.getId(), user.getRole()); // 중복 방지
     refreshTokenRepository.save(RefreshToken.builder()
         .refreshToken(refreshToken)
         .userId(user.getId())
