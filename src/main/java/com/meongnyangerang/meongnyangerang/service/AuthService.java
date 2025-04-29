@@ -115,7 +115,7 @@ public class AuthService {
 
     // DB 조회
     RefreshToken tokenEntity = refreshTokenRepository.findByRefreshToken(refreshToken)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.INVALID_REFRESH_TOKEN));
+        .orElseThrow(() -> new MeongnyangerangException(INVALID_REFRESH_TOKEN));
 
     // 만료 시간 체크
     if (tokenEntity.getExpiryDate().isBefore(LocalDateTime.now())) {
