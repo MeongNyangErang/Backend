@@ -128,27 +128,36 @@ public class AuthService {
 
     // 새로운 Access Token을 RefreshResponse로 감싸서 반환
     return new RefreshResponse(switch (role) {
-      case ROLE_USER -> {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
-        if (user.getStatus() == UserStatus.DELETED) {
-          throw new MeongnyangerangException(ACCOUNT_DELETED);
-        }
-        yield jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), role.name(), user.getStatus());
-      }
-      case ROLE_HOST -> {
-        Host host = hostRepository.findById(userId)
-            .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
-        if (host.getStatus() == HostStatus.DELETED || host.getStatus() == HostStatus.PENDING) {
-          throw new MeongnyangerangException(INVALID_AUTHORIZED);
-        }
-        yield jwtTokenProvider.createAccessToken(host.getId(), host.getEmail(), role.name(), host.getStatus());
-      }
-      case ROLE_ADMIN -> {
-        Admin admin = adminRepository.findById(userId)
-            .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
-        yield jwtTokenProvider.createAccessToken(admin.getId(), admin.getEmail(), role.name(), admin.getStatus());
-      }
+      case ROLE_USER -> reissueForUser(userId);
+      case ROLE_HOST -> reissueForHost(userId);
+      case ROLE_ADMIN -> reissueForAdmin(userId);
     });
+  }
+
+  private String reissueForUser(Long userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+    if (user.getStatus() == UserStatus.DELETED) {
+      throw new MeongnyangerangException(ACCOUNT_DELETED);
+    }
+    return jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole().name(),
+        user.getStatus());
+  }
+
+  private String reissueForHost(Long hostId) {
+    Host host = hostRepository.findById(hostId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+    if (host.getStatus() == HostStatus.DELETED || host.getStatus() == HostStatus.PENDING) {
+      throw new MeongnyangerangException(INVALID_AUTHORIZED);
+    }
+    return jwtTokenProvider.createAccessToken(host.getId(), host.getEmail(), host.getRole().name(),
+        host.getStatus());
+  }
+
+  private String reissueForAdmin(Long adminId) {
+    Admin admin = adminRepository.findById(adminId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+    return jwtTokenProvider.createAccessToken(admin.getId(), admin.getEmail(),
+        admin.getRole().name(), admin.getStatus());
   }
 }
