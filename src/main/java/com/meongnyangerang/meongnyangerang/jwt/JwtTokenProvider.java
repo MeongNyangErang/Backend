@@ -44,7 +44,8 @@ public class JwtTokenProvider {
   // 암호화 알고리즘
   private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;
 
-  private final long tokenTime = 1000L * 60 * 60; // 1시간
+  private final long accessTokenValidity = 1000L * 60 * 15; // 15분
+  private final long refreshTokenValidity = 1000L * 60 * 60 * 24 * 7; // 7일
 
   // Bean 생성 후 자동 실행 (secretKey를 Key 객체로 변환하여 저장)
   @PostConstruct
@@ -52,10 +53,10 @@ public class JwtTokenProvider {
     key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
   }
 
-  // 토큰 생성
-  public String createToken(Long id, String email, String role, Enum<?> status) {
+  // Access Token 발급
+  public String createAccessToken(Long id, String email, String role, Enum<?> status) {
     Date now = new Date();
-    Date expiryDate = new Date(now.getTime() + tokenTime);
+    Date expiryDate = new Date(now.getTime() + accessTokenValidity);
 
     return Jwts.builder()
         .setSubject(email) // JWT payload의 subject(email)
@@ -65,6 +66,18 @@ public class JwtTokenProvider {
         .setIssuedAt(now) // 발급 시간
         .setExpiration(expiryDate) // 만료 시간
         .signWith(key, signatureAlgorithm) // 암호화 알고리즘
+        .compact();
+  }
+
+  // Refresh Token 발급
+  public String createRefreshToken() {
+    Date now = new Date();
+    Date expiryDate = new Date(now.getTime() + refreshTokenValidity);
+
+    return Jwts.builder()
+        .setIssuedAt(now)
+        .setExpiration(expiryDate)
+        .signWith(key, signatureAlgorithm)
         .compact();
   }
 
