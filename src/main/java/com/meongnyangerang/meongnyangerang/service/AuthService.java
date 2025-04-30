@@ -135,6 +135,7 @@ public class AuthService {
   }
 
   // 로그아웃
+  @Transactional
   public void logout(Long userId, Role role) {
     // 해당 사용자의 RefreshToken 삭제(id, role 모두 검증)
     refreshTokenRepository.deleteByUserIdAndRole(userId, role);
