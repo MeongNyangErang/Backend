@@ -288,4 +288,18 @@ class AuthServiceTest {
         .isInstanceOf(JwtCustomException.class)
         .hasMessage(ErrorCode.INVALID_JWT_FORMAT.getDescription());
   }
+
+  @Test
+  @DisplayName("로그아웃 시 해당 사용자의 리프레시 토큰 삭제")
+  void should_delete_refresh_token_on_logout() {
+    // given
+    Long userId = 1L;
+    Role role = Role.ROLE_USER;
+
+    // when
+    authService.logout(userId, role);
+
+    // then
+    verify(refreshTokenRepository, times(1)).deleteByUserIdAndRole(userId, role);
+  }
 }
