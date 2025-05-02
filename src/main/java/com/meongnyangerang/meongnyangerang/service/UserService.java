@@ -79,6 +79,11 @@ public class UserService {
     User user = userRepository.findByEmail(request.getEmail())
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 
+    // 일반 회원만 로그인 허용(로컬 회원가입)
+    if (user.getProvider() != AuthProvider.LOCAL) {
+      throw new MeongnyangerangException(SOCIAL_ACCOUNT_LOGIN_ONLY);
+    }
+
     // 비밀번호 검증
     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
       throw new MeongnyangerangException(INVALID_PASSWORD);
