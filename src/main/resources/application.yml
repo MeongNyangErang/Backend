@@ -38,7 +38,7 @@ spring:
     secret: ${JWT_SECRET}
 
   kakao:
-    client-id: ${KAKAO_CLIENT_ID}
-    redirect-uri: ${KAKAO_REDIRECT_URI}
+    client-id: ${REST_API_KEY}
+    redirect-uri: ${REDIRECT_URI}
     token-uri: https://kauth.kakao.com/oauth/token
     user-info-uri: https://kapi.kakao.com/v2/user/me
