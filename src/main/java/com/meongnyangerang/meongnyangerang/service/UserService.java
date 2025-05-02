@@ -12,6 +12,7 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_R
 
 import com.meongnyangerang.meongnyangerang.domain.auth.RefreshToken;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
+import com.meongnyangerang.meongnyangerang.domain.user.AuthProvider;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
@@ -66,6 +67,7 @@ public class UserService {
         .profileImage(profileImageUrl)
         .status(ACTIVE)
         .role(ROLE_USER)
+        .provider(AuthProvider.LOCAL)
         .build());
   }
 
