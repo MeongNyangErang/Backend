@@ -35,6 +35,7 @@ public enum ErrorCode {
   EXISTS_RESERVATION(HttpStatus.BAD_REQUEST, "예약이 존재하는 객실은 삭제할 수 없습니다."),
   REVIEW_REPORT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 신고된 리뷰입니다."),
   ROOM_COUNT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "객실은 20개까지 생성 가능합니다."),
+  SOCIAL_ACCOUNT_LOGIN_ONLY(HttpStatus.BAD_REQUEST, "소셜 계정은 일반 로그인을 지원하지 않습니다."),
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
   INVALID_JWT_FORMAT(HttpStatus.BAD_REQUEST, "JWT 형식이 올바르지 않습니다."),
