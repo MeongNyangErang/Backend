@@ -2,6 +2,7 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
+import com.meongnyangerang.meongnyangerang.dto.auth.KakaoUserInfoResponse;
 import com.meongnyangerang.meongnyangerang.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,7 @@ public class KakaoOAuthController {
   @GetMapping("/kakao/callback")
   public ResponseEntity<LoginResponse> kakaoCallback(@RequestParam String code,
       @RequestParam Role role) {
-    
+
     // 1. 카카오 Access Token 요청
     String kakaoAccessToken = kakaoOAuthService.getAccessToken(code);
 
