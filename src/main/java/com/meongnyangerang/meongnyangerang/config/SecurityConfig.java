@@ -62,7 +62,8 @@ public class SecurityConfig {
                 "/api/v1/search/accommodations",
                 "/api/v1/accommodations/{accommodationId}",
                 "/api/v1/rooms/{roomId}",
-                "/health"
+                "/health",
+                "/actuator/**"
             ).permitAll()
             .requestMatchers("/api/v1/users/**").hasAuthority("ROLE_USER")
             .requestMatchers("/api/v1/chats/users/create").hasAuthority("ROLE_USER")
