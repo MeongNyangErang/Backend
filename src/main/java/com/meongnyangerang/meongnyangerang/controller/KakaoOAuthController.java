@@ -37,8 +37,8 @@ public class KakaoOAuthController {
 
     // 3. 소셜 로그인 처리
     return ResponseEntity.ok(switch (role) {
-      case ROLE_USER -> userService.kakaoLogin(kakaoUserInfo);
-      case ROLE_HOST -> hostService.kakaoLogin(kakaoUserInfo);
+      case ROLE_USER -> userService.loginWithKakao(kakaoUserInfo);
+      case ROLE_HOST -> hostService.loginWithKakao(kakaoUserInfo);
       default -> throw new MeongnyangerangException(INVALID_REQUEST);
     });
   }

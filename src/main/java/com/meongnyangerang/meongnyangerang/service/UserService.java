@@ -6,6 +6,7 @@ import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.DELETED
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTHORIZED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_RESERVATION_EXISTS;
@@ -20,6 +21,7 @@ import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
+import com.meongnyangerang.meongnyangerang.dto.auth.KakaoUserInfoResponse;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -28,6 +30,7 @@ import com.meongnyangerang.meongnyangerang.repository.auth.RefreshTokenRepositor
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -113,6 +116,45 @@ public class UserService {
 
     // Access Token + Refresh Token 함께 응답
     return new LoginResponse(accessToken, refreshToken);
+  }
+
+  // 사용자 카카오 로그인
+  @Transactional
+  public LoginResponse loginWithKakao(KakaoUserInfoResponse kakaoUser) {
+    String email = kakaoUser.email();
+    String nickname = kakaoUser.nickname();
+    String profileImage = kakaoUser.profileImage();
+    String oauthId = String.valueOf(kakaoUser.getId());
+
+    Optional<User> optionalUser = userRepository.findByEmail(email);
+
+    if (optionalUser.isPresent()) {
+      User user = optionalUser.get();
+
+      if (user.getStatus() != ACTIVE) {
+        throw new MeongnyangerangException(ACCOUNT_DELETED);
+      }
+
+      if (user.getProvider() != AuthProvider.KAKAO || !oauthId.equals(user.getOauthId())) {
+        throw new MeongnyangerangException(INVALID_AUTHORIZED);
+      }
+
+      return issueJwtToken(user);
+    }
+
+    // 회원가입 처리
+    User newUser = userRepository.save(User.builder()
+        .email(email)
+        .nickname(nickname)
+        .profileImage(profileImage)
+        .provider(AuthProvider.KAKAO)
+        .oauthId(oauthId)
+        .role(ROLE_USER)
+        .status(ACTIVE)
+        .password(null)
+        .build());
+
+    return issueJwtToken(newUser);
   }
 
   // 사용자 회원 탈퇴
