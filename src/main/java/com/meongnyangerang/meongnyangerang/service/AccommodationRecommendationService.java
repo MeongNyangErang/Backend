@@ -68,7 +68,7 @@ public class AccommodationRecommendationService {
   public PageResponse<RecommendationResponse> getDefaultLoadMoreRecommendations(PetType type,
       Pageable pageable) {
     int size = calculateActualSize(pageable);
-    int from = (int) pageable.getOffset();
+    int from = calculateFromOffset(pageable);
 
     Query query = buildPetTypeQuery(type.name());
 
@@ -126,7 +126,7 @@ public class AccommodationRecommendationService {
     UserPet pet = validateAndGetUserPet(userId, petId);
 
     int size = calculateActualSize(pageable);
-    int from = (int) pageable.getOffset();
+    int from = calculateFromOffset(pageable);
 
     Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
     Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
@@ -148,7 +148,7 @@ public class AccommodationRecommendationService {
           roomScoreMap, wishlistedIds);
 
       long totalElements = response.hits().total().value();
-      int totalPages = (int) Math.ceil((double) totalElements / pageable.getPageSize());
+      int totalPages = (int) Math.ceil((double) totalElements / size);
 
       boolean isFirst = pageable.getPageNumber() == 0;
       boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
@@ -308,12 +308,16 @@ public class AccommodationRecommendationService {
 
   private int calculateActualSize(Pageable pageable) {
     int size = pageable.getPageSize();
-    int from = (int) pageable.getOffset();
+    int from = calculateFromOffset(pageable);
 
     if (from + size > MAX_RESULTS) {
       return Math.max(0, MAX_RESULTS - from);
     }
     return size;
+  }
+
+  private int calculateFromOffset(Pageable pageable) {
+    return pageable.getPageNumber() == 0 ? SIZE : (int) pageable.getOffset();
   }
 
   // 점수 계산 및 정렬 처리
