@@ -11,6 +11,7 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_RE
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_PHONE_NUMBER;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.FILE_IS_EMPTY;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTHORIZED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_RESERVATION_EXISTS;
@@ -18,11 +19,13 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_R
 import com.meongnyangerang.meongnyangerang.domain.auth.RefreshToken;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
+import com.meongnyangerang.meongnyangerang.domain.user.AuthProvider;
 import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
+import com.meongnyangerang.meongnyangerang.dto.auth.KakaoUserInfoResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
@@ -126,6 +129,22 @@ public class HostService {
 
     // Access Token + Refresh Token 함께 응답
     return new LoginResponse(accessToken, refreshToken);
+  }
+
+  // 호스트 카카오 로그인
+  @Transactional
+  public LoginResponse loginWithKakao(KakaoUserInfoResponse kakaoUser) {
+    String email = kakaoUser.email();
+    String oauthId = String.valueOf(kakaoUser.getId());
+
+    Host host = hostRepository.findByEmail(email)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    if (host.getStatus() != HostStatus.ACTIVE) {
+      throw new MeongnyangerangException(INVALID_AUTHORIZED);
+    }
+
+    return issueJwtToken(host);
   }
 
   // 호스트 회원 탈퇴
