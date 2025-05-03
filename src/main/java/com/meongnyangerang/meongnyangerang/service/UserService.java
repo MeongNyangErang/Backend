@@ -98,24 +98,7 @@ public class UserService {
       throw new MeongnyangerangException(ACCOUNT_DELETED);
     }
 
-    // Access Token 발급
-    String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(),
-        user.getRole().name(), user.getStatus());
-
-    // Refresh Token 발급
-    String refreshToken = jwtTokenProvider.createRefreshToken();
-
-    // Refresh Token 저장
-    refreshTokenRepository.deleteByUserIdAndRole(user.getId(), user.getRole()); // 중복 방지
-    refreshTokenRepository.save(RefreshToken.builder()
-        .refreshToken(refreshToken)
-        .userId(user.getId())
-        .role(user.getRole())
-        .expiryDate(LocalDateTime.now().plusDays(7))
-        .build());
-
-    // Access Token + Refresh Token 함께 응답
-    return new LoginResponse(accessToken, refreshToken);
+    return issueJwtToken(user);
   }
 
   // 사용자 카카오 로그인
@@ -155,6 +138,29 @@ public class UserService {
         .build());
 
     return issueJwtToken(newUser);
+  }
+
+  // Access Token + Refresh Token 발급 메서드
+  private LoginResponse issueJwtToken(User user) {
+
+    // Access Token 발급
+    String accessToken = jwtTokenProvider.createAccessToken(
+        user.getId(), user.getEmail(), user.getRole().name(), user.getStatus());
+
+    // Refresh Token 발급
+    String refreshToken = jwtTokenProvider.createRefreshToken();
+
+    // Refresh Token 저장
+    refreshTokenRepository.deleteByUserIdAndRole(user.getId(), user.getRole()); // 중복 방지
+    refreshTokenRepository.save(RefreshToken.builder()
+        .refreshToken(refreshToken)
+        .userId(user.getId())
+        .role(user.getRole())
+        .expiryDate(LocalDateTime.now().plusDays(7))
+        .build());
+
+    // Access Token + Refresh Token 함께 응답
+    return new LoginResponse(accessToken, refreshToken);
   }
 
   // 사용자 회원 탈퇴
