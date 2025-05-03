@@ -68,7 +68,7 @@ public class AccommodationRecommendationService {
   public PageResponse<RecommendationResponse> getDefaultLoadMoreRecommendations(PetType type,
       Pageable pageable) {
     int size = calculateActualSize(pageable);
-    int from = (int) pageable.getOffset();
+    int from = calculateFromOffset(pageable);
 
     Query query = buildPetTypeQuery(type.name());
 
