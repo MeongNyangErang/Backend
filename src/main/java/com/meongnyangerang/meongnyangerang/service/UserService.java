@@ -9,6 +9,7 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_RESERVATION_EXISTS;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.SOCIAL_ACCOUNT_LOGIN_ONLY;
 
 import com.meongnyangerang.meongnyangerang.domain.auth.RefreshToken;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
