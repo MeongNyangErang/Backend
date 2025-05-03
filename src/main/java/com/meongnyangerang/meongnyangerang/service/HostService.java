@@ -111,6 +111,29 @@ public class HostService {
       throw new MeongnyangerangException(ACCOUNT_PENDING);
     }
 
+    // 액세스 토큰 + 리프레시 토큰 발급
+    return issueJwtToken(host);
+  }
+
+  // 호스트 카카오 로그인
+  @Transactional
+  public LoginResponse loginWithKakao(KakaoUserInfoResponse kakaoUser) {
+    String email = kakaoUser.email();
+    String oauthId = String.valueOf(kakaoUser.getId());
+
+    Host host = hostRepository.findByEmail(email)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
+
+    if (host.getStatus() != HostStatus.ACTIVE) {
+      throw new MeongnyangerangException(INVALID_AUTHORIZED);
+    }
+
+    return issueJwtToken(host);
+  }
+
+  // Access Token + Refresh Token 발급 메서드
+  private LoginResponse issueJwtToken(Host host) {
+
     // Access Token 발급
     String accessToken = jwtTokenProvider.createAccessToken(host.getId(), host.getEmail(),
         host.getRole().name(), host.getStatus());
@@ -129,22 +152,6 @@ public class HostService {
 
     // Access Token + Refresh Token 함께 응답
     return new LoginResponse(accessToken, refreshToken);
-  }
-
-  // 호스트 카카오 로그인
-  @Transactional
-  public LoginResponse loginWithKakao(KakaoUserInfoResponse kakaoUser) {
-    String email = kakaoUser.email();
-    String oauthId = String.valueOf(kakaoUser.getId());
-
-    Host host = hostRepository.findByEmail(email)
-        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
-
-    if (host.getStatus() != HostStatus.ACTIVE) {
-      throw new MeongnyangerangException(INVALID_AUTHORIZED);
-    }
-
-    return issueJwtToken(host);
   }
 
   // 호스트 회원 탈퇴
