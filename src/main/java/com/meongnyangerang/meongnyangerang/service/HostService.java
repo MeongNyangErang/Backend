@@ -86,6 +86,7 @@ public class HostService {
   }
 
   // 호스트 로그인
+  @Transactional
   public LoginResponse login(@Valid LoginRequest request) {
 
     // 호스트 조회
