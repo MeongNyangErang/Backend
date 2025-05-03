@@ -308,7 +308,7 @@ public class AccommodationRecommendationService {
 
   private int calculateActualSize(Pageable pageable) {
     int size = pageable.getPageSize();
-    int from = (int) pageable.getOffset();
+    int from = calculateFromOffset(pageable);
 
     if (from + size > MAX_RESULTS) {
       return Math.max(0, MAX_RESULTS - from);
