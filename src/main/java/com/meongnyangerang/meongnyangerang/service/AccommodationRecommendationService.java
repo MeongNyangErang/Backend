@@ -148,7 +148,7 @@ public class AccommodationRecommendationService {
           roomScoreMap, wishlistedIds);
 
       long totalElements = response.hits().total().value();
-      int totalPages = (int) Math.ceil((double) totalElements / pageable.getPageSize());
+      int totalPages = (int) Math.ceil((double) totalElements / size);
 
       boolean isFirst = pageable.getPageNumber() == 0;
       boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
