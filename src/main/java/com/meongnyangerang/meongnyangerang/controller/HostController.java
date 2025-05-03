@@ -45,7 +45,7 @@ public class HostController {
   // 호스트 로그인 API
   @PostMapping("/login")
   public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-    return ResponseEntity.ok(new LoginResponse(hostService.login(request)));
+    return ResponseEntity.ok(hostService.login(request));
   }
 
   // 호스트 회원 탈퇴 API

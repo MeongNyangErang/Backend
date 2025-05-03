@@ -5,9 +5,11 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_
 
 import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
+import com.meongnyangerang.meongnyangerang.domain.auth.RefreshToken;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
+import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostListResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
@@ -16,7 +18,9 @@ import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
+import com.meongnyangerang.meongnyangerang.repository.auth.RefreshTokenRepository;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,9 +38,10 @@ public class AdminService {
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
   private final MailComponent mailComponent;
+  private final RefreshTokenRepository refreshTokenRepository;
 
   // 관리자 로그인
-  public String login(@Valid LoginRequest request) {
+  public LoginResponse login(@Valid LoginRequest request) {
 
     // 관리자 조회
     Admin admin = adminRepository.findByEmail(request.getEmail())
@@ -47,10 +52,25 @@ public class AdminService {
       throw new MeongnyangerangException(INVALID_PASSWORD);
     }
 
-    // 상태 검증은 JwtTokenProvider 내부에서 수행됨
+    // Access Token 발급
+    String accessToken = jwtTokenProvider.createAccessToken(
+        admin.getId(), admin.getEmail(), admin.getRole().name(), admin.getStatus()
+    );
 
-    return jwtTokenProvider.createToken(admin.getId(), admin.getEmail(), admin.getRole().name(),
-        admin.getStatus());
+    // Refresh Token 발급
+    String refreshToken = jwtTokenProvider.createRefreshToken();
+
+    // 기존 Refresh Token 삭제 후 저장
+    refreshTokenRepository.deleteByUserIdAndRole(admin.getId(), admin.getRole());
+    refreshTokenRepository.save(RefreshToken.builder()
+        .refreshToken(refreshToken)
+        .userId(admin.getId())
+        .role(admin.getRole())
+        .expiryDate(LocalDateTime.now().plusDays(7))
+        .build());
+
+    // 6. Access Token + Refresh Token 응답
+    return new LoginResponse(accessToken, refreshToken);
   }
 
   // 가입 신청 목록 조회

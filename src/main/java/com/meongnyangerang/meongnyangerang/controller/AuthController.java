@@ -2,12 +2,16 @@ package com.meongnyangerang.meongnyangerang.controller;
 
 import com.meongnyangerang.meongnyangerang.dto.EmailRequest;
 import com.meongnyangerang.meongnyangerang.dto.VerifyCodeRequest;
+import com.meongnyangerang.meongnyangerang.dto.auth.RefreshRequest;
+import com.meongnyangerang.meongnyangerang.dto.auth.RefreshResponse;
+import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.AuthService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,6 +61,20 @@ public class AuthController {
   public ResponseEntity<Void> checkNickname(
       @RequestParam("nickname") @Size(min = 2, max = 20) String nickname) {
     authService.checkNickname(nickname);
+    return ResponseEntity.ok().build();
+  }
+
+  // 리프레시 토큰을 이용해 새로운 액세스 토큰을 재발급하는 API
+  @PostMapping("/auth/reissue")
+  public ResponseEntity<RefreshResponse> reissueAccessToken(
+      @RequestBody @Valid RefreshRequest request) {
+    return ResponseEntity.ok(authService.reissueAccessToken(request.refreshToken()));
+  }
+
+  // 로그아웃(사용자, 호스트, 관리자 모두 공통)
+  @PostMapping("/auth/logout")
+  public ResponseEntity<Void> logout(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+    authService.logout(userDetails.getId(), userDetails.getRole());
     return ResponseEntity.ok().build();
   }
 }

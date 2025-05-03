@@ -10,9 +10,11 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PA
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_RESERVATION_EXISTS;
 
+import com.meongnyangerang.meongnyangerang.domain.auth.RefreshToken;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
+import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
@@ -20,6 +22,7 @@ import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import com.meongnyangerang.meongnyangerang.repository.auth.RefreshTokenRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -37,8 +40,9 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
   private final ImageService imageService;
-  private final ReservationRepository reservationRepository;
   private final AuthService authService;
+  private final ReservationRepository reservationRepository;
+  private final RefreshTokenRepository refreshTokenRepository;
 
   // 사용자 회원가입
   public void registerUser(UserSignupRequest request, MultipartFile profileImage) {
@@ -66,7 +70,8 @@ public class UserService {
   }
 
   // 사용자 로그인
-  public String login(@Valid LoginRequest request) {
+  @Transactional
+  public LoginResponse login(@Valid LoginRequest request) {
 
     // 사용자 조회
     User user = userRepository.findByEmail(request.getEmail())
@@ -82,8 +87,24 @@ public class UserService {
       throw new MeongnyangerangException(ACCOUNT_DELETED);
     }
 
-    return jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole().name(),
-        user.getStatus());
+    // Access Token 발급
+    String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(),
+        user.getRole().name(), user.getStatus());
+
+    // Refresh Token 발급
+    String refreshToken = jwtTokenProvider.createRefreshToken();
+
+    // Refresh Token 저장
+    refreshTokenRepository.deleteByUserIdAndRole(user.getId(), user.getRole()); // 중복 방지
+    refreshTokenRepository.save(RefreshToken.builder()
+        .refreshToken(refreshToken)
+        .userId(user.getId())
+        .role(user.getRole())
+        .expiryDate(LocalDateTime.now().plusDays(7))
+        .build());
+
+    // Access Token + Refresh Token 함께 응답
+    return new LoginResponse(accessToken, refreshToken);
   }
 
   // 사용자 회원 탈퇴

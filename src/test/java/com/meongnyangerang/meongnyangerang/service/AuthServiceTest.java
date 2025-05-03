@@ -5,6 +5,8 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.EXPIRED_AUTH_CODE;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTH_CODE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -16,10 +18,20 @@ import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.component.MailComponent;
 import com.meongnyangerang.meongnyangerang.domain.auth.AuthenticationCode;
+import com.meongnyangerang.meongnyangerang.domain.auth.RefreshToken;
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
+import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
+import com.meongnyangerang.meongnyangerang.dto.auth.RefreshResponse;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
+import com.meongnyangerang.meongnyangerang.exception.JwtCustomException;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
+import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.AuthenticationCodeRepository;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import com.meongnyangerang.meongnyangerang.repository.auth.RefreshTokenRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +53,15 @@ class AuthServiceTest {
 
   @Mock
   private HostRepository hostRepository;
+
+  @Mock
+  private AdminRepository adminRepository;
+
+  @Mock
+  private JwtTokenProvider jwtTokenProvider;
+
+  @Mock
+  private RefreshTokenRepository refreshTokenRepository;
 
   @Mock
   private AuthenticationCodeRepository authenticationCodeRepository;
@@ -175,5 +197,109 @@ class AuthServiceTest {
     MeongnyangerangException ex = assertThrows(MeongnyangerangException.class,
         () -> authService.checkNickname(nickname));
     assertEquals(DUPLICATE_NICKNAME, ex.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("정상적인 유저의 리프레시 토큰으로 액세스 토큰 재발급 성공")
+  void should_reissue_access_token_when_valid_refresh_token_for_user() {
+    // given
+    String refreshToken = "valid-refresh-token";
+    Long userId = 1L;
+    Role role = Role.ROLE_USER;
+    UserStatus status = UserStatus.ACTIVE;
+
+    RefreshToken token = RefreshToken.builder()
+        .refreshToken(refreshToken)
+        .userId(userId)
+        .role(role)
+        .expiryDate(LocalDateTime.now().plusDays(1))
+        .build();
+
+    User user = User.builder()
+        .id(userId)
+        .email("test@example.com")
+        .status(status)
+        .role(role)
+        .build();
+
+    String newAccessToken = "new-access-token";
+
+    // when
+    Mockito.when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
+    Mockito.when(refreshTokenRepository.findByRefreshToken(refreshToken)).thenReturn(Optional.of(token));
+    Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    Mockito.when(jwtTokenProvider.createAccessToken(userId, user.getEmail(), role.name(), status)).thenReturn(newAccessToken);
+
+    // then
+    RefreshResponse response = authService.reissueAccessToken(refreshToken);
+    assertThat(response.accessToken()).isEqualTo(newAccessToken);
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 리프레시 토큰으로 요청 시 예외 발생")
+  void should_throw_exception_when_refresh_token_not_found_in_db() {
+    // given
+    String refreshToken = "nonexistent-token";
+
+    // when
+    Mockito.when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
+    Mockito.when(refreshTokenRepository.findByRefreshToken(refreshToken)).thenReturn(Optional.empty());
+
+    // then
+    assertThatThrownBy(() -> authService.reissueAccessToken(refreshToken))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasMessage(ErrorCode.INVALID_REFRESH_TOKEN.getDescription());
+  }
+
+  @Test
+  @DisplayName("DB 기준으로 만료된 리프레시 토큰이면 예외 발생")
+  void should_throw_exception_when_refresh_token_expired_in_db() {
+    // given
+    String refreshToken = "expired-in-db";
+    RefreshToken expiredToken = RefreshToken.builder()
+        .refreshToken(refreshToken)
+        .userId(1L)
+        .role(Role.ROLE_USER)
+        .expiryDate(LocalDateTime.now().minusMinutes(1))
+        .build();
+
+    // when
+    Mockito.when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
+    Mockito.when(refreshTokenRepository.findByRefreshToken(refreshToken)).thenReturn(Optional.of(expiredToken));
+
+    // then
+    assertThatThrownBy(() -> authService.reissueAccessToken(refreshToken))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasMessage(ErrorCode.EXPIRED_REFRESH_TOKEN.getDescription());
+  }
+
+  @Test
+  @DisplayName("리프레시 토큰 자체가 유효성 검증 실패하면 예외 발생")
+  void should_throw_exception_when_refresh_token_validation_fails() {
+    // given
+    String invalidRefreshToken = "invalid-refresh-token";
+
+    // when
+    Mockito.when(jwtTokenProvider.validateToken(invalidRefreshToken))
+        .thenThrow(new JwtCustomException(ErrorCode.INVALID_JWT_FORMAT));
+
+    // then
+    assertThatThrownBy(() -> authService.reissueAccessToken(invalidRefreshToken))
+        .isInstanceOf(JwtCustomException.class)
+        .hasMessage(ErrorCode.INVALID_JWT_FORMAT.getDescription());
+  }
+
+  @Test
+  @DisplayName("로그아웃 시 해당 사용자의 리프레시 토큰 삭제")
+  void should_delete_refresh_token_on_logout() {
+    // given
+    Long userId = 1L;
+    Role role = Role.ROLE_USER;
+
+    // when
+    authService.logout(userId, role);
+
+    // then
+    verify(refreshTokenRepository, times(1)).deleteByUserIdAndRole(userId, role);
   }
 }

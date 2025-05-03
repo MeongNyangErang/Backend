@@ -15,17 +15,20 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PA
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_RESERVATION_EXISTS;
 
+import com.meongnyangerang.meongnyangerang.domain.auth.RefreshToken;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
+import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
+import com.meongnyangerang.meongnyangerang.repository.auth.RefreshTokenRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -44,8 +47,9 @@ public class HostService {
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
   private final ImageService imageService;
-  private final ReservationRepository reservationRepository;
   private final AuthService authService;
+  private final ReservationRepository reservationRepository;
+  private final RefreshTokenRepository refreshTokenRepository;
 
   // 호스트 회원가입
   public void registerHost(HostSignupRequest request,
@@ -82,7 +86,7 @@ public class HostService {
   }
 
   // 호스트 로그인
-  public String login(@Valid LoginRequest request) {
+  public LoginResponse login(@Valid LoginRequest request) {
 
     // 호스트 조회
     Host host = hostRepository.findByEmail(request.getEmail())
@@ -103,8 +107,24 @@ public class HostService {
       throw new MeongnyangerangException(ACCOUNT_PENDING);
     }
 
-    return jwtTokenProvider.createToken(host.getId(), host.getEmail(), host.getRole().name(),
-        host.getStatus());
+    // Access Token 발급
+    String accessToken = jwtTokenProvider.createAccessToken(host.getId(), host.getEmail(),
+        host.getRole().name(), host.getStatus());
+
+    // Refresh Token 발급
+    String refreshToken = jwtTokenProvider.createRefreshToken();
+
+    // Refresh Token 저장
+    refreshTokenRepository.deleteByUserIdAndRole(host.getId(), host.getRole()); // 중복 방지
+    refreshTokenRepository.save(RefreshToken.builder()
+        .refreshToken(refreshToken)
+        .userId(host.getId())
+        .role(host.getRole())
+        .expiryDate(LocalDateTime.now().plusDays(7))
+        .build());
+
+    // Access Token + Refresh Token 함께 응답
+    return new LoginResponse(accessToken, refreshToken);
   }
 
   // 호스트 회원 탈퇴
