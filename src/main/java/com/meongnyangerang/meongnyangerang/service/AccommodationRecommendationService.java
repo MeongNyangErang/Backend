@@ -317,7 +317,7 @@ public class AccommodationRecommendationService {
   }
 
   private int calculateFromOffset(Pageable pageable) {
-    return pageable.getPageNumber() == 0 ? 6 : (int) pageable.getOffset();
+    return pageable.getPageNumber() == 0 ? SIZE : (int) pageable.getOffset();
   }
 
   // 점수 계산 및 정렬 처리
