@@ -316,6 +316,10 @@ public class AccommodationRecommendationService {
     return size;
   }
 
+  private int calculateFromOffset(Pageable pageable) {
+    return pageable.getPageNumber() == 0 ? 6 : (int) pageable.getOffset();
+  }
+
   // 점수 계산 및 정렬 처리
   private List<RecommendationResponse> calculateScoreAndSort(
       SearchResponse<AccommodationDocument> response,
