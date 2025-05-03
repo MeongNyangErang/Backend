@@ -72,6 +72,10 @@ dependencies {
     // 더미 데이터 생성
     implementation 'net.datafaker:datafaker:2.0.2'
 
+    // 모니터링
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
