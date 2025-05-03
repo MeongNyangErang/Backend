@@ -126,7 +126,7 @@ public class AccommodationRecommendationService {
     UserPet pet = validateAndGetUserPet(userId, petId);
 
     int size = calculateActualSize(pageable);
-    int from = (int) pageable.getOffset();
+    int from = calculateFromOffset(pageable);
 
     Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
     Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
