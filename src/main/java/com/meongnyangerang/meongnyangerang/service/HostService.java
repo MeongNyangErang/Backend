@@ -123,8 +123,12 @@ public class HostService {
     Host host = hostRepository.findByEmail(email)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 
-    if (host.getStatus() != HostStatus.ACTIVE) {
-      throw new MeongnyangerangException(INVALID_AUTHORIZED);
+    if (host.getStatus() == HostStatus.PENDING) {
+      throw new MeongnyangerangException(ACCOUNT_PENDING);
+    }
+
+    if (host.getStatus() == HostStatus.DELETED) {
+      throw new MeongnyangerangException(ACCOUNT_DELETED);
     }
 
     return issueJwtToken(host);
