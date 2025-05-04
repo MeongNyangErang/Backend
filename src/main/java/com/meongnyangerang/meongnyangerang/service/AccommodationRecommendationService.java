@@ -82,7 +82,7 @@ public class AccommodationRecommendationService {
 
       List<RecommendationResponse> content = response.hits().hits().stream()
           .map(Hit::source).filter(Objects::nonNull)
-          .map(this::mapToResponse)
+          .map(RecommendationResponse::from)
           .toList();
 
       // 총 개수 및 페이지 계산
@@ -333,7 +333,7 @@ public class AccommodationRecommendationService {
         .map(doc -> new AbstractMap.SimpleEntry<>(calculateScore(doc, accScoreMap, roomScoreMap),
             doc))
         .sorted((a, b) -> Integer.compare(b.getKey(), a.getKey()))
-        .map(entry -> mapToResponse(entry.getValue(), wishlistedIds))
+        .map(entry -> RecommendationResponse.from(entry.getValue(), wishlistedIds))
         .toList();
   }
 
