@@ -6,6 +6,8 @@ import lombok.Getter;
 @Getter
 public class KakaoUserInfoResponse {
   private Long id;
+
+  @JsonProperty("kakao_account")
   private KakaoAccount kakaoAccount;
 
   @Getter
@@ -23,14 +25,16 @@ public class KakaoUserInfoResponse {
   }
 
   public String email() {
-    return kakaoAccount.getEmail();
+    return kakaoAccount != null ? kakaoAccount.getEmail() : null;
   }
 
   public String nickname() {
-    return kakaoAccount.getProfile().getNickname();
+    return kakaoAccount != null && kakaoAccount.getProfile() != null
+        ? kakaoAccount.getProfile().getNickname() : null;
   }
 
   public String profileImage() {
-    return kakaoAccount.getProfile().getProfileImageUrl();
+    return kakaoAccount != null && kakaoAccount.getProfile() != null
+        ? kakaoAccount.getProfile().getProfileImageUrl() : null;
   }
 }
