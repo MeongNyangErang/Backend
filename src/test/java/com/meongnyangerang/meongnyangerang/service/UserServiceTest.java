@@ -165,7 +165,7 @@ class UserServiceTest {
 
   // 정상 로그인 (기존 유저, ACTIVE, provider=KAKAO, oauthId 동일)
   @Test
-  @DisplayName("카카오 로그인: 기존 활성화 유저가 정상적으로 토큰을 발급받는다")
+  @DisplayName("카카오 로그인 성공 - 기존 활성화 유저가 정상적으로 토큰을 발급받는다")
   void loginWithKakao_shouldReturnToken_whenUserExistsAndValid() {
     String email = "test@example.com";
     String oauthId = "123456";
@@ -190,6 +190,30 @@ class UserServiceTest {
     assertEquals("access", response.getAccessToken());
     assertEquals("refresh", response.getRefreshToken());
     verify(refreshTokenRepository).deleteByUserIdAndRole(1L, Role.ROLE_USER);
+    verify(refreshTokenRepository).save(any());
+  }
+
+  // 신규 유저
+  @Test
+  @DisplayName("카카오 로그인 성공 - 신규 유저가 회원가입 후 토큰을 발급받는다")
+  void loginWithKakao_shouldRegisterAndReturnToken_whenUserNotExists() {
+    String email = "new@example.com";
+    KakaoUserInfoResponse kakaoUser = mockKakaoUser(email, "777", "뉴유저", "img");
+
+    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+      User u = invocation.getArgument(0);
+      u.setId(42L);
+      return u;
+    });
+    when(jwtTokenProvider.createAccessToken(42L, email, Role.ROLE_USER.name(), UserStatus.ACTIVE)).thenReturn("access-new");
+    when(jwtTokenProvider.createRefreshToken()).thenReturn("refresh-new");
+
+    LoginResponse response = userService.loginWithKakao(kakaoUser);
+
+    assertEquals("access-new", response.getAccessToken());
+    assertEquals("refresh-new", response.getRefreshToken());
+    verify(refreshTokenRepository).deleteByUserIdAndRole(42L, Role.ROLE_USER);
     verify(refreshTokenRepository).save(any());
   }
 
