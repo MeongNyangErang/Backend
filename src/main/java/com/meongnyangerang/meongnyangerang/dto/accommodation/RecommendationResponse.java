@@ -26,7 +26,7 @@ public class RecommendationResponse {
   private boolean isWishlisted;
 
   // AccommodationDocument를 응답 객체로 변환
-  private static RecommendationResponse from(AccommodationDocument doc) {
+  public static RecommendationResponse from(AccommodationDocument doc) {
     return RecommendationResponse.builder()
         .id(doc.getId())
         .name(doc.getName())
@@ -37,7 +37,7 @@ public class RecommendationResponse {
   }
 
   // 기존 메서드 오버로딩: 찜 여부 포함
-  private static RecommendationResponse from(AccommodationDocument doc, Set<Long> wishlistedIds) {
+  public static RecommendationResponse from(AccommodationDocument doc, Set<Long> wishlistedIds) {
     return RecommendationResponse.builder()
         .id(doc.getId())
         .name(doc.getName())
