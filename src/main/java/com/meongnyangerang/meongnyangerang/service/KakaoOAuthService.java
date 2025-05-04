@@ -20,16 +20,16 @@ public class KakaoOAuthService {
 
   private final RestTemplate restTemplate = new RestTemplate();
 
-  @Value("${kakao.client-id}")
+  @Value("${REST_API_KEY}")
   private String clientId;
 
-  @Value("${kakao.redirect-uri}")
+  @Value("${REDIRECT_URI}")
   private String redirectUri;
 
-  @Value("${kakao.token-uri}")
+  @Value("${TOKEN_URI}")
   private String tokenUri;
 
-  @Value("${kakao.user-info-uri}")
+  @Value("${USER_INFO_URI}")
   private String userInfoUri;
 
   public String getAccessToken(String code) {
