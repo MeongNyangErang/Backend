@@ -217,6 +217,25 @@ class UserServiceTest {
     verify(refreshTokenRepository).save(any());
   }
 
+  // DELETED 상태 유저
+  @Test
+  @DisplayName("카카오 로그인 실패 - 삭제된 유저는 로그인할 수 없다")
+  void loginWithKakao_shouldThrow_whenUserIsDeleted() {
+    String email = "deleted@example.com";
+    User deletedUser = User.builder()
+        .email(email)
+        .provider(AuthProvider.KAKAO)
+        .oauthId("9999")
+        .status(UserStatus.DELETED)
+        .build();
+
+    when(userRepository.findByEmail(email)).thenReturn(Optional.of(deletedUser));
+
+    KakaoUserInfoResponse kakaoUser = mockKakaoUser(email, "9999", "닉", "img");
+
+    assertThrows(MeongnyangerangException.class, () -> userService.loginWithKakao(kakaoUser));
+  }
+
   private KakaoUserInfoResponse mockKakaoUser(String email, String id, String nickname, String imageUrl) {
     KakaoUserInfoResponse response = new KakaoUserInfoResponse();
     response.setId(Long.parseLong(id));
