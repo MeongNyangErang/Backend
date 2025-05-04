@@ -274,6 +274,25 @@ public class AccommodationRecommendationService {
     });
   }
 
+  private PageResponse<RecommendationResponse> buildPageResponse(
+      List<RecommendationResponse> content, Pageable pageable,
+      int size, long totalElements, int from) {
+
+    int totalPages = (int) Math.ceil((double) totalElements / size);
+    boolean isFirst = pageable.getPageNumber() == 0;
+    boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
+
+    return new PageResponse<>(
+        content,
+        pageable.getPageNumber(),
+        size,
+        totalElements,
+        totalPages,
+        isFirst,
+        isLast
+    );
+  }
+
   // 반려동물 정보로 숙소 시설 점수 맵 생성
   private Map<AccommodationPetFacilityType, Integer> getAccommodationScoreMap(UserPet pet) {
     return PetFacilityScoreMap.getAccommodationScore(
