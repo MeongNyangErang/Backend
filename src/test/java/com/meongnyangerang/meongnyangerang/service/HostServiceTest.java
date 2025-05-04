@@ -182,6 +182,21 @@ class HostServiceTest {
         .hasMessageContaining(INVALID_AUTHORIZED.getDescription());
   }
 
+  @Test
+  @DisplayName("카카오 로그인 실패 - 호스트 존재하지 않음")
+  void loginWithKakao_hostNotFound() {
+    // given
+    String email = "host@example.com";
+    KakaoUserInfoResponse kakaoUser = createKakaoUserInfo(email, 1L);
+
+    given(hostRepository.findByEmail(email)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.loginWithKakao(kakaoUser))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasMessageContaining(NOT_EXIST_ACCOUNT.getDescription());
+  }
+
   private KakaoUserInfoResponse createKakaoUserInfo(String email, Long kakaoId) {
     KakaoUserInfoResponse.KakaoAccount.Profile profile = new KakaoUserInfoResponse.KakaoAccount.Profile();
     ReflectionTestUtils.setField(profile, "nickname", "호스트");
