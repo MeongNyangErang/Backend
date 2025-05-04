@@ -87,20 +87,8 @@ public class AccommodationRecommendationService {
 
       // 총 개수 및 페이지 계산
       long totalElements = response.hits().total().value();
-      int totalPages = (int) Math.ceil((double) totalElements / size);
 
-      boolean isFirst = pageable.getPageNumber() == 0;
-      boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
-
-      return new PageResponse<>(
-          content,
-          pageable.getPageNumber(),
-          size,
-          totalElements,
-          totalPages,
-          isFirst,
-          isLast
-      );
+      return buildPageResponse(content, pageable, size, totalElements, from);
     } catch (IOException e) {
       throw new MeongnyangerangException(ErrorCode.DEFAULT_RECOMMENDATION_FAILED);
     }
@@ -148,20 +136,8 @@ public class AccommodationRecommendationService {
           roomScoreMap, wishlistedIds);
 
       long totalElements = response.hits().total().value();
-      int totalPages = (int) Math.ceil((double) totalElements / size);
 
-      boolean isFirst = pageable.getPageNumber() == 0;
-      boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
-
-      return new PageResponse<>(
-          content,
-          pageable.getPageNumber(),
-          size,
-          totalElements,
-          totalPages,
-          isFirst,
-          isLast
-      );
+      return buildPageResponse(content, pageable, size, totalElements, from);
     } catch (IOException e) {
       throw new MeongnyangerangException(ErrorCode.USER_RECOMMENDATION_FAILED);
     }
