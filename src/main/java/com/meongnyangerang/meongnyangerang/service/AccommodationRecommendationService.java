@@ -337,29 +337,6 @@ public class AccommodationRecommendationService {
         .toList();
   }
 
-  // AccommodationDocument를 응답 객체로 변환
-  private RecommendationResponse mapToResponse(AccommodationDocument doc) {
-    return RecommendationResponse.builder()
-        .id(doc.getId())
-        .name(doc.getName())
-        .price(doc.getPrice())
-        .totalRating(doc.getTotalRating())
-        .thumbnailUrl(doc.getThumbnailUrl())
-        .build();
-  }
-
-  // 기존 메서드 오버로딩: 찜 여부 포함
-  private RecommendationResponse mapToResponse(AccommodationDocument doc, Set<Long> wishlistedIds) {
-    return RecommendationResponse.builder()
-        .id(doc.getId())
-        .name(doc.getName())
-        .price(doc.getPrice())
-        .totalRating(doc.getTotalRating())
-        .thumbnailUrl(doc.getThumbnailUrl())
-        .isWishlisted(wishlistedIds.contains(doc.getId()))
-        .build();
-  }
-
   private UserPet validateAndGetUserPet(Long userId, Long petId) {
     Optional<UserPet> petOptional = userPetRepository.findById(petId);
 
