@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.service;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_NICKNAME;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTHORIZED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -160,6 +161,25 @@ class HostServiceTest {
 
     then(refreshTokenRepository).should().deleteByUserIdAndRole(1L, Role.ROLE_HOST);
     then(refreshTokenRepository).should().save(any(RefreshToken.class));
+  }
+
+  @Test
+  @DisplayName("카카오 로그인 실패 - 상태 PENDING(DELETED 상태도 검증 같음")
+  void loginWithKakao_pendingHost() {
+    // given
+    String email = "host@example.com";
+    KakaoUserInfoResponse kakaoUser = createKakaoUserInfo(email, 1L);
+    Host host = Host.builder()
+        .email(email)
+        .status(HostStatus.PENDING)
+        .build();
+
+    given(hostRepository.findByEmail(email)).willReturn(Optional.of(host));
+
+    // when & then
+    assertThatThrownBy(() -> hostService.loginWithKakao(kakaoUser))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasMessageContaining(INVALID_AUTHORIZED.getDescription());
   }
 
   private KakaoUserInfoResponse createKakaoUserInfo(String email, Long kakaoId) {
