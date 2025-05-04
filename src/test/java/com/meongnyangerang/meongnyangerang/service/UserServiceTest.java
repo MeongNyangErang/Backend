@@ -20,14 +20,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
+import com.meongnyangerang.meongnyangerang.domain.user.AuthProvider;
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
+import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
+import com.meongnyangerang.meongnyangerang.dto.auth.KakaoUserInfoResponse;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
+import com.meongnyangerang.meongnyangerang.repository.auth.RefreshTokenRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.io.IOException;
 import java.util.Optional;
@@ -54,10 +60,16 @@ class UserServiceTest {
   private PasswordEncoder passwordEncoder;
 
   @Mock
+  private JwtTokenProvider jwtTokenProvider;
+
+  @Mock
   private ImageService imageService;
 
   @Mock
   private ReservationRepository reservationRepository;
+
+  @Mock
+  private RefreshTokenRepository refreshTokenRepository;
 
   @Mock
   private AuthService authService;
@@ -149,6 +161,52 @@ class UserServiceTest {
     // then
     assertEquals(UserStatus.DELETED, user.getStatus());
     assertNotNull(user.getDeletedAt());
+  }
+
+  // 정상 로그인 (기존 유저, ACTIVE, provider=KAKAO, oauthId 동일)
+  @Test
+  @DisplayName("카카오 로그인: 기존 활성화 유저가 정상적으로 토큰을 발급받는다")
+  void loginWithKakao_shouldReturnToken_whenUserExistsAndValid() {
+    String email = "test@example.com";
+    String oauthId = "123456";
+    User user = User.builder()
+        .id(1L)
+        .email(email)
+        .nickname("닉네임")
+        .provider(AuthProvider.KAKAO)
+        .oauthId(oauthId)
+        .role(Role.ROLE_USER)
+        .status(UserStatus.ACTIVE)
+        .build();
+
+    KakaoUserInfoResponse kakaoUser = mockKakaoUser(email, oauthId, "닉네임", "http://img.com");
+
+    when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+    when(jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole().name(), user.getStatus())).thenReturn("access");
+    when(jwtTokenProvider.createRefreshToken()).thenReturn("refresh");
+
+    LoginResponse response = userService.loginWithKakao(kakaoUser);
+
+    assertEquals("access", response.getAccessToken());
+    assertEquals("refresh", response.getRefreshToken());
+    verify(refreshTokenRepository).deleteByUserIdAndRole(1L, Role.ROLE_USER);
+    verify(refreshTokenRepository).save(any());
+  }
+
+  private KakaoUserInfoResponse mockKakaoUser(String email, String id, String nickname, String imageUrl) {
+    KakaoUserInfoResponse response = new KakaoUserInfoResponse();
+    response.setId(Long.parseLong(id));
+
+    KakaoUserInfoResponse.KakaoAccount.Profile profile = new KakaoUserInfoResponse.KakaoAccount.Profile();
+    profile.setNickname(nickname);
+    profile.setProfileImageUrl(imageUrl);
+
+    KakaoUserInfoResponse.KakaoAccount account = new KakaoUserInfoResponse.KakaoAccount();
+    account.setEmail(email);
+    account.setProfile(profile);
+
+    response.setKakaoAccount(account);
+    return response;
   }
 
   @Test
