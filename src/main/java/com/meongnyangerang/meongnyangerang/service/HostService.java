@@ -119,7 +119,6 @@ public class HostService {
   @Transactional
   public LoginResponse loginWithKakao(KakaoUserInfoResponse kakaoUser) {
     String email = kakaoUser.email();
-    String oauthId = String.valueOf(kakaoUser.getId());
 
     Host host = hostRepository.findByEmail(email)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
