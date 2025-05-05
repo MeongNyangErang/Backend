@@ -8,7 +8,9 @@ import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -17,11 +19,14 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
+import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -33,6 +38,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Value("${CORS_ALLOWED_ORIGINS}")
   private String allowedOrigins;
   private final JwtTokenProvider jwtTokenProvider;
+  private final ChannelInterceptor stompMetricsInterceptor;
+  private final WebSocketHandlerDecoratorFactory webSocketMetricsDecorator;
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -56,39 +63,54 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
-    log.debug("WebSocket Inbound Channel");
+    registration.interceptors(stompMetricsInterceptor, // 메트릭 수집 인터셉터
+        new ChannelInterceptor() { // 인증용 인터셉터
+          @Override
+          public Message<?> preSend(Message<?> message, MessageChannel channel) {
+            StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(
+                message, StompHeaderAccessor.class);
 
-    registration.interceptors(new ChannelInterceptor() {
-      @Override
-      public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        log.debug("WebSocket preSend");
-        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(
-            message, StompHeaderAccessor.class);
+            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+              log.debug("STOMP CONNECT 요청... 사용자 검증...");
+              String authorizationHeader = accessor.getFirstNativeHeader("Authorization");
 
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-          log.debug("STOMP CONNECT 요청... 사용자 검증...");
-          String authorizationHeader = accessor.getFirstNativeHeader("Authorization");
+              try {
+                if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                  authorizationHeader = authorizationHeader.substring(7);
+                }
 
-          try {
-            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-              authorizationHeader = authorizationHeader.substring(7);
+                Authentication auth = jwtTokenProvider.getAuthentication(authorizationHeader);
+                UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+                String userKey = determineRole(userDetails.getId(), userDetails.getRole());
+
+                accessor.setUser(new UsernamePasswordAuthenticationToken(
+                    userKey, null, auth.getAuthorities()));
+                log.debug("WebSocket 인증 성공 - Principal: {}", userKey);
+              } catch (Exception e) {
+                log.error("STOMP CONNECT 요청에서 토큰을 찾을 수 없습니다.");
+                throw new MeongnyangerangException(ErrorCode.WEBSOCKET_SERVER_ERROR);
+              }
             }
-
-            Authentication auth = jwtTokenProvider.getAuthentication(authorizationHeader);
-            UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
-            String userKey = determineRole(userDetails.getId(), userDetails.getRole());
-
-            accessor.setUser(new UsernamePasswordAuthenticationToken(
-                userKey, null, auth.getAuthorities()));
-            log.debug("WebSocket 인증 성공 - Principal: {}", userKey);
-          } catch (Exception e) {
-            log.error("STOMP CONNECT 요청에서 토큰을 찾을 수 없습니다.");
-            throw new MeongnyangerangException(ErrorCode.WEBSOCKET_SERVER_ERROR);
+            return message;
           }
-        }
-        return message;
-      }
-    });
+        });
+  }
+
+  @Override
+  public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
+    registration.addDecoratorFactory(webSocketMetricsDecorator)
+        .setMessageSizeLimit(128 * 1024)
+        .setSendBufferSizeLimit(1024 * 1024)
+        .setSendTimeLimit(20 * 1000);
+  }
+
+  @Bean
+  public TaskExecutor messageBrokerTaskExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(10);
+    executor.setMaxPoolSize(20);
+    executor.setQueueCapacity(1000);
+    return executor;
   }
 
   private String determineRole(Long id, Role role) {

@@ -68,7 +68,7 @@ public class AccommodationRecommendationService {
   public PageResponse<RecommendationResponse> getDefaultLoadMoreRecommendations(PetType type,
       Pageable pageable) {
     int size = calculateActualSize(pageable);
-    int from = (int) pageable.getOffset();
+    int from = calculateFromOffset(pageable);
 
     Query query = buildPetTypeQuery(type.name());
 
@@ -82,25 +82,13 @@ public class AccommodationRecommendationService {
 
       List<RecommendationResponse> content = response.hits().hits().stream()
           .map(Hit::source).filter(Objects::nonNull)
-          .map(this::mapToResponse)
+          .map(RecommendationResponse::from)
           .toList();
 
       // 총 개수 및 페이지 계산
       long totalElements = response.hits().total().value();
-      int totalPages = (int) Math.ceil((double) totalElements / size);
 
-      boolean isFirst = pageable.getPageNumber() == 0;
-      boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
-
-      return new PageResponse<>(
-          content,
-          pageable.getPageNumber(),
-          size,
-          totalElements,
-          totalPages,
-          isFirst,
-          isLast
-      );
+      return buildPageResponse(content, pageable, size, totalElements, from);
     } catch (IOException e) {
       throw new MeongnyangerangException(ErrorCode.DEFAULT_RECOMMENDATION_FAILED);
     }
@@ -126,7 +114,7 @@ public class AccommodationRecommendationService {
     UserPet pet = validateAndGetUserPet(userId, petId);
 
     int size = calculateActualSize(pageable);
-    int from = (int) pageable.getOffset();
+    int from = calculateFromOffset(pageable);
 
     Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
     Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
@@ -148,20 +136,8 @@ public class AccommodationRecommendationService {
           roomScoreMap, wishlistedIds);
 
       long totalElements = response.hits().total().value();
-      int totalPages = (int) Math.ceil((double) totalElements / pageable.getPageSize());
 
-      boolean isFirst = pageable.getPageNumber() == 0;
-      boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
-
-      return new PageResponse<>(
-          content,
-          pageable.getPageNumber(),
-          size,
-          totalElements,
-          totalPages,
-          isFirst,
-          isLast
-      );
+      return buildPageResponse(content, pageable, size, totalElements, from);
     } catch (IOException e) {
       throw new MeongnyangerangException(ErrorCode.USER_RECOMMENDATION_FAILED);
     }
@@ -274,6 +250,25 @@ public class AccommodationRecommendationService {
     });
   }
 
+  private PageResponse<RecommendationResponse> buildPageResponse(
+      List<RecommendationResponse> content, Pageable pageable,
+      int size, long totalElements, int from) {
+
+    int totalPages = (int) Math.ceil((double) totalElements / size);
+    boolean isFirst = pageable.getPageNumber() == 0;
+    boolean isLast = from + size >= MAX_RESULTS || totalElements <= (from + size);
+
+    return new PageResponse<>(
+        content,
+        pageable.getPageNumber(),
+        size,
+        totalElements,
+        totalPages,
+        isFirst,
+        isLast
+    );
+  }
+
   // 반려동물 정보로 숙소 시설 점수 맵 생성
   private Map<AccommodationPetFacilityType, Integer> getAccommodationScoreMap(UserPet pet) {
     return PetFacilityScoreMap.getAccommodationScore(
@@ -308,12 +303,16 @@ public class AccommodationRecommendationService {
 
   private int calculateActualSize(Pageable pageable) {
     int size = pageable.getPageSize();
-    int from = (int) pageable.getOffset();
+    int from = calculateFromOffset(pageable);
 
     if (from + size > MAX_RESULTS) {
       return Math.max(0, MAX_RESULTS - from);
     }
     return size;
+  }
+
+  private int calculateFromOffset(Pageable pageable) {
+    return pageable.getPageNumber() == 0 ? SIZE : (int) pageable.getOffset();
   }
 
   // 점수 계산 및 정렬 처리
@@ -329,31 +328,8 @@ public class AccommodationRecommendationService {
         .map(doc -> new AbstractMap.SimpleEntry<>(calculateScore(doc, accScoreMap, roomScoreMap),
             doc))
         .sorted((a, b) -> Integer.compare(b.getKey(), a.getKey()))
-        .map(entry -> mapToResponse(entry.getValue(), wishlistedIds))
+        .map(entry -> RecommendationResponse.from(entry.getValue(), wishlistedIds))
         .toList();
-  }
-
-  // AccommodationDocument를 응답 객체로 변환
-  private RecommendationResponse mapToResponse(AccommodationDocument doc) {
-    return RecommendationResponse.builder()
-        .id(doc.getId())
-        .name(doc.getName())
-        .price(doc.getPrice())
-        .totalRating(doc.getTotalRating())
-        .thumbnailUrl(doc.getThumbnailUrl())
-        .build();
-  }
-
-  // 기존 메서드 오버로딩: 찜 여부 포함
-  private RecommendationResponse mapToResponse(AccommodationDocument doc, Set<Long> wishlistedIds) {
-    return RecommendationResponse.builder()
-        .id(doc.getId())
-        .name(doc.getName())
-        .price(doc.getPrice())
-        .totalRating(doc.getTotalRating())
-        .thumbnailUrl(doc.getThumbnailUrl())
-        .isWishlisted(wishlistedIds.contains(doc.getId()))
-        .build();
   }
 
   private UserPet validateAndGetUserPet(Long userId, Long petId) {

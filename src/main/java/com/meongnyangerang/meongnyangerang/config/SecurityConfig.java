@@ -64,7 +64,8 @@ public class SecurityConfig {
                 "/api/v1/rooms/{roomId}",
                 "/api/v1/auth/reissue",
                 "/api/v1/oauth/kakao/callback",
-                "/health"
+                "/health",
+                "/actuator/**"
             ).permitAll()
             .requestMatchers("/api/v1/users/**").hasAuthority("ROLE_USER")
             .requestMatchers("/api/v1/chats/users/create").hasAuthority("ROLE_USER")
@@ -130,5 +131,4 @@ public class SecurityConfig {
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }
-
 }
