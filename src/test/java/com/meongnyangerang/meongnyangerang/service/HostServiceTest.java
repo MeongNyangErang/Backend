@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.service;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_NICKNAME;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTHORIZED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
@@ -20,16 +22,22 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.meongnyangerang.meongnyangerang.domain.auth.RefreshToken;
 import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.host.HostStatus;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
+import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.dto.HostProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.HostSignupRequest;
+import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
+import com.meongnyangerang.meongnyangerang.dto.auth.KakaoUserInfoResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
+import com.meongnyangerang.meongnyangerang.repository.auth.RefreshTokenRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.io.IOException;
 import java.util.Optional;
@@ -42,6 +50,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,6 +67,12 @@ class HostServiceTest {
 
   @Mock
   private ImageService imageService;
+
+  @Mock
+  private JwtTokenProvider jwtTokenProvider;
+
+  @Mock
+  private RefreshTokenRepository refreshTokenRepository;
 
   @Mock
   private ReservationRepository reservationRepository;
@@ -116,6 +131,85 @@ class HostServiceTest {
     assertThrows(MeongnyangerangException.class,
         () -> hostService.registerHost(request, null, null, null));
     verify(hostRepository, never()).save(any(Host.class));
+  }
+
+  @Test
+  @DisplayName("카카오 로그인 성공 - 상태 ACTIVE(기존 회원가입 완료)")
+  void loginWithKakao_success() {
+    // given
+    String email = "host@example.com";
+    Long kakaoId = 98765L;
+
+    KakaoUserInfoResponse kakaoUser = createKakaoUserInfo(email, kakaoId);
+    Host host = Host.builder()
+        .id(1L)
+        .email(email)
+        .role(Role.ROLE_HOST)
+        .status(HostStatus.ACTIVE)
+        .build();
+
+    given(hostRepository.findByEmail(email)).willReturn(Optional.of(host));
+    given(jwtTokenProvider.createAccessToken(1L, email, "ROLE_HOST", HostStatus.ACTIVE)).willReturn("access-token");
+    given(jwtTokenProvider.createRefreshToken()).willReturn("refresh-token");
+
+    // when
+    LoginResponse response = hostService.loginWithKakao(kakaoUser);
+
+    // then
+    assertThat(response.getAccessToken()).isEqualTo("access-token");
+    assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
+
+    then(refreshTokenRepository).should().deleteByUserIdAndRole(1L, Role.ROLE_HOST);
+    then(refreshTokenRepository).should().save(any(RefreshToken.class));
+  }
+
+  @Test
+  @DisplayName("카카오 로그인 실패 - 상태 PENDING(DELETED 상태도 검증 같음")
+  void loginWithKakao_pendingHost() {
+    // given
+    String email = "host@example.com";
+    KakaoUserInfoResponse kakaoUser = createKakaoUserInfo(email, 1L);
+    Host host = Host.builder()
+        .email(email)
+        .status(HostStatus.PENDING)
+        .build();
+
+    given(hostRepository.findByEmail(email)).willReturn(Optional.of(host));
+
+    // when & then
+    assertThatThrownBy(() -> hostService.loginWithKakao(kakaoUser))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasMessageContaining(INVALID_AUTHORIZED.getDescription());
+  }
+
+  @Test
+  @DisplayName("카카오 로그인 실패 - 호스트 존재하지 않음")
+  void loginWithKakao_hostNotFound() {
+    // given
+    String email = "host@example.com";
+    KakaoUserInfoResponse kakaoUser = createKakaoUserInfo(email, 1L);
+
+    given(hostRepository.findByEmail(email)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> hostService.loginWithKakao(kakaoUser))
+        .isInstanceOf(MeongnyangerangException.class)
+        .hasMessageContaining(NOT_EXIST_ACCOUNT.getDescription());
+  }
+
+  private KakaoUserInfoResponse createKakaoUserInfo(String email, Long kakaoId) {
+    KakaoUserInfoResponse.KakaoAccount.Profile profile = new KakaoUserInfoResponse.KakaoAccount.Profile();
+    ReflectionTestUtils.setField(profile, "nickname", "호스트");
+    ReflectionTestUtils.setField(profile, "profileImageUrl", "https://example.com/profile.jpg");
+
+    KakaoUserInfoResponse.KakaoAccount account = new KakaoUserInfoResponse.KakaoAccount();
+    ReflectionTestUtils.setField(account, "email", email);
+    ReflectionTestUtils.setField(account, "profile", profile);
+
+    KakaoUserInfoResponse userInfo = new KakaoUserInfoResponse();
+    ReflectionTestUtils.setField(userInfo, "id", kakaoId);
+    ReflectionTestUtils.setField(userInfo, "kakaoAccount", account);
+    return userInfo;
   }
 
   @Test

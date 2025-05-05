@@ -6,18 +6,22 @@ import static com.meongnyangerang.meongnyangerang.domain.user.UserStatus.DELETED
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOUNT_DELETED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ALREADY_REGISTERED_NICKNAME;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.DUPLICATE_EMAIL;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_AUTHORIZED;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.INVALID_PASSWORD;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_ACCOUNT;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.RESERVED_RESERVATION_EXISTS;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.SOCIAL_ACCOUNT_LOGIN_ONLY;
 
 import com.meongnyangerang.meongnyangerang.domain.auth.RefreshToken;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationStatus;
+import com.meongnyangerang.meongnyangerang.domain.user.AuthProvider;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PasswordUpdateRequest;
 import com.meongnyangerang.meongnyangerang.dto.UserProfileResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserSignupRequest;
+import com.meongnyangerang.meongnyangerang.dto.auth.KakaoUserInfoResponse;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.jwt.JwtTokenProvider;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -26,6 +30,7 @@ import com.meongnyangerang.meongnyangerang.repository.auth.RefreshTokenRepositor
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -66,6 +71,7 @@ public class UserService {
         .profileImage(profileImageUrl)
         .status(ACTIVE)
         .role(ROLE_USER)
+        .provider(AuthProvider.LOCAL)
         .build());
   }
 
@@ -77,6 +83,11 @@ public class UserService {
     User user = userRepository.findByEmail(request.getEmail())
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
 
+    // 일반 회원만 로그인 허용(로컬 회원가입)
+    if (user.getProvider() != AuthProvider.LOCAL) {
+      throw new MeongnyangerangException(SOCIAL_ACCOUNT_LOGIN_ONLY);
+    }
+
     // 비밀번호 검증
     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
       throw new MeongnyangerangException(INVALID_PASSWORD);
@@ -87,9 +98,54 @@ public class UserService {
       throw new MeongnyangerangException(ACCOUNT_DELETED);
     }
 
+    return issueJwtToken(user);
+  }
+
+  // 사용자 카카오 로그인
+  @Transactional
+  public LoginResponse loginWithKakao(KakaoUserInfoResponse kakaoUser) {
+    String email = kakaoUser.email();
+    String nickname = kakaoUser.nickname();
+    String profileImage = kakaoUser.profileImage();
+    String oauthId = String.valueOf(kakaoUser.getId());
+
+    Optional<User> optionalUser = userRepository.findByEmail(email);
+
+    if (optionalUser.isPresent()) {
+      User user = optionalUser.get();
+
+      if (user.getStatus() != ACTIVE) {
+        throw new MeongnyangerangException(ACCOUNT_DELETED);
+      }
+
+      if (user.getProvider() != AuthProvider.KAKAO || !oauthId.equals(user.getOauthId())) {
+        throw new MeongnyangerangException(INVALID_AUTHORIZED);
+      }
+
+      return issueJwtToken(user);
+    }
+
+    // 회원가입 처리
+    User newUser = userRepository.save(User.builder()
+        .email(email)
+        .nickname(nickname)
+        .profileImage(profileImage)
+        .provider(AuthProvider.KAKAO)
+        .oauthId(oauthId)
+        .role(ROLE_USER)
+        .status(ACTIVE)
+        .password(null)
+        .build());
+
+    return issueJwtToken(newUser);
+  }
+
+  // Access Token + Refresh Token 발급 메서드
+  private LoginResponse issueJwtToken(User user) {
+
     // Access Token 발급
-    String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(),
-        user.getRole().name(), user.getStatus());
+    String accessToken = jwtTokenProvider.createAccessToken(
+        user.getId(), user.getEmail(), user.getRole().name(), user.getStatus());
 
     // Refresh Token 발급
     String refreshToken = jwtTokenProvider.createRefreshToken();

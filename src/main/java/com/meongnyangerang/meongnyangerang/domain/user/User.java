@@ -37,7 +37,6 @@ public class User {
   @Column(length = 50, nullable = false, unique = true)
   private String nickname;
 
-  @Column(nullable = false)
   private String password;
 
   private String profileImage;
@@ -49,6 +48,12 @@ public class User {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private Role role;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private AuthProvider provider; // LOCAL or KAKAO
+
+  private String oauthId; // 소셜 로그인 고유 ID
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
