@@ -79,6 +79,9 @@ public class AdminController {
 
   @DeleteMapping("/reports/{reviewReportId}")
   public ResponseEntity<Void> deleteReportReview(@PathVariable Long reviewReportId) {
-    return ResponseEntity.ok(reviewReportService.deleteReportReview(reviewReportId)).build();
+
+    reviewReportService.deleteReportReview(reviewReportId);
+
+    return ResponseEntity.ok().build();
   }
 }
