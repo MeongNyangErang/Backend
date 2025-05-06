@@ -77,6 +77,9 @@ class ReviewServiceTest {
   private ImageService imageService;
 
   @Mock
+  private ReviewDeletionService reviewDeletionService;
+
+  @Mock
   private NotificationService notificationService;
 
   @InjectMocks
@@ -588,31 +591,16 @@ class ReviewServiceTest {
     // when
     User user = User.builder().id(1L).build();
     Accommodation accommodation = Accommodation.builder().id(1L).totalRating(4.0).build();
-
     Review review = Review.builder().id(1L).user(user).userRating(3.0).petFriendlyRating(4.0)
         .accommodation(accommodation).build();
-    ReviewImage image = ReviewImage.builder().id(1L).review(review).build();
 
     when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
-    when(reviewImageRepository.findAllByReviewId(review.getId())).thenReturn(List.of(image));
-
-    double previousTotalRating = accommodation.getTotalRating();
 
     // when
     reviewService.deleteReview(review.getId(), user.getId());
 
     // then
-    ArgumentCaptor<Review> reviewCaptor = ArgumentCaptor.forClass(Review.class);
-    verify(reviewRepository, times(1)).delete(reviewCaptor.capture());
-    assertEquals(review.getId(), reviewCaptor.getValue().getId());
-
-    ArgumentCaptor<List<ReviewImage>> reviewImagesCaptor = ArgumentCaptor.forClass(List.class);
-    verify(reviewImageRepository, times(1)).deleteAll(reviewImagesCaptor.capture());
-    assertEquals(1, reviewImagesCaptor.getValue().size());
-    assertEquals(image.getId(), reviewImagesCaptor.getValue().get(0).getId());
-
-    assertNotEquals(previousTotalRating, accommodation.getTotalRating());
-    assertEquals(0, accommodation.getTotalRating());
+    verify(reviewDeletionService, times(1)).deleteReviewCompletely(review);
   }
 
   @Test
