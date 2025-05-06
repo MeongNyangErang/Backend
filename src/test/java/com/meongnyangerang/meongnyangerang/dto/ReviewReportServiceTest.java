@@ -172,4 +172,19 @@ class ReviewReportServiceTest {
     verify(reviewDeletionService, times(1)).deleteReviewCompletely(review);
     verify(reviewReportRepository, times(1)).delete(reviewReport);
   }
+
+  @Test
+  @DisplayName("신고 리뷰 삭제 - 실패: 신고 리뷰가 없는 경우")
+  void deleteReviewReport_not_exists_review_report() {
+    // given
+    when(reviewReportRepository.findById(999L)).thenReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reviewReportService.deleteReviewReport(999L);
+    });
+
+    // then
+    assertEquals(ErrorCode.NOT_EXIST_REVIEW_REPORT, e.getErrorCode());
+  }
 }
