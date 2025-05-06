@@ -68,6 +68,7 @@ public enum ErrorCode {
   ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "객실이 존재하지 않습니다."),
   RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예약이 존재하지 않습니다."),
   REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰가 존재하지 않습니다."),
+  NOT_EXIST_REVIEW_REPORT(HttpStatus.NOT_FOUND, "존재하지 않는 리뷰 신고입니다."),
   NOT_EXIST_PET(HttpStatus.NOT_FOUND, "존재하지 않는 반려동물입니다."),
   NOT_EXIST_WISHLIST(HttpStatus.NOT_FOUND, "존재하지 않는 찜 목록입니다."),
   NOT_EXIST_NOTICE(HttpStatus.NOT_FOUND, "존재하지 않는 공지사항입니다."),
