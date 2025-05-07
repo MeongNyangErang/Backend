@@ -65,8 +65,8 @@ public class ReviewReportService {
     ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_REVIEW_REPORT));
 
-    reviewDeletionService.deleteReviewCompletely(reviewReport.getReview());
-
     reviewReportRepository.delete(reviewReport);
+
+    reviewDeletionService.deleteReviewCompletely(reviewReport.getReview());
   }
 }
