@@ -6,11 +6,15 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.admin.Notice;
 import com.meongnyangerang.meongnyangerang.dto.NoticeRequest;
+import com.meongnyangerang.meongnyangerang.dto.NoticeSimpleResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.NoticeRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -82,5 +86,12 @@ public class NoticeService {
     }
 
     noticeRepository.delete(notice);
+  }
+
+  // 공지사항 목록 조회
+  public PageResponse<NoticeSimpleResponse> getNoticeList(Pageable pageable) {
+    Page<Notice> notices = noticeRepository.findAll(pageable);
+
+    return PageResponse.from(notices.map(NoticeSimpleResponse::from));
   }
 }
