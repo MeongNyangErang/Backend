@@ -43,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ReviewService {
 
   private final ImageService imageService;
+  private final ReviewDeletionService reviewDeletionService;
   private final ReviewRepository reviewRepository;
   private final ReservationRepository reservationRepository;
   private final ReviewImageRepository reviewImageRepository;
@@ -106,22 +107,8 @@ public class ReviewService {
   public void deleteReview(Long reviewId, Long userId) {
     // 리뷰 조회 및 권한 검증
     Review review = getReviewIfAuthorized(reviewId, userId);
-    Accommodation accommodation = review.getAccommodation();
-    double userRating = review.getUserRating();
-    double petFriendlyRating = review.getPetFriendlyRating();
 
-    // 리뷰에 포함된 모든 이미지 삭제
-    deleteAllReviewImages(reviewId);
-
-    // 리뷰 삭제
-    reviewRepository.delete(review);
-
-    // 숙소 총 평점 업데이트
-    updateAccommodationRatingOnDelete(accommodation, userRating,
-        petFriendlyRating);
-
-    // elasticsearch 색인 업데이트
-    updateElasticsearchDocument(accommodation);
+    reviewDeletionService.deleteReviewCompletely(review);
   }
 
   @Transactional
@@ -287,16 +274,6 @@ public class ReviewService {
     return review;
   }
 
-  // 특정 리뷰에 포함된 모든 이미지 삭제
-  private void deleteAllReviewImages(Long reviewId) {
-    List<ReviewImage> images = reviewImageRepository.findAllByReviewId(reviewId);
-    List<String> imageUrls = images.stream().map(ReviewImage::getImageUrl).toList();
-
-    imageService.deleteImagesAsync(imageUrls);
-
-    reviewImageRepository.deleteAll(images);
-  }
-
   // 이미지 삭제 요청 및 새로운 이미지 업로드 시, 최대 이미지 개수(3장)를 초과하는지 검증
   private void validateImageLimit(Long reviewId, List<Long> deletedImageIds,
       List<MultipartFile> newImages) {
@@ -360,25 +337,6 @@ public class ReviewService {
     }
 
     accommodation.setTotalRating(Math.round(newTotalRating * 10) / 10.0);
-  }
-
-  private void updateAccommodationRatingOnDelete(Accommodation accommodation, double userRating,
-      double petFriendlyRating) {
-    int reviewCount = reviewRepository.countByAccommodationId(accommodation.getId());
-
-    if (reviewCount == 0) {
-      accommodation.setTotalRating(0.0);
-      return;
-    }
-
-    double existingTotalRating = accommodation.getTotalRating();
-    double removedReviewRating = calculateReviewRating(userRating, petFriendlyRating);
-
-    double newTotalRating = Math.round(
-        ((existingTotalRating * (reviewCount + 1) - removedReviewRating) / reviewCount) * 10)
-        / 10.0;
-
-    accommodation.setTotalRating(newTotalRating);
   }
 
   private double calculateReviewRating(double userRating, double petFriendlyRating) {

@@ -15,9 +15,11 @@ import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReviewReportRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
+import com.meongnyangerang.meongnyangerang.service.ReviewDeletionService;
 import com.meongnyangerang.meongnyangerang.service.ReviewReportService;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +37,9 @@ class ReviewReportServiceTest {
 
   @Mock
   private ReviewRepository reviewRepository;
+
+  @Mock
+  private ReviewDeletionService reviewDeletionService;
 
   @Mock
   private ImageService imageService;
@@ -149,5 +154,37 @@ class ReviewReportServiceTest {
 
     // then
     assertEquals(ErrorCode.REVIEW_REPORT_ALREADY_EXISTS, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("신고 리뷰 삭제 - 성공")
+  void deleteReviewReport_success() {
+    // given
+    Review review = Review.builder().id(1L).build();
+    ReviewReport reviewReport = ReviewReport.builder().id(1L).review(review).build();
+
+    when(reviewReportRepository.findById(1L)).thenReturn(Optional.ofNullable(reviewReport));
+
+    // when
+    reviewReportService.deleteReviewReport(1L);
+
+    // then
+    verify(reviewDeletionService, times(1)).deleteReviewCompletely(review);
+    verify(reviewReportRepository, times(1)).delete(reviewReport);
+  }
+
+  @Test
+  @DisplayName("신고 리뷰 삭제 - 실패: 신고 리뷰가 없는 경우")
+  void deleteReviewReport_not_exists_review_report() {
+    // given
+    when(reviewReportRepository.findById(999L)).thenReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reviewReportService.deleteReviewReport(999L);
+    });
+
+    // then
+    assertEquals(ErrorCode.NOT_EXIST_REVIEW_REPORT, e.getErrorCode());
   }
 }

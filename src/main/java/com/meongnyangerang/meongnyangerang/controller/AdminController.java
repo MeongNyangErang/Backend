@@ -76,4 +76,12 @@ public class AdminController {
   ) {
     return ResponseEntity.ok(reviewReportService.getReviews(pageable));
   }
+
+  @DeleteMapping("/reports/{reviewReportId}")
+  public ResponseEntity<Void> deleteReviewReport(@PathVariable Long reviewReportId) {
+
+    reviewReportService.deleteReviewReport(reviewReportId);
+
+    return ResponseEntity.ok().build();
+  }
 }

@@ -25,6 +25,7 @@ public class ReviewReportService {
 
   private final ReviewReportRepository reviewReportRepository;
   private final ReviewRepository reviewRepository;
+  private final ReviewDeletionService reviewDeletionService;
   private final ImageService imageService;
 
   // 리뷰 신고 생성
@@ -57,5 +58,15 @@ public class ReviewReportService {
         pageable, ReportStatus.PENDING);
     Page<ReviewReportResponse> responses = reviewReportResponse.map(ReviewReportResponse::from);
     return PageResponse.from(responses);
+  }
+
+  @Transactional
+  public void deleteReviewReport(Long reviewReportId) {
+    ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_REVIEW_REPORT));
+
+    reviewReportRepository.delete(reviewReport);
+
+    reviewDeletionService.deleteReviewCompletely(reviewReport.getReview());
   }
 }
