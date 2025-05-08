@@ -355,4 +355,18 @@ public class NoticeServiceTest {
     assertEquals(LocalDateTime.of(2025, 5, 8, 10, 31, 45), response.createdAt());
   }
 
+
+  @Test
+  @DisplayName("공지사항 상세 조회 실패 - 존재하지 않는 공지사항")
+  void getNoticeDetailFail_notExist() {
+    // given
+    Long noticeId = 999L;
+    given(noticeRepository.findById(noticeId)).willReturn(Optional.empty());
+
+    // when & then
+    MeongnyangerangException exception = assertThrows(MeongnyangerangException.class,
+        () -> noticeService.getNoticeDetail(noticeId));
+
+    assertEquals(ErrorCode.NOT_EXIST_NOTICE, exception.getErrorCode());
+  }
 }
