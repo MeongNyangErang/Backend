@@ -25,6 +25,7 @@ import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -74,9 +75,13 @@ public class JwtTokenProvider {
     Date now = new Date();
     Date expiryDate = new Date(now.getTime() + refreshTokenValidity);
 
+    // UUID 추가하여 고유성 보장
+    String uuid = UUID.randomUUID().toString();
+
     return Jwts.builder()
         .setIssuedAt(now)
         .setExpiration(expiryDate)
+        .setId(uuid)
         .signWith(key, signatureAlgorithm)
         .compact();
   }
