@@ -32,6 +32,6 @@ public class PublicNoticeController {
   // 공지사항 상세 조회 API
   @GetMapping("/{noticeId}")
   public ResponseEntity<NoticeDetailResponse> getNoticeDetail(@PathVariable Long noticeId) {
-    return ResponseEntity.ok(noticeService.getNoticeDetail);
+    return ResponseEntity.ok(noticeService.getNoticeDetail(noticeId));
   }
 }

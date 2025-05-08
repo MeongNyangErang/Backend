@@ -5,9 +5,11 @@ import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.NOT_EXIST_
 
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.admin.Notice;
+import com.meongnyangerang.meongnyangerang.dto.NoticeDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.NoticeRequest;
 import com.meongnyangerang.meongnyangerang.dto.NoticeSimpleResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.NoticeRepository;
@@ -93,5 +95,12 @@ public class NoticeService {
     Page<Notice> notices = noticeRepository.findAll(pageable);
 
     return PageResponse.from(notices.map(NoticeSimpleResponse::from));
+  }
+
+  // 공지사항 상세 조회
+  public NoticeDetailResponse getNoticeDetail(Long noticeId) {
+    Notice notice = noticeRepository.findById(noticeId)
+        .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_NOTICE));
+    return NoticeDetailResponse.from(notice);
   }
 }
