@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.controller;
 
+import com.meongnyangerang.meongnyangerang.dto.NoticeDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.NoticeSimpleResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.service.NoticeService;
