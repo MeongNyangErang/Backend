@@ -65,6 +65,7 @@ public class SecurityConfig {
                 "/api/v1/auth/reissue",
                 "/api/v1/oauth/kakao/callback",
                 "/health",
+                "/api/v1/notices",
                 "/actuator/**"
             ).permitAll()
             .requestMatchers("/api/v1/users/**").hasAuthority("ROLE_USER")

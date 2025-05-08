@@ -14,11 +14,15 @@ import static org.mockito.Mockito.when;
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.admin.Notice;
 import com.meongnyangerang.meongnyangerang.dto.NoticeRequest;
+import com.meongnyangerang.meongnyangerang.dto.NoticeSimpleResponse;
+import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.AdminRepository;
 import com.meongnyangerang.meongnyangerang.repository.NoticeRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +32,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -283,4 +292,40 @@ public class NoticeServiceTest {
     assertEquals(ErrorCode.NOT_EXIST_NOTICE, exception.getErrorCode());
     assertEquals("존재하지 않는 공지사항입니다.", exception.getMessage());
   }
+
+  @Test
+  @DisplayName("공지사항 목록 조회 성공")
+  void getNoticeList_success() {
+    // given
+    Pageable pageable = PageRequest.of(0, 2, Sort.by("createdAt").descending());
+
+    Notice notice1 = Notice.builder()
+        .id(1L)
+        .title("첫 번째 공지")
+        .content("내용1")
+        .createdAt(LocalDateTime.now().minusDays(1))
+        .build();
+
+    Notice notice2 = Notice.builder()
+        .id(2L)
+        .title("두 번째 공지")
+        .content("내용2")
+        .createdAt(LocalDateTime.now())
+        .build();
+
+    Page<Notice> mockPage = new PageImpl<>(List.of(notice2, notice1), pageable, 2);
+
+    given(noticeRepository.findAll(pageable)).willReturn(mockPage);
+
+    // when
+    PageResponse<NoticeSimpleResponse> result = noticeService.getNoticeList(pageable);
+
+    // then
+    assertEquals(2, result.content().size());
+    assertEquals("두 번째 공지", result.content().get(0).title());
+    assertEquals(0, result.page());
+    assertEquals(2, result.totalElements());
+    verify(noticeRepository).findAll(pageable);
+  }
+
 }
