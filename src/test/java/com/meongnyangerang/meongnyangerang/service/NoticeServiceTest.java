@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.meongnyangerang.meongnyangerang.domain.admin.Admin;
 import com.meongnyangerang.meongnyangerang.domain.admin.Notice;
+import com.meongnyangerang.meongnyangerang.dto.NoticeDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.NoticeRequest;
 import com.meongnyangerang.meongnyangerang.dto.NoticeSimpleResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
@@ -328,4 +329,44 @@ public class NoticeServiceTest {
     verify(noticeRepository).findAll(pageable);
   }
 
+  @Test
+  @DisplayName("공지사항 상세 조회 성공")
+  void getNoticeDetailSuccess() {
+    // given
+    Long noticeId = 1L;
+    Notice notice = Notice.builder()
+        .id(noticeId)
+        .title("공지사항 제목입니다")
+        .content("공지사항 내용입니다")
+        .imageUrl("https://s3.bucket/notice.jpg")
+        .createdAt(LocalDateTime.of(2025, 5, 8, 10, 31, 45))
+        .build();
+
+    given(noticeRepository.findById(noticeId)).willReturn(Optional.of(notice));
+
+    // when
+    NoticeDetailResponse response = noticeService.getNoticeDetail(noticeId);
+
+    // then
+    assertEquals(noticeId, response.noticeId());
+    assertEquals("공지사항 제목입니다", response.title());
+    assertEquals("공지사항 내용입니다", response.content());
+    assertEquals("https://s3.bucket/notice.jpg", response.noticeImageUrl());
+    assertEquals(LocalDateTime.of(2025, 5, 8, 10, 31, 45), response.createdAt());
+  }
+
+
+  @Test
+  @DisplayName("공지사항 상세 조회 실패 - 존재하지 않는 공지사항")
+  void getNoticeDetailFail_notExist() {
+    // given
+    Long noticeId = 999L;
+    given(noticeRepository.findById(noticeId)).willReturn(Optional.empty());
+
+    // when & then
+    MeongnyangerangException exception = assertThrows(MeongnyangerangException.class,
+        () -> noticeService.getNoticeDetail(noticeId));
+
+    assertEquals(ErrorCode.NOT_EXIST_NOTICE, exception.getErrorCode());
+  }
 }

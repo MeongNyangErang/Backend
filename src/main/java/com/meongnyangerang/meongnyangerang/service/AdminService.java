@@ -41,6 +41,7 @@ public class AdminService {
   private final RefreshTokenRepository refreshTokenRepository;
 
   // 관리자 로그인
+  @Transactional
   public LoginResponse login(@Valid LoginRequest request) {
 
     // 관리자 조회

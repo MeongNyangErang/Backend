@@ -41,6 +41,7 @@ import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacility;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
+import com.meongnyangerang.meongnyangerang.domain.user.AuthProvider;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
 import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
@@ -301,6 +302,7 @@ public class DummyDataCreateService {
               random.nextBoolean() ? imageUrls.get(random.nextInt(imageUrls.size())) : null)
           .status(UserStatus.ACTIVE)
           .role(Role.ROLE_USER)
+          .provider(AuthProvider.LOCAL)
           .createdAt(LocalDateTime.now())
           .updatedAt(LocalDateTime.now())
           .build();
