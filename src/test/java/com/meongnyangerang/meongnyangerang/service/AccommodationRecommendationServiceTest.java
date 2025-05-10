@@ -27,6 +27,8 @@ import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
 import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
+import com.meongnyangerang.meongnyangerang.service.recommendation.AccommodationRecommendationService;
+import com.meongnyangerang.meongnyangerang.service.recommendation.PetFacilityScoreService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -57,6 +59,9 @@ class AccommodationRecommendationServiceTest {
 
   @Mock
   private WishlistRepository wishlistRepository;
+
+  @Mock
+  private PetFacilityScoreService petFacilityScoreService;
 
   @InjectMocks
   private AccommodationRecommendationService recommendationService;
