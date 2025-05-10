@@ -1,0 +1,350 @@
+[
+  {
+    "petType": "SMALL_DOG",
+    "activityLevel": "LOW",
+    "personality": "INTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 1,
+      "PLAYGROUND": 1,
+      "SHOWER_ROOM": 0,
+      "SWIMMING_POOL": 1,
+      "FENCE_AREA": 5,
+      "CARE_SERVICE": 1,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 0,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 5,
+      "POTTY_SUPPLIES": 0,
+      "TOY": 5,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 1,
+      "FENCE_AREA": 3,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "SMALL_DOG",
+    "activityLevel": "LOW",
+    "personality": "EXTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 2,
+      "PLAYGROUND": 2,
+      "SHOWER_ROOM": 1,
+      "SWIMMING_POOL": 1,
+      "FENCE_AREA": 1,
+      "CARE_SERVICE": 1,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 0,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 3,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 3,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 1,
+      "FENCE_AREA": 1,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "SMALL_DOG",
+    "activityLevel": "MEDIUM",
+    "personality": "INTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 3,
+      "PLAYGROUND": 1,
+      "SHOWER_ROOM": 0,
+      "SWIMMING_POOL": 3,
+      "FENCE_AREA": 3,
+      "CARE_SERVICE": 1,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 0,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 3,
+      "POTTY_SUPPLIES": 1,
+      "TOY": 3,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 1,
+      "FENCE_AREA": 3,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "SMALL_DOG",
+    "activityLevel": "MEDIUM",
+    "personality": "EXTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 3,
+      "PLAYGROUND": 3,
+      "SHOWER_ROOM": 1,
+      "SWIMMING_POOL": 3,
+      "FENCE_AREA": 3,
+      "CARE_SERVICE": 3,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 1,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 1,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 1,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 1,
+      "FENCE_AREA": 1,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "SMALL_DOG",
+    "activityLevel": "HIGH",
+    "personality": "INTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 3,
+      "PLAYGROUND": 3,
+      "SHOWER_ROOM": 0,
+      "SWIMMING_POOL": 3,
+      "FENCE_AREA": 3,
+      "CARE_SERVICE": 1,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 0,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 3,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 5,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 3,
+      "FENCE_AREA": 3,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "SMALL_DOG",
+    "activityLevel": "HIGH",
+    "personality": "EXTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 5,
+      "PLAYGROUND": 5,
+      "SHOWER_ROOM": 1,
+      "SWIMMING_POOL": 5,
+      "FENCE_AREA": 1,
+      "CARE_SERVICE": 3,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 0,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 3,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 3,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 3,
+      "FENCE_AREA": 1,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "MEDIUM_DOG",
+    "activityLevel": "LOW",
+    "personality": "INTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 3,
+      "PLAYGROUND": 1,
+      "SHOWER_ROOM": 0,
+      "SWIMMING_POOL": 1,
+      "FENCE_AREA": 5,
+      "CARE_SERVICE": 1,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 0,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 5,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 3,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 1,
+      "FENCE_AREA": 3,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "MEDIUM_DOG",
+    "activityLevel": "LOW",
+    "personality": "EXTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 3,
+      "PLAYGROUND": 3,
+      "SHOWER_ROOM": 0,
+      "SWIMMING_POOL": 3,
+      "FENCE_AREA": 1,
+      "CARE_SERVICE": 1,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 0,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 3,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 3,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 1,
+      "FENCE_AREA": 1,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "MEDIUM_DOG",
+    "activityLevel": "MEDIUM",
+    "personality": "INTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 5,
+      "PLAYGROUND": 3,
+      "SHOWER_ROOM": 0,
+      "SWIMMING_POOL": 3,
+      "FENCE_AREA": 3,
+      "CARE_SERVICE": 1,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 0,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 3,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 3,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 1,
+      "FENCE_AREA": 3,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "MEDIUM_DOG",
+    "activityLevel": "MEDIUM",
+    "personality": "EXTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 5,
+      "PLAYGROUND": 3,
+      "SHOWER_ROOM": 1,
+      "SWIMMING_POOL": 3,
+      "FENCE_AREA": 1,
+      "CARE_SERVICE": 3,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 1,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 1,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 1,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 1,
+      "FENCE_AREA": 1,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "MEDIUM_DOG",
+    "activityLevel": "HIGH",
+    "personality": "INTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 5,
+      "PLAYGROUND": 3,
+      "SHOWER_ROOM": 1,
+      "SWIMMING_POOL": 5,
+      "FENCE_AREA": 3,
+      "CARE_SERVICE": 1,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 1,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 3,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 3,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 3,
+      "FENCE_AREA": 3,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  },
+  {
+    "petType": "MEDIUM_DOG",
+    "activityLevel": "HIGH",
+    "personality": "EXTROVERT",
+    "accommodationScores": {
+      "EXERCISE_AREA": 5,
+      "PLAYGROUND": 5,
+      "SHOWER_ROOM": 3,
+      "SWIMMING_POOL": 5,
+      "FENCE_AREA": 1,
+      "CARE_SERVICE": 3,
+      "PET_FOOD": 1,
+      "DRY_ROOM": 0,
+      "NEARBY_HOSPITAL": 3
+    },
+    "roomScores": {
+      "FOOD_BOWL": 1,
+      "EXCLUSIVE_YARD": 1,
+      "POTTY_SUPPLIES": 3,
+      "TOY": 3,
+      "BED": 0,
+      "ANTI_SLIP_FLOOR": 3,
+      "FENCE_AREA": 1,
+      "CAT_TOWER": 0,
+      "CAT_WHEEL": 0,
+      "BRUSH": 1,
+      "PET_STEPS": 3
+    }
+  }
+]

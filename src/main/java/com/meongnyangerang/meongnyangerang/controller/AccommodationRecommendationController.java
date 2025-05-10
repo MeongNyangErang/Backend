@@ -5,7 +5,7 @@ import com.meongnyangerang.meongnyangerang.dto.accommodation.PetRecommendationGr
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
-import com.meongnyangerang.meongnyangerang.service.AccommodationRecommendationService;
+import com.meongnyangerang.meongnyangerang.service.recommendation.AccommodationRecommendationService;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
