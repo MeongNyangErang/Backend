@@ -1,4 +1,4 @@
-package com.meongnyangerang.meongnyangerang.service;
+package com.meongnyangerang.meongnyangerang.service.recommendation;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -11,7 +11,6 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationDocument;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.PetType;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.facility.AccommodationPetFacilityType;
-import com.meongnyangerang.meongnyangerang.domain.recommendation.PetFacilityScoreMap;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import com.meongnyangerang.meongnyangerang.domain.room.facility.RoomPetFacilityType;
 import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
@@ -48,6 +47,7 @@ public class AccommodationRecommendationService {
   private final AccommodationRepository accommodationRepository;
   private final RoomRepository roomRepository;
   private final WishlistRepository wishlistRepository;
+  private final PetFacilityScoreService petFacilityScoreService;
 
   private static final String INDEX_NAME = "accommodations";
   private static final int SIZE = 6;
@@ -116,8 +116,8 @@ public class AccommodationRecommendationService {
     int size = calculateActualSize(pageable);
     int from = calculateFromOffset(pageable);
 
-    Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
-    Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
+    Map<String, Integer> accScoreMap = getAccommodationScoreMap(pet);
+    Map<String, Integer> roomScoreMap = getRoomScoreMap(pet);
     Set<Long> wishlistedIds = new HashSet<>(
         wishlistRepository.findAccommodationIdsByUserId(userId));
 
@@ -191,8 +191,8 @@ public class AccommodationRecommendationService {
   // 사용자 반려동물 정보를 바탕으로 맞춤 추천 수행
   private List<RecommendationResponse> searchByUserPet(UserPet pet, Set<Long> wishlistedIds) {
     // 반려동물 성향에 따른 시설 점수 맵 생성
-    Map<AccommodationPetFacilityType, Integer> accScoreMap = getAccommodationScoreMap(pet);
-    Map<RoomPetFacilityType, Integer> roomScoreMap = getRoomScoreMap(pet);
+    Map<String, Integer> accScoreMap = getAccommodationScoreMap(pet);
+    Map<String, Integer> roomScoreMap = getRoomScoreMap(pet);
 
     // allowedPetTypes 필드 기반 필터링 쿼리 생성
     Query query = buildPetTypeQuery(pet.getType().name());
@@ -270,31 +270,32 @@ public class AccommodationRecommendationService {
   }
 
   // 반려동물 정보로 숙소 시설 점수 맵 생성
-  private Map<AccommodationPetFacilityType, Integer> getAccommodationScoreMap(UserPet pet) {
-    return PetFacilityScoreMap.getAccommodationScore(
-        pet.getType(), pet.getActivityLevel(), pet.getPersonality());
+  private Map<String, Integer> getAccommodationScoreMap(UserPet pet) {
+    return petFacilityScoreService.getAccommodationScore(pet.getType().name(),
+        pet.getActivityLevel().name(), pet.getPersonality().name());
   }
 
   // 반려동물 정보로 객실 시설 점수 맵 생성
-  private Map<RoomPetFacilityType, Integer> getRoomScoreMap(UserPet pet) {
-    return PetFacilityScoreMap.getRoomScore(
-        pet.getType(), pet.getActivityLevel(), pet.getPersonality());
+  private Map<String, Integer> getRoomScoreMap(UserPet pet) {
+    return petFacilityScoreService.getRoomScore(pet.getType().name(), pet.getActivityLevel().name(),
+        pet.getPersonality().name());
   }
 
   // 숙소의 시설 점수를 계산 (반려동물 성향 기반)
   private int calculateScore(AccommodationDocument doc,
-      Map<AccommodationPetFacilityType, Integer> accMap,
-      Map<RoomPetFacilityType, Integer> roomMap) {
+      Map<String, Integer> accMap,
+      Map<String, Integer> roomMap) {
+
     // 숙소 시설 점수 계산
     int accScore = doc.getAccommodationPetFacilities().stream()
         .map(AccommodationPetFacilityType::valueOf)
-        .mapToInt(facility -> accMap.getOrDefault(facility, 0))
+        .mapToInt(facility -> accMap.getOrDefault(facility.name(), 0))
         .sum();
 
     // 객실 시설 점수 계산
     int roomScore = doc.getRoomPetFacilities().stream()
         .map(RoomPetFacilityType::valueOf)
-        .mapToInt(facility -> roomMap.getOrDefault(facility, 0))
+        .mapToInt(facility -> roomMap.getOrDefault(facility.name(), 0))
         .sum();
 
     // 총점 반환
@@ -318,8 +319,8 @@ public class AccommodationRecommendationService {
   // 점수 계산 및 정렬 처리
   private List<RecommendationResponse> calculateScoreAndSort(
       SearchResponse<AccommodationDocument> response,
-      Map<AccommodationPetFacilityType, Integer> accScoreMap,
-      Map<RoomPetFacilityType, Integer> roomScoreMap,
+      Map<String, Integer> accScoreMap,
+      Map<String, Integer> roomScoreMap,
       Set<Long> wishlistedIds) {
 
     return response.hits().hits().stream()
