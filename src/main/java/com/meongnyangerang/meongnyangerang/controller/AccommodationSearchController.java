@@ -25,6 +25,7 @@ public class AccommodationSearchController {
 
   private final AccommodationSearchService searchService;
 
+  // 숙소 목록 조회(필터 검색) API
   @PostMapping
   public ResponseEntity<PageResponse<AccommodationSearchResponse>> searchAccommodation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
