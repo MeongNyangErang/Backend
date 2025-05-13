@@ -21,6 +21,8 @@ public class AccommodationSearchResponse {
   private Integer standardPeopleCount;
   private Integer standardPetCount;
   private AccommodationType accommodationType;
+  private Double latitude;
+  private Double longitude;
 
   public static AccommodationSearchResponse fromDocument(AccommodationRoomDocument doc,
       boolean isWishlisted) {
