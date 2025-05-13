@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import com.meongnyangerang.meongnyangerang.domain.AccommodationRoomDocument;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
@@ -19,9 +20,11 @@ import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,6 +45,9 @@ class AccommodationSearchServiceTest {
 
   @Mock
   private WishlistRepository wishlistRepository;
+
+  @Mock
+  private AccommodationRepository accommodationRepository;
 
   @InjectMocks
   private AccommodationSearchService searchService;
@@ -132,6 +138,14 @@ class AccommodationSearchServiceTest {
     given(wishlistRepository.findAccommodationIdsByUserId(userId))
         .willReturn(List.of(1L));
 
+    given(accommodationRepository.findById(1L))
+        .willReturn(
+            Optional.of(Accommodation.builder().id(1L).latitude(37.5665).longitude(126.9780).build()));
+
+    given(accommodationRepository.findById(2L))
+        .willReturn(
+            Optional.of(Accommodation.builder().id(2L).latitude(37.5796).longitude(126.9770).build()));
+
     given(elasticsearchClient.search(any(Function.class), eq(AccommodationRoomDocument.class)))
         .willReturn(mockResponse);
 
@@ -145,6 +159,10 @@ class AccommodationSearchServiceTest {
         .containsExactlyInAnyOrder(1L, 2L);
     assertThat(response.content()).extracting("isWishlisted")
         .containsExactlyInAnyOrder(true, false);
+    assertThat(response.content()).extracting("latitude")
+        .containsExactlyInAnyOrder(37.5665, 37.5796);
+    assertThat(response.content()).extracting("longitude")
+        .containsExactlyInAnyOrder(126.9780, 126.9770);
   }
 
   @Test

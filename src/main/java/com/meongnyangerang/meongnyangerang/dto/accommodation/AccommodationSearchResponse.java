@@ -21,9 +21,11 @@ public class AccommodationSearchResponse {
   private Integer standardPeopleCount;
   private Integer standardPetCount;
   private AccommodationType accommodationType;
+  private Double latitude;
+  private Double longitude;
 
   public static AccommodationSearchResponse fromDocument(AccommodationRoomDocument doc,
-      boolean isWishlisted) {
+      boolean isWishlisted, Double latitude, Double longitude) {
 
     return AccommodationSearchResponse.builder()
         .accommodationId(doc.getAccommodationId())
@@ -36,6 +38,8 @@ public class AccommodationSearchResponse {
         .standardPeopleCount(doc.getStandardPeopleCount())
         .standardPetCount(doc.getStandardPetCount())
         .accommodationType(doc.getAccommodationType())
+        .latitude(latitude)
+        .longitude(longitude)
         .build();
   }
 }

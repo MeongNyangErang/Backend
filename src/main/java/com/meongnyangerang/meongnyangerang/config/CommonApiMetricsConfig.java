@@ -33,8 +33,11 @@ public class CommonApiMetricsConfig implements WebMvcConfigurer {
       API_URL_PREFIX + "/users/reservations/{id}",
 
       Pattern.compile(API_URL_PREFIX + "/accommodations/\\d+"),
-      API_URL_PREFIX + "/accommodations/{id}"
+      API_URL_PREFIX + "/accommodations/{id}",
       // 추가 패턴은 여기에...
+
+      Pattern.compile(API_URL_PREFIX + "/search/accommodations"),
+      API_URL_PREFIX + "/search/accommodations"
   );
 
   // 메트릭 캐싱을 위한 맵
