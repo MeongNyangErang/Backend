@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.SEARCH_FAILED;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -10,13 +11,16 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.meongnyangerang.meongnyangerang.domain.AccommodationRoomDocument;
+import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationType;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
 import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
+import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -37,6 +41,7 @@ public class AccommodationSearchService {
   private final ElasticsearchClient elasticsearchClient;
   private final ReservationSlotRepository reservationSlotRepository;
   private final WishlistRepository wishlistRepository;
+  private final AccommodationRepository accommodationRepository;
 
   public PageResponse<AccommodationSearchResponse> searchAccommodation(Long userId,
       AccommodationSearchRequest request,
@@ -109,8 +114,18 @@ public class AccommodationSearchService {
               : Collections.emptySet();
 
       List<AccommodationSearchResponse> content = unique.values().stream()
-          .map(doc -> AccommodationSearchResponse.fromDocument(doc,
-              wishlistedIds.contains(doc.getAccommodationId())))
+          .map(doc -> {
+
+            Accommodation accommodation = accommodationRepository.findById(doc.getAccommodationId())
+                .orElseThrow(() -> new MeongnyangerangException(ACCOMMODATION_NOT_FOUND));
+
+            return AccommodationSearchResponse.fromDocument(
+                doc,
+                wishlistedIds.contains(doc.getAccommodationId()),
+                accommodation.getLatitude(),
+                accommodation.getLongitude()
+            );
+          })
           .toList();
 
       // total count 가져오는 방식은 정확도에 따라 다름 (지금은 hits.total.value 사용)
