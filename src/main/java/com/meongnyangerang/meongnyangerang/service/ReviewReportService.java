@@ -99,6 +99,6 @@ public class ReviewReportService {
           .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
     }
 
-    return new MeongnyangerangException(ErrorCode.INVALID_REPORTER_TYPE);
+    throw new MeongnyangerangException(ErrorCode.INVALID_REPORTER_TYPE);
   }
 }
