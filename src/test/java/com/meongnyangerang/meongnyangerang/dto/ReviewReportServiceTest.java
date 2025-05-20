@@ -235,4 +235,19 @@ class ReviewReportServiceTest {
     assertEquals("나쁜 말만 사용합니다.", response.getReason());
     assertEquals("2025-05-05", response.getReportDate());
   }
+
+  @Test
+  @DisplayName("신고된 리뷰 상세 보기 - 실패: 신고 리뷰가 없는 경우")
+  void getReviewReportDetail_not_exists_review_report() {
+    // given
+    when(reviewReportRepository.findById(2L)).thenReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reviewReportService.getReviewReportDetail(2L);
+    });
+
+    // then
+    assertEquals(ErrorCode.NOT_EXIST_REVIEW_REPORT, e.getErrorCode());
+  }
 }
