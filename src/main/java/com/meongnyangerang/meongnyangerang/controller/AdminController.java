@@ -4,6 +4,7 @@ import com.meongnyangerang.meongnyangerang.dto.LoginRequest;
 import com.meongnyangerang.meongnyangerang.dto.LoginResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.PendingHostListResponse;
+import com.meongnyangerang.meongnyangerang.dto.ReviewReportDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewReportResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.service.AdminService;
@@ -75,6 +76,13 @@ public class AdminController {
       @PageableDefault(size = 20, sort = "createdAt", direction = Direction.ASC) Pageable pageable
   ) {
     return ResponseEntity.ok(reviewReportService.getReviews(pageable));
+  }
+
+  @GetMapping("/reports/{reviewReportId}")
+  public ResponseEntity<ReviewReportDetailResponse> getReviewReportDetail(
+      @PathVariable Long reviewReportId) {
+
+    return ResponseEntity.ok(reviewReportService.getReviewReportDetail(reviewReportId));
   }
 
   @DeleteMapping("/reports/{reviewReportId}")
