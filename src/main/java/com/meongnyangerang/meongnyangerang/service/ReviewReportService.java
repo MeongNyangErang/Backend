@@ -89,14 +89,16 @@ public class ReviewReportService {
   }
 
   private String getReporterNickname(Long reporterId, ReporterType type) {
-    String nickname = "";
-
     if (type == ReporterType.USER) {
-      nickname = String.valueOf(userRepository.findById(reporterId).map(User::getNickname));
+      return userRepository.findById(reporterId)
+          .map(User::getNickname)
+          .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
     } else if (type == ReporterType.HOST) {
-      nickname = String.valueOf(hostRepository.findById(reporterId).map(Host::getNickname));
+      return hostRepository.findById(reporterId)
+          .map(Host::getNickname)
+          .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
     }
 
-    return nickname;
+    return new MeongnyangerangException(ErrorCode.INVALID_REPORTER_TYPE);
   }
 }
