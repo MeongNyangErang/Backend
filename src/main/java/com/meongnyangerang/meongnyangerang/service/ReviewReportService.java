@@ -72,10 +72,6 @@ public class ReviewReportService {
     ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_REVIEW_REPORT));
 
-    if (reviewReport.getStatus() != ReportStatus.PENDING) {
-      throw new MeongnyangerangException(ErrorCode.ALREADY_PROCESSED_REVIEW_REPORT);
-    }
-
     String reporterNickname = getReporterNickname(reviewReport.getReporterId(),
         reviewReport.getType());
 

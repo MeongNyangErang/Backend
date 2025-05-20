@@ -250,35 +250,4 @@ class ReviewReportServiceTest {
     // then
     assertEquals(ErrorCode.NOT_EXIST_REVIEW_REPORT, e.getErrorCode());
   }
-
-  @Test
-  @DisplayName("신고된 리뷰 상세 보기 - 실패: 이미 처리된 신고인 경우")
-  void getReviewReportDetail_already_processed_review_report() {
-    // given
-    User user = User.builder().id(1L).nickname("장난꾸러기").build();
-    Host host = Host.builder().id(100L).nickname("3월").build();
-    Review review = Review.builder().id(1L).user(user).content("비추천. 최악의 숙소입니다.").build();
-
-    ReviewReport reviewReport = ReviewReport.builder()
-        .id(1L)
-        .review(review)
-        .reporterId(host.getId())
-        .type(ReporterType.HOST)
-        .status(ReportStatus.COMPLETED)
-        .reason("나쁜 말만 사용합니다.")
-        .evidenceImageUrl("")
-        .createdAt(LocalDateTime.of(2025, 5, 5, 15, 30, 0))
-        .build();
-
-    when(reviewReportRepository.findById(reviewReport.getId())).thenReturn(
-        Optional.of(reviewReport));
-
-    // when
-    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reviewReportService.getReviewReportDetail(reviewReport.getId());
-    });
-
-    // then
-    assertEquals(ErrorCode.ALREADY_PROCESSED_REVIEW_REPORT, e.getErrorCode());
-  }
 }
