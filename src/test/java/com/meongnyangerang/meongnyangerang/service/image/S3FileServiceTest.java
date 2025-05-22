@@ -11,6 +11,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -72,8 +73,8 @@ class S3FileServiceTest {
   }
 
   @Test
-  @DisplayName("단일 이미지 업로드 성공")
-  void uploadImage_Success() throws MalformedURLException {
+  @DisplayName("이미지 업로드 성공 - 압축 진행하지 않은 이미지")
+  void uploadImage_NotCompressedImage_Success_() throws MalformedURLException {
     // given
     when(s3Client.utilities()).thenReturn(s3Utilities);
     doReturn(new URL(MOCK_FILE_URL)).when(s3Utilities).getUrl(any(GetUrlRequest.class));
@@ -101,6 +102,43 @@ class S3FileServiceTest {
       PutObjectRequest capturedRequest = putObjectRequestCaptor.getValue();
       assertEquals(BUCKET, capturedRequest.bucket());
       assertEquals(fileUrl, MOCK_FILE_URL);
+    }
+  }
+
+  @Test
+  @DisplayName("이미지 업로드 성공 - 압축 진행된 이미지")
+  void uploadImage_CompressedImage_Success() throws MalformedURLException {
+    // given
+    when(s3Client.utilities()).thenReturn(s3Utilities);
+    doReturn(new URL(MOCK_FILE_URL)).when(s3Utilities).getUrl(any(GetUrlRequest.class));
+
+    // 업로드 요청 캡처
+    ArgumentCaptor<PutObjectRequest> putObjectRequestCaptor = ArgumentCaptor
+        .forClass(PutObjectRequest.class);
+
+    // 업로드 실제 파일 데이터 캡처
+    ArgumentCaptor<RequestBody> requestBodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+
+    // UUID 생성을 모킹하기 위해 정적 메서드 모킹
+    try (MockedStatic<UUID> mockedUUID = mockStatic(UUID.class)) {
+      mockedUUID.when(UUID::randomUUID).thenReturn(MOCK_UUID);
+
+      // when
+
+      String fileUrl = s3FileService.uploadFile(
+          mockImage.getBytes(), mockImage.getOriginalFilename(), mockImage.getContentType());
+
+      // then
+      verify(s3Client, times(1)).putObject(
+          putObjectRequestCaptor.capture(),
+          requestBodyCaptor.capture()
+      );
+
+      PutObjectRequest capturedRequest = putObjectRequestCaptor.getValue();
+      assertEquals(BUCKET, capturedRequest.bucket());
+      assertEquals(fileUrl, MOCK_FILE_URL);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
