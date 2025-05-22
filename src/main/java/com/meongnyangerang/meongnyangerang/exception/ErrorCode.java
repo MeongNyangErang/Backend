@@ -77,6 +77,7 @@ public enum ErrorCode {
   NOT_EXIST_NOTICE(HttpStatus.NOT_FOUND, "존재하지 않는 공지사항입니다."),
   NOT_EXIST_CHAT_ROOM(HttpStatus.NOT_FOUND, "채팅방이 존재하지 않습니다."),
   NOT_FOUND_IMAGE(HttpStatus.NOT_FOUND, "버킷에서 가져올 이미지가 없습니다."),
+  PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "결제 정보 없음"),
 
 
   // 409 Conflict
