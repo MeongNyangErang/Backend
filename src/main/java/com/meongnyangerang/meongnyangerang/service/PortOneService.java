@@ -1,7 +1,10 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+
 import com.meongnyangerang.meongnyangerang.component.PortOneClient;
 import com.meongnyangerang.meongnyangerang.dto.portone.PaymentInfo;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,11 +19,11 @@ public class PortOneService {
     PaymentInfo payment = portOneClient.getPaymentByImpUid(impUid);
 
     if (!payment.getStatus().equals("paid")) {
-      throw new MeongnyangerangException(ErrorCode.PAYMENT_NOT_COMPLETED);
+      throw new MeongnyangerangException(PAYMENT_NOT_COMPLETED);
     }
 
     if (!payment.getAmount().equals(expectedAmount)) {
-      throw new MeongnyangerangException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
+      throw new MeongnyangerangException(PAYMENT_AMOUNT_MISMATCH);
     }
   }
 }

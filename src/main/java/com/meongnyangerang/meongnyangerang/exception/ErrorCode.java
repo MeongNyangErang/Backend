@@ -39,6 +39,8 @@ public enum ErrorCode {
   INVALID_REPORTER_TYPE(HttpStatus.BAD_REQUEST, "신고자 유형이 올바르지 않습니다."),
   ALREADY_PROCESSED_REVIEW_REPORT(HttpStatus.BAD_REQUEST, "이미 처리된 신고입니다."),
   PAYMENT_AUTHORIZATION_FAILED(HttpStatus.BAD_REQUEST, "결제 인증 실패"),
+  PAYMENT_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "결제 완료 상태 아님"),
+  PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액 불일치"),
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
   INVALID_JWT_FORMAT(HttpStatus.BAD_REQUEST, "JWT 형식이 올바르지 않습니다."),
