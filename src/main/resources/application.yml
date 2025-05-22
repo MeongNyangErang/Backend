@@ -44,7 +44,7 @@ image:
     size-threshold: 1080       # 크기 1080 이상 시 압축
     quality: 0.7               # 70% 품질로 압축
     max-width: 1080 # 최대 너비
-    max-height: 1080 # 쵀디 높이
+    max-height: 1080 # 최대 높이
 
 management:
   endpoints:
