@@ -12,6 +12,7 @@ import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.portone.PaymentReservationRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -47,6 +48,7 @@ public class ReservationService {
   private final RoomRepository roomRepository;
   private final ReviewRepository reviewRepository;
   private final NotificationService notificationService;
+  private final PortOneService portOneService;
 
   private static final String RESERVATION_CONFIRMED_CONTENT = "%s 숙소 예약이 확정되었습니다.";
   private static final String RESERVATION_REGISTERED_CONTENT = "%s 님이 예약하였습니다.";
@@ -59,6 +61,23 @@ public class ReservationService {
     validateUser(userId);
     Room room = validateRoom(request.getRoomId());
     checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate());
+  }
+
+  @Transactional
+  public ReservationResponse createReservationAfterPayment(Long userId, PaymentReservationRequest request) {
+    // 결제 검증
+    ReservationRequest reservationRequest = request.getReservationRequest();
+    portOneService.verifyPayment(request.getImpUid(), reservationRequest.getTotalPrice());
+
+    // 예약 처리
+    User user = validateUser(userId);
+    Room room = validateRoom(reservationRequest.getRoomId());
+    checkRoomAvailability(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
+    bookRoomForDates(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
+    Reservation savedReservation = saveReservation(user, room, reservationRequest);
+    sendNotificationWhenReservationRegistered(savedReservation);
+
+    return new ReservationResponse(UUID.randomUUID().toString());
   }
 
   // 사용자가 예약 상태(RESERVED, COMPLETED, CANCELED)에 따라 예약 목록을 조회합니다.
