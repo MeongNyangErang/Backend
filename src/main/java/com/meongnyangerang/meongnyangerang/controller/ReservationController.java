@@ -31,6 +31,15 @@ public class ReservationController {
 
   private final ReservationService reservationService;
 
+  @PostMapping("/users/reservations/validate")
+  public ResponseEntity<Void> validateReservation(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @Valid @RequestBody ReservationRequest request) {
+
+    reservationService.validateReservation(userDetails.getId(), request);
+    return ResponseEntity.ok().build();
+  }
+
   @PostMapping("/users/reservations")
   public ResponseEntity<ReservationResponse> createReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
