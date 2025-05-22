@@ -31,6 +31,7 @@ public class ReservationController {
 
   private final ReservationService reservationService;
 
+  // 예약 사전 검증 api
   @PostMapping("/users/reservations/validate")
   public ResponseEntity<Void> validateReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,

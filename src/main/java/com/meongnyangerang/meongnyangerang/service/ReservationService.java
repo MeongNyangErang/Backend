@@ -54,6 +54,13 @@ public class ReservationService {
       "%s 숙소 예약이 성공적으로 취소되었습니다.";
   private static final String RESERVATION_CANCELED_CONTENT = "%s님이 예약을 취소하였습니다.";
 
+  @Transactional(readOnly = true)
+  public void validateReservation(Long userId, ReservationRequest request) {
+    validateUser(userId);
+    Room room = validateRoom(request.getRoomId());
+    checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate());
+  }
+
   /**
    * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드. 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
    *
