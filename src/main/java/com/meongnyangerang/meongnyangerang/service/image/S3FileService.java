@@ -42,6 +42,7 @@ public class S3FileService implements ImageStorage {
 
   /**
    * 단일 파일 업로드
+   *
    * @return 업로드된 파일의 URL
    */
   @Override
@@ -69,6 +70,34 @@ public class S3FileService implements ImageStorage {
     } catch (IOException e) {
       log.error("파일 업로드 도중 IO 에러 발생 : {}", e.getMessage(), e);
       throw new MeongnyangerangException(ErrorCode.INVALID_IO_ERROR);
+    }
+  }
+
+  @Override
+  public String uploadFile(byte[] fileData, String originalFilename, String contentType) {
+      validateByteArray(fileData);
+      String filename = createFilename(originalFilename);
+
+    try {
+      PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+          .bucket(bucket)
+          .key(filename)
+          .contentType(contentType)
+          .build();
+
+      s3Client.putObject(putObjectRequest, RequestBody.fromBytes(fileData));
+
+      log.info("파일 업로드 성공 (압축된 이미지)");
+      return generateFileUrl(filename);
+    } catch (SdkException e) {
+      log.error("파일 업로드 도중 아마존 서비스 에러 발생 : {}", e.getMessage(), e);
+      throw new MeongnyangerangException(ErrorCode.FILE_IS_EMPTY);
+    }
+  }
+
+  private void validateByteArray(byte[] fileData) {
+    if (fileData == null || fileData.length == 0) {
+      throw new MeongnyangerangException(ErrorCode.FILE_IS_EMPTY);
     }
   }
 
@@ -145,7 +174,7 @@ public class S3FileService implements ImageStorage {
 
     ListObjectsV2Response response = s3Client.listObjectsV2(request); // 객체 목록 결과
 
-    if (response.keyCount() < 1){
+    if (response.keyCount() < 1) {
       throw new MeongnyangerangException(ErrorCode.NOT_FOUND_IMAGE);
     }
 
