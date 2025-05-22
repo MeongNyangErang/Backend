@@ -1,5 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service.image;
 
+import com.meongnyangerang.meongnyangerang.dto.image.CompressedImageData;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.service.adptor.ImageStorage;
@@ -18,12 +19,18 @@ import org.springframework.web.multipart.MultipartFile;
 public class ImageService {
 
   private final ImageStorage imageStorage;
+  private final ImageCompressionUtil imageCompressionUtil;
 
   /**
    * 이미지 업로드
    */
   public String storeImage(MultipartFile image) {
     validateImage(image);
+    if (imageCompressionUtil.shouldCompress(image)){
+      CompressedImageData compressedImage = imageCompressionUtil.compressImage(image);
+      return imageStorage.uploadFile(
+          compressedImage.imageData(), compressedImage.filename(), compressedImage.contentType());
+    }
     return imageStorage.uploadFile(image);
   }
 
