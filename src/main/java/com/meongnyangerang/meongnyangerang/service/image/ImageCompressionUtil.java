@@ -131,14 +131,16 @@ public class ImageCompressionUtil {
     // JPG/JPEG 둘 다 "jpeg" Writer 사용 (동일한 형식이므로)
     if ("jpg".equals(lowerFormat) || "jpeg".equals(lowerFormat)) {
       compressJpegImage(image, outputStream);
-    } else if ("png".equals(lowerFormat)) {
-      ImageIO.write(image, "png", outputStream);
-    } else {
-      log.error("압축을 지원하지 않는 파일 형식입니다. {}", format);
-      throw new MeongnyangerangException(ErrorCode.NOT_SUPPORTED_TYPE);
+      return outputStream.toByteArray();
     }
 
-    return outputStream.toByteArray();
+    if ("png".equals(lowerFormat)) {
+      ImageIO.write(image, "png", outputStream);
+      return outputStream.toByteArray();
+    }
+
+    log.error("압축을 지원하지 않는 파일 형식입니다. {}", format);
+    throw new MeongnyangerangException(ErrorCode.NOT_SUPPORTED_TYPE);
   }
 
   private void compressJpegImage(BufferedImage image, ByteArrayOutputStream outputStream)
