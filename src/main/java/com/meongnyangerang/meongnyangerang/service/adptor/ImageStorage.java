@@ -7,6 +7,8 @@ public interface ImageStorage {
 
   String uploadFile(MultipartFile file);
 
+  String uploadFile(byte[] fileData, String originalFilename, String contentType);
+
   void deleteFile(String fileUrl);
 
   void deleteFiles(List<String> fileUrls);
