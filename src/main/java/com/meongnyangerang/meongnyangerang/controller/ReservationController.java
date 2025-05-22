@@ -6,6 +6,7 @@ import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.portone.PaymentReservationRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReservationService;
 import jakarta.validation.Valid;
