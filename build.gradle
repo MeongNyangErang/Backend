@@ -66,6 +66,9 @@ dependencies {
     // JSON 파싱용 (카카오 응답 파싱 시 필요)
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
+    // 이미지 압축
+    implementation 'org.imgscalr:imgscalr-lib:4.2'
+
     // Port One (이니시스 결제 연동)
 	implementation 'com.github.iamport:iamport-rest-client-java:0.2.23'
 

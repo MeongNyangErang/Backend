@@ -56,6 +56,10 @@ public class ReviewReport {
   @CreatedDate
   @Column(nullable = false)
   private LocalDateTime createdAt;
+
+  public String getReviewerNickname() {
+    return this.review.getUserNickname();
+  }
 }
 
 

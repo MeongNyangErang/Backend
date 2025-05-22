@@ -65,4 +65,8 @@ public class Review {
   @LastModifiedDate
   @Column(nullable = false)
   private LocalDateTime updatedAt;
+
+  public String getUserNickname() {
+    return this.user.getNickname();
+  }
 }

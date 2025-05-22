@@ -1,15 +1,21 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
 import com.meongnyangerang.meongnyangerang.domain.review.ReportStatus;
+import com.meongnyangerang.meongnyangerang.domain.review.ReporterType;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewReport;
+import com.meongnyangerang.meongnyangerang.domain.user.User;
+import com.meongnyangerang.meongnyangerang.dto.ReviewReportDetailResponse;
 import com.meongnyangerang.meongnyangerang.dto.ReviewReportRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReviewReportResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewReportRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
+import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +31,8 @@ public class ReviewReportService {
 
   private final ReviewReportRepository reviewReportRepository;
   private final ReviewRepository reviewRepository;
+  private final UserRepository userRepository;
+  private final HostRepository hostRepository;
   private final ReviewDeletionService reviewDeletionService;
   private final ImageService imageService;
 
@@ -60,6 +68,16 @@ public class ReviewReportService {
     return PageResponse.from(responses);
   }
 
+  public ReviewReportDetailResponse getReviewReportDetail(Long reviewReportId) {
+    ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
+        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_REVIEW_REPORT));
+
+    String reporterNickname = getReporterNickname(reviewReport.getReporterId(),
+        reviewReport.getType());
+
+    return ReviewReportDetailResponse.from(reviewReport, reporterNickname);
+  }
+
   @Transactional
   public void deleteReviewReport(Long reviewReportId) {
     ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
@@ -68,5 +86,19 @@ public class ReviewReportService {
     reviewReportRepository.delete(reviewReport);
 
     reviewDeletionService.deleteReviewCompletely(reviewReport.getReview());
+  }
+
+  private String getReporterNickname(Long reporterId, ReporterType type) {
+    if (type == ReporterType.USER) {
+      return userRepository.findById(reporterId)
+          .map(User::getNickname)
+          .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
+    } else if (type == ReporterType.HOST) {
+      return hostRepository.findById(reporterId)
+          .map(Host::getNickname)
+          .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXISTS_HOST));
+    }
+
+    throw new MeongnyangerangException(ErrorCode.INVALID_REPORTER_TYPE);
   }
 }

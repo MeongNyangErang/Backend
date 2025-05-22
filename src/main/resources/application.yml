@@ -37,6 +37,15 @@ spring:
   jwt:
     secret: ${JWT_SECRET}
 
+# 이미지 압축 설정
+image:
+  compression:
+    capacity-threshold: 512000 # 용량 500KB 이상 시 압축
+    size-threshold: 1080       # 크기 1080 이상 시 압축
+    quality: 0.7               # 70% 품질로 압축
+    max-width: 1080 # 최대 너비
+    max-height: 1080 # 최대 높이
+
 management:
   endpoints:
     web:

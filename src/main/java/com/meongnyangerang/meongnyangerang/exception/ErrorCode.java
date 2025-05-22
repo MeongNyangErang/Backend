@@ -36,6 +36,8 @@ public enum ErrorCode {
   REVIEW_REPORT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 신고된 리뷰입니다."),
   ROOM_COUNT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "객실은 20개까지 생성 가능합니다."),
   SOCIAL_ACCOUNT_LOGIN_ONLY(HttpStatus.BAD_REQUEST, "소셜 계정은 일반 로그인을 지원하지 않습니다."),
+  INVALID_REPORTER_TYPE(HttpStatus.BAD_REQUEST, "신고자 유형이 올바르지 않습니다."),
+  ALREADY_PROCESSED_REVIEW_REPORT(HttpStatus.BAD_REQUEST, "이미 처리된 신고입니다."),
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
   INVALID_JWT_FORMAT(HttpStatus.BAD_REQUEST, "JWT 형식이 올바르지 않습니다."),
