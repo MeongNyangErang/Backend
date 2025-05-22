@@ -41,6 +41,16 @@ public class ReservationController {
     return ResponseEntity.ok().build();
   }
 
+  // 결제 검증 후 예약 처리 api
+  @PostMapping("/users/reservations/payment")
+  public ResponseEntity<ReservationResponse> payAndCreateReservation(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @Valid @RequestBody PaymentReservationRequest request) {
+
+    return ResponseEntity.ok(reservationService.createReservationAfterPayment(
+        userDetails.getId(), request));
+  }
+
   @GetMapping("/users/reservations")
   public ResponseEntity<PageResponse<UserReservationResponse>> getUserReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
