@@ -61,36 +61,6 @@ public class ReservationService {
     checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate());
   }
 
-  /**
-   * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드. 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
-   *
-   * @param userId  사용자 ID
-   * @param request 예약 요청 정보
-   */
-  @Transactional
-  public ReservationResponse createReservation(Long userId, ReservationRequest request) {
-    // 사용자 검증
-    User user = validateUser(userId);
-
-    // 객실 검증
-    Room room = validateRoom(request.getRoomId());
-
-    // 객실 예약 가능 여부 확인
-    checkRoomAvailability(room, request.getCheckInDate(),
-        request.getCheckOutDate());
-
-    // 예약 날짜에 대해 객실 예약 처리
-    bookRoomForDates(room, request.getCheckInDate(), request.getCheckOutDate());
-
-    // 예약 정보 생성 후 DB에 저장
-    Reservation savedReservation = saveReservation(user, room, request);
-
-    // 예약 알림 저장 및 전송 (사용자와 호스트에게 전송)
-    sendNotificationWhenReservationRegistered(savedReservation);
-
-    return new ReservationResponse(UUID.randomUUID().toString());
-  }
-
   // 사용자가 예약 상태(RESERVED, COMPLETED, CANCELED)에 따라 예약 목록을 조회합니다.
   public PageResponse<UserReservationResponse> getUserReservations(Long userId, Pageable pageable,
       ReservationStatus status) {
