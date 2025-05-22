@@ -6,20 +6,26 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.meongnyangerang.meongnyangerang.domain.host.Host;
+import com.meongnyangerang.meongnyangerang.domain.review.ReportStatus;
+import com.meongnyangerang.meongnyangerang.domain.review.ReporterType;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewReport;
 import com.meongnyangerang.meongnyangerang.domain.user.Role;
+import com.meongnyangerang.meongnyangerang.domain.user.User;
 import com.meongnyangerang.meongnyangerang.domain.user.UserStatus;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewReportRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
+import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReviewDeletionService;
 import com.meongnyangerang.meongnyangerang.service.ReviewReportService;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.time.LocalDateTime;
 import java.util.Optional;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +43,12 @@ class ReviewReportServiceTest {
 
   @Mock
   private ReviewRepository reviewRepository;
+
+  @Mock
+  private UserRepository userRepository;
+
+  @Mock
+  private HostRepository hostRepository;
 
   @Mock
   private ReviewDeletionService reviewDeletionService;
@@ -182,6 +194,57 @@ class ReviewReportServiceTest {
     // when
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
       reviewReportService.deleteReviewReport(999L);
+    });
+
+    // then
+    assertEquals(ErrorCode.NOT_EXIST_REVIEW_REPORT, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("신고된 리뷰 상세 보기 - 성공")
+  void getReviewReportDetail_success() {
+    // given
+    User user = User.builder().id(1L).nickname("장난꾸러기").build();
+    Host host = Host.builder().id(100L).nickname("3월").build();
+    Review review = Review.builder().id(1L).user(user).content("비추천. 최악의 숙소입니다.").build();
+
+    ReviewReport reviewReport = ReviewReport.builder()
+        .id(1L)
+        .review(review)
+        .reporterId(host.getId())
+        .type(ReporterType.HOST)
+        .status(ReportStatus.PENDING)
+        .reason("나쁜 말만 사용합니다.")
+        .evidenceImageUrl("")
+        .createdAt(LocalDateTime.of(2025, 5, 5, 15, 30, 0))
+        .build();
+
+    when(reviewReportRepository.findById(reviewReport.getId())).thenReturn(
+        Optional.of(reviewReport));
+    when(hostRepository.findById(host.getId())).thenReturn(Optional.of(host));
+
+    // when
+    ReviewReportDetailResponse response = reviewReportService.getReviewReportDetail(
+        reviewReport.getId());
+
+    // then
+    assertEquals(review.getId(), response.getReviewId());
+    assertEquals(user.getNickname(), response.getReviewerNickname());
+    assertEquals(host.getNickname(), response.getReporterNickname());
+    assertEquals("", response.getEvidenceImageUrl());
+    assertEquals("나쁜 말만 사용합니다.", response.getReason());
+    assertEquals("2025-05-05", response.getReportDate());
+  }
+
+  @Test
+  @DisplayName("신고된 리뷰 상세 보기 - 실패: 신고 리뷰가 없는 경우")
+  void getReviewReportDetail_not_exists_review_report() {
+    // given
+    when(reviewReportRepository.findById(2L)).thenReturn(Optional.empty());
+
+    // when
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
+      reviewReportService.getReviewReportDetail(2L);
     });
 
     // then
