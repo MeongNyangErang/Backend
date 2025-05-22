@@ -41,17 +41,6 @@ public class ReservationController {
     return ResponseEntity.ok().build();
   }
 
-  @PostMapping("/users/reservations")
-  public ResponseEntity<ReservationResponse> createReservation(
-      @AuthenticationPrincipal UserDetailsImpl userDetails,
-      @Valid @RequestBody ReservationRequest request) {
-
-    ReservationResponse response = reservationService.createReservation(userDetails.getId(),
-        request);
-
-    return ResponseEntity.ok(response);
-  }
-
   @GetMapping("/users/reservations")
   public ResponseEntity<PageResponse<UserReservationResponse>> getUserReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
