@@ -55,12 +55,6 @@ class ImageCompressionUtilTest {
     BufferedImage compressedImage = ImageIO.read(new ByteArrayInputStream(imageData));
     assertNotNull(compressedImage);
 
-    System.out.println("compressedSize : " + compressedSize);
-    System.out.println("compressedImage.getWidth() : " + compressedImage.getWidth());
-    System.out.println("compressedImage.getHeight() : " + compressedImage.getHeight());
-    System.out.println("maxWidth : " + maxWidth);
-    System.out.println("maxHeight : " + maxHeight);
-
     // 용량이 임계값(500KB) 이하로 압축되었는지 확인
     assertTrue(compressedSize <= capacityThreshold);
 
