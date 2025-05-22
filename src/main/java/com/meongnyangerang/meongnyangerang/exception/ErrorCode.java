@@ -38,6 +38,7 @@ public enum ErrorCode {
   SOCIAL_ACCOUNT_LOGIN_ONLY(HttpStatus.BAD_REQUEST, "소셜 계정은 일반 로그인을 지원하지 않습니다."),
   INVALID_REPORTER_TYPE(HttpStatus.BAD_REQUEST, "신고자 유형이 올바르지 않습니다."),
   ALREADY_PROCESSED_REVIEW_REPORT(HttpStatus.BAD_REQUEST, "이미 처리된 신고입니다."),
+  PAYMENT_AUTHORIZATION_FAILED(HttpStatus.BAD_REQUEST, "결제 인증 실패"),
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
   INVALID_JWT_FORMAT(HttpStatus.BAD_REQUEST, "JWT 형식이 올바르지 않습니다."),

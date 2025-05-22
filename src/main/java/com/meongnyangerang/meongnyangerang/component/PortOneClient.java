@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.component;
 import com.meongnyangerang.meongnyangerang.dto.portone.PaymentInfo;
 import com.meongnyangerang.meongnyangerang.dto.portone.PaymentResponse;
 import com.meongnyangerang.meongnyangerang.dto.portone.TokenResponse;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
