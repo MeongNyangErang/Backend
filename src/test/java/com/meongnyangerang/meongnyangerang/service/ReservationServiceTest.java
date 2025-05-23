@@ -176,7 +176,7 @@ class ReservationServiceTest {
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.createReservation(userId, request);
+      reservationService.validateReservation(userId, request);
     });
 
     assertEquals(ErrorCode.USER_NOT_FOUND, e.getErrorCode());
