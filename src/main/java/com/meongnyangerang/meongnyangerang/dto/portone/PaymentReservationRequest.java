@@ -5,8 +5,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class PaymentReservationRequest {
   @NotBlank(message = "결제 고유번호(impUid)는 필수입니다.")
   private String impUid;

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,6 +24,7 @@ import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.portone.PaymentReservationRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -52,6 +54,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationServiceTest {
@@ -73,6 +76,9 @@ class ReservationServiceTest {
 
   @Mock
   private NotificationService notificationService;
+
+  @Mock
+  private PortOneService portOneService;
 
   @InjectMocks
   private ReservationService reservationService;
@@ -121,8 +127,17 @@ class ReservationServiceTest {
         Reservation.class);
     when(reservationRepository.save(reservationArgumentCaptor.capture())).thenReturn(reservation);
 
+    PaymentReservationRequest paymentRequest = new PaymentReservationRequest();
+    ReflectionTestUtils.setField(paymentRequest, "impUid", "imp_1234567890");
+    ReflectionTestUtils.setField(paymentRequest, "merchantUid", "merchant_9876543210");
+    ReflectionTestUtils.setField(paymentRequest, "reservationRequest", request);
+
+    // 포트원 결제 검증 성공 설정
+    doNothing().when(portOneService).verifyPayment("imp_1234567890", request.getTotalPrice());
+
     // when
-    ReservationResponse response = reservationService.createReservation(userId, request);
+    ReservationResponse response = reservationService.createReservationAfterPayment(userId, paymentRequest);
+
 
     // then
     verify(reservationSlotRepository, times(1)).saveAll(any());
