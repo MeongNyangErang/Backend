@@ -249,18 +249,14 @@ class ReservationServiceTest {
 
     Room room = Room.builder().id(roomId).build();
 
-    ReservationSlot existingSlot = new ReservationSlot(room, checkInDate, true);
-
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
-    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(roomId,
-        checkInDate, checkOutDate.minusDays(1), true)).thenReturn(false);
-    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate)).thenReturn(
-        Optional.of(existingSlot));
+    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(
+        roomId, checkInDate, checkOutDate.minusDays(1), true)).thenReturn(true);
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.createReservation(userId, request);
+      reservationService.validateReservation(userId, request);
     });
 
     assertEquals(ErrorCode.ROOM_ALREADY_RESERVED, e.getErrorCode());
