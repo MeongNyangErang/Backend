@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -270,8 +272,24 @@ class ReservationServiceTest {
     Long roomId = 101L;
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
-    ReservationRequest request = ReservationRequest.builder().roomId(roomId)
-        .checkInDate(checkInDate).checkOutDate(checkOutDate).build();
+    ReservationRequest request = ReservationRequest.builder()
+        .roomId(roomId)
+        .accommodationName("테스트 숙소")
+        .checkInDate(checkInDate)
+        .checkOutDate(checkOutDate)
+        .peopleCount(2)
+        .petCount(1)
+        .reserverName("홍길동")
+        .reserverPhoneNumber("01012345678")
+        .hasVehicle(true)
+        .totalPrice(100000L)
+        .build();
+
+
+    PaymentReservationRequest paymentRequest = new PaymentReservationRequest();
+    ReflectionTestUtils.setField(paymentRequest, "impUid", "imp_test_1234");
+    ReflectionTestUtils.setField(paymentRequest, "merchantUid", "order_test_1234");
+    ReflectionTestUtils.setField(paymentRequest, "reservationRequest", request);
 
     User user = User.builder().id(userId).build();
 
@@ -287,6 +305,7 @@ class ReservationServiceTest {
     when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate)).thenReturn(
         Optional.of(reservationSlot));
 
+    doNothing().when(portOneService).verifyPayment("imp_test_1234", 100000L);
     ExecutorService executorService = Executors.newFixedThreadPool(3);  // 3개의 스레드 실행
     CountDownLatch latch = new CountDownLatch(3); // 3개의 예약이 끝날 때까지 대기
     AtomicInteger successCount = new AtomicInteger(); // 성공한 예약의 개수 세기
@@ -297,7 +316,7 @@ class ReservationServiceTest {
       executorService.submit(() -> {  // 스레드 제출
         try {
           // 예약 시도 -> 성공하면 성공 예약 개수 증가
-          reservationService.createReservation(userId, request);
+          reservationService.createReservationAfterPayment(userId, paymentRequest);
           successCount.incrementAndGet();
         } catch (MeongnyangerangException e) {
           // OptimisticLockException 잡아서 MeongnyangerangException 던지기 때문에 실패 개수 증가
