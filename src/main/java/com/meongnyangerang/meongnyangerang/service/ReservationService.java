@@ -12,6 +12,7 @@ import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.portone.PaymentReservationRequest;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
@@ -47,6 +48,7 @@ public class ReservationService {
   private final RoomRepository roomRepository;
   private final ReviewRepository reviewRepository;
   private final NotificationService notificationService;
+  private final PortOneService portOneService;
 
   private static final String RESERVATION_CONFIRMED_CONTENT = "%s 숙소 예약이 확정되었습니다.";
   private static final String RESERVATION_REGISTERED_CONTENT = "%s 님이 예약하였습니다.";
@@ -54,31 +56,25 @@ public class ReservationService {
       "%s 숙소 예약이 성공적으로 취소되었습니다.";
   private static final String RESERVATION_CANCELED_CONTENT = "%s님이 예약을 취소하였습니다.";
 
-  /**
-   * 사용자와 객실 정보를 바탕으로 예약을 생성하는 메소드. 예약 가능한지 확인하고, 예약을 처리한 후 예약 정보를 DB에 저장합니다.
-   *
-   * @param userId  사용자 ID
-   * @param request 예약 요청 정보
-   */
-  @Transactional
-  public ReservationResponse createReservation(Long userId, ReservationRequest request) {
-    // 사용자 검증
-    User user = validateUser(userId);
-
-    // 객실 검증
+  @Transactional(readOnly = true)
+  public void validateReservation(Long userId, ReservationRequest request) {
+    validateUser(userId);
     Room room = validateRoom(request.getRoomId());
+    checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate());
+  }
 
-    // 객실 예약 가능 여부 확인
-    checkRoomAvailability(room, request.getCheckInDate(),
-        request.getCheckOutDate());
+  @Transactional
+  public ReservationResponse createReservationAfterPayment(Long userId, PaymentReservationRequest request) {
+    // 결제 검증
+    ReservationRequest reservationRequest = request.getReservationRequest();
+    portOneService.verifyPayment(request.getImpUid(), reservationRequest.getTotalPrice());
 
-    // 예약 날짜에 대해 객실 예약 처리
-    bookRoomForDates(room, request.getCheckInDate(), request.getCheckOutDate());
-
-    // 예약 정보 생성 후 DB에 저장
-    Reservation savedReservation = saveReservation(user, room, request);
-
-    // 예약 알림 저장 및 전송 (사용자와 호스트에게 전송)
+    // 예약 처리
+    User user = validateUser(userId);
+    Room room = validateRoom(reservationRequest.getRoomId());
+    checkRoomAvailability(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
+    bookRoomForDates(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
+    Reservation savedReservation = saveReservation(user, room, reservationRequest);
     sendNotificationWhenReservationRegistered(savedReservation);
 
     return new ReservationResponse(UUID.randomUUID().toString());
