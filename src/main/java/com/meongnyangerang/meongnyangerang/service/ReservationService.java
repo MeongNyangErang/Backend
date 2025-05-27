@@ -15,6 +15,7 @@ import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.portone.PaymentReservationRequest;
+import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
@@ -81,7 +82,11 @@ public class ReservationService {
     // 예약 처리
     User user = validateUser(userId);
     Room room = validateRoom(reservationRequest.getRoomId());
-    checkRoomAvailability(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
+
+    // hold 상태인 슬롯들을 조회하고 유효성 검증
+    List<ReservationSlot> slots = findAndValidateHoldSlots(room,
+        reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
+
     bookRoomForDates(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
     Reservation savedReservation = saveReservation(user, room, reservationRequest);
     sendNotificationWhenReservationRegistered(savedReservation);
@@ -204,6 +209,25 @@ public class ReservationService {
       slot.setExpiredAt(LocalDateTime.now().plusMinutes(5));
       reservationSlotRepository.save(slot);
     }
+  }
+
+  /**
+   * hold 상태인 슬롯들을 조회하고 유효성 검증
+   */
+  private List<ReservationSlot> findAndValidateHoldSlots(Room room, LocalDate checkIn, LocalDate checkOut) {
+    List<ReservationSlot> slots = new ArrayList<>();
+    for (LocalDate date = checkIn; date.isBefore(checkOut); date = date.plusDays(1)) {
+      ReservationSlot slot = reservationSlotRepository
+          .findByRoomIdAndReservedDate(room.getId(), date)
+          .orElseThrow(() -> new MeongnyangerangException(RESERVATION_NOT_FOUND));
+
+      if (!Boolean.TRUE.equals(slot.getHold())) {
+        throw new MeongnyangerangException(ROOM_ALREADY_RESERVED);
+      }
+
+      slots.add(slot);
+    }
+    return slots;
   }
 
   /**
