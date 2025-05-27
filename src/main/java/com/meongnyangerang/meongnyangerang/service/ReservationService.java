@@ -217,14 +217,15 @@ public class ReservationService {
    * hold 상태인 슬롯들을 조회하고 유효성 검증
    */
   private List<ReservationSlot> findAndValidateHoldSlots(Room room, LocalDate checkIn, LocalDate checkOut) {
+    LocalDateTime now = LocalDateTime.now();
     List<ReservationSlot> slots = new ArrayList<>();
     for (LocalDate date = checkIn; date.isBefore(checkOut); date = date.plusDays(1)) {
       ReservationSlot slot = reservationSlotRepository
           .findByRoomIdAndReservedDate(room.getId(), date)
           .orElseThrow(() -> new MeongnyangerangException(RESERVATION_NOT_FOUND));
 
-      if (!Boolean.TRUE.equals(slot.getHold())) {
-        throw new MeongnyangerangException(ROOM_ALREADY_RESERVED);
+      if (!Boolean.TRUE.equals(slot.getHold()) || slot.getExpiredAt() == null || slot.getExpiredAt().isBefore(now)) {
+        throw new MeongnyangerangException(RESERVATION_SLOT_EXPIRED);
       }
 
       slots.add(slot);
