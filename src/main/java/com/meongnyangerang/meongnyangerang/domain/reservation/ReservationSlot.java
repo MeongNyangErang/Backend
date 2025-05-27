@@ -50,6 +50,12 @@ public class ReservationSlot {
   @Column(nullable = false)
   private Integer version;
 
+  @Column(nullable = false)
+  private Boolean hold = false;
+
+  @Column
+  private LocalDateTime expiredAt;
+
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
