@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.repository;
 import com.meongnyangerang.meongnyangerang.domain.reservation.ReservationSlot;
 import com.meongnyangerang.meongnyangerang.domain.room.Room;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -38,4 +39,11 @@ public interface ReservationSlotRepository extends JpaRepository<ReservationSlot
   @Modifying
   @Query("DELETE FROM ReservationSlot rs WHERE rs.room.id = :roomId")
   void deleteAllByRoomId(@Param("roomId") Long roomId);
+
+  @Query("""
+      SELECT rs FROM ReservationSlot rs
+      WHERE rs.hold = true AND rs.expiredAt IS NOT NULL AND rs.expiredAt < :now
+    """)
+  List<ReservationSlot> findAllExpiredHoldSlots(@Param("now") LocalDateTime now);
+
 }
