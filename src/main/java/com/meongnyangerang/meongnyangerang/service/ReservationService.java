@@ -86,6 +86,8 @@ public class ReservationService {
     // hold 상태인 슬롯들을 조회하고 유효성 검증
     List<ReservationSlot> slots = findAndValidateHoldSlots(room,
         reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
+    // 유효성 검증을 마친 예약 슬롯 예약 확정 처리
+    confirmReservationSlots(slots);
 
     bookRoomForDates(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
     Reservation savedReservation = saveReservation(user, room, reservationRequest);
@@ -229,6 +231,24 @@ public class ReservationService {
     }
     return slots;
   }
+
+  /**
+   * 예약 슬롯 확정 처리: hold → reserved (IsReserved = true, Hold = false, ExpiredAt = null)
+   */
+  private void confirmReservationSlots(List<ReservationSlot> slots) {
+    for (ReservationSlot slot : slots) {
+      slot.setIsReserved(true);
+      slot.setHold(false);
+      slot.setExpiredAt(null);
+    }
+
+    try {
+      reservationSlotRepository.saveAll(slots);
+    } catch (OptimisticLockException e) {
+      throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
+    }
+  }
+
 
   /**
    * 체크인부터 체크아웃 전날까지 예약 슬롯을 확인하고 예약되지 않은 슬롯에 대해 예약을 진행합니다. 예약된 슬롯은 예외를 발생시키고, 예약되지 않은 슬롯은 예약 처리합니다.
