@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
@@ -99,16 +101,16 @@ public class ReservationService {
   public void cancelReservation(Long userId, Long reservationId) {
     // 예약 정보 가져오기
     Reservation reservation = reservationRepository.findById(reservationId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.RESERVATION_NOT_FOUND));
+        .orElseThrow(() -> new MeongnyangerangException(RESERVATION_NOT_FOUND));
 
     // 사용자가 예약한 내역인지 확인
     if (!reservation.getUser().getId().equals(userId)) {
-      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+      throw new MeongnyangerangException(INVALID_AUTHORIZED);
     }
 
     // 이미 취소된 예약인지 확인
     if (reservation.getStatus() == ReservationStatus.CANCELED) {
-      throw new MeongnyangerangException(ErrorCode.RESERVATION_ALREADY_CANCELED);
+      throw new MeongnyangerangException(RESERVATION_ALREADY_CANCELED);
     }
 
     updateReservationSlot(reservation);
@@ -140,7 +142,7 @@ public class ReservationService {
    */
   private User validateUser(Long userId) {
     return userRepository.findById(userId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> new MeongnyangerangException(USER_NOT_FOUND));
   }
 
   /**
@@ -152,7 +154,7 @@ public class ReservationService {
    */
   private Room validateRoom(Long roomId) {
     return roomRepository.findById(roomId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ROOM_NOT_FOUND));
+        .orElseThrow(() -> new MeongnyangerangException(ROOM_NOT_FOUND));
   }
 
   /**
@@ -169,7 +171,7 @@ public class ReservationService {
             room.getId(), checkInDate, checkOutDate.minusDays(1), true);
 
     if (isRoomBooked) {
-      throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
+      throw new MeongnyangerangException(ROOM_ALREADY_RESERVED);
     }
   }
 
@@ -177,7 +179,7 @@ public class ReservationService {
     boolean isHold = reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndHoldTrue(
         room.getId(), checkInDate, checkOutDate.minusDays(1));
     if (isHold) {
-      throw new MeongnyangerangException(ErrorCode.ROOM_TEMPORARILY_HELD); // 새로운 에러 코드
+      throw new MeongnyangerangException(ROOM_TEMPORARILY_HELD);
     }
   }
 
@@ -206,7 +208,7 @@ public class ReservationService {
 
       // 이미 예약된 슬롯이라면 예외 발생
       if (slot.getIsReserved()) {
-        throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
+        throw new MeongnyangerangException(ROOM_ALREADY_RESERVED);
       }
 
       // 슬롯 예약 처리
@@ -217,7 +219,7 @@ public class ReservationService {
     try {
       reservationSlotRepository.saveAll(reservations);  // 저장 시 버전 번호 확인
     } catch (OptimisticLockException e) {
-      throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
+      throw new MeongnyangerangException(ROOM_ALREADY_RESERVED);
     }
   }
 
