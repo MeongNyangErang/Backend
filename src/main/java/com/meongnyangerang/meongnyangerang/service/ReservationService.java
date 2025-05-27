@@ -89,7 +89,6 @@ public class ReservationService {
     // 유효성 검증을 마친 예약 슬롯 예약 확정 처리
     confirmReservationSlots(slots);
 
-    bookRoomForDates(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
     Reservation savedReservation = saveReservation(user, room, reservationRequest);
     sendNotificationWhenReservationRegistered(savedReservation);
 
@@ -246,46 +245,6 @@ public class ReservationService {
       reservationSlotRepository.saveAll(slots);
     } catch (OptimisticLockException e) {
       throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
-    }
-  }
-
-
-  /**
-   * 체크인부터 체크아웃 전날까지 예약 슬롯을 확인하고 예약되지 않은 슬롯에 대해 예약을 진행합니다. 예약된 슬롯은 예외를 발생시키고, 예약되지 않은 슬롯은 예약 처리합니다.
-   *
-   * @param room         예약하려는 객실
-   * @param checkInDate  체크인 날짜
-   * @param checkOutDate 체크아웃 날짜
-   * @return 예약된 슬롯 목록
-   * @throws MeongnyangerangException 이미 예약된 슬롯이 있을 경우 예외 발생
-   */
-  private void bookRoomForDates(Room room, LocalDate checkInDate,
-      LocalDate checkOutDate) {
-    List<ReservationSlot> reservations = new ArrayList<>();
-
-    // 체크인부터 체크아웃 전날까지 예약 슬롯을 확인하고 업데이트
-    for (LocalDate date = checkInDate; date.isBefore(checkOutDate); date = date.plusDays(1)) {
-      LocalDate finalDate = date;
-
-      // 해당 날짜에 예약 슬롯을 조회하고 없으면 생성
-      ReservationSlot slot = reservationSlotRepository
-          .findByRoomIdAndReservedDate(room.getId(), date)
-          .orElseGet(() -> new ReservationSlot(room, finalDate, false));
-
-      // 이미 예약된 슬롯이라면 예외 발생
-      if (slot.getIsReserved()) {
-        throw new MeongnyangerangException(ROOM_ALREADY_RESERVED);
-      }
-
-      // 슬롯 예약 처리
-      slot.setIsReserved(true);
-      reservations.add(slot);
-    }
-
-    try {
-      reservationSlotRepository.saveAll(reservations);  // 저장 시 버전 번호 확인
-    } catch (OptimisticLockException e) {
-      throw new MeongnyangerangException(ROOM_ALREADY_RESERVED);
     }
   }
 
