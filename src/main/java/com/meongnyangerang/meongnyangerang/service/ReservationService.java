@@ -93,7 +93,7 @@ public class ReservationService {
         request.getImpUid(), request.getMerchantUid());
     sendNotificationWhenReservationRegistered(savedReservation);
 
-    return new ReservationResponse(UUID.randomUUID().toString());
+    return new ReservationResponse(savedReservation.getMerchantUid());
   }
 
   // 사용자가 예약 상태(RESERVED, COMPLETED, CANCELED)에 따라 예약 목록을 조회합니다.
