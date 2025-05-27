@@ -6,6 +6,7 @@ import com.meongnyangerang.meongnyangerang.dto.ReservationRequest;
 import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
+import com.meongnyangerang.meongnyangerang.dto.portone.PaymentReservationRequest;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.ReservationService;
 import jakarta.validation.Valid;
@@ -31,15 +32,24 @@ public class ReservationController {
 
   private final ReservationService reservationService;
 
-  @PostMapping("/users/reservations")
-  public ResponseEntity<ReservationResponse> createReservation(
+  // 예약 사전 검증 api
+  @PostMapping("/users/reservations/validate")
+  public ResponseEntity<Void> validateReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
       @Valid @RequestBody ReservationRequest request) {
 
-    ReservationResponse response = reservationService.createReservation(userDetails.getId(),
-        request);
+    reservationService.validateReservation(userDetails.getId(), request);
+    return ResponseEntity.ok().build();
+  }
 
-    return ResponseEntity.ok(response);
+  // 결제 검증 후 예약 처리 api
+  @PostMapping("/users/reservations/payment")
+  public ResponseEntity<ReservationResponse> payAndCreateReservation(
+      @AuthenticationPrincipal UserDetailsImpl userDetails,
+      @Valid @RequestBody PaymentReservationRequest request) {
+
+    return ResponseEntity.ok(reservationService.createReservationAfterPayment(
+        userDetails.getId(), request));
   }
 
   @GetMapping("/users/reservations")
