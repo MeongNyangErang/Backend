@@ -68,6 +68,7 @@ public class ReservationService {
     checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate()); // 확정된 예약 확인
     checkRoomHoldStatus(room, request.getCheckInDate(), request.getCheckOutDate()); // 다른 사용자 결제 중 hold 확인
 
+    // 예약 슬롯을 임시 선점 (hold = true, expiredAt = now + 5분)
     holdReservationSlots(room, request.getCheckInDate(), request.getCheckOutDate());
   }
 
