@@ -25,6 +25,7 @@ import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import jakarta.persistence.OptimisticLockException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,12 +59,17 @@ public class ReservationService {
       "%s 숙소 예약이 성공적으로 취소되었습니다.";
   private static final String RESERVATION_CANCELED_CONTENT = "%s님이 예약을 취소하였습니다.";
 
+  /**
+   * 사용자, 객실, 예약 슬롯 상태를 검증하고 예약 슬롯을 임시 선점(hold = true, expiredAt = +5분)합니다.
+   */
   @Transactional(readOnly = true)
   public void validateReservation(Long userId, ReservationRequest request) {
     validateUser(userId);
     Room room = validateRoom(request.getRoomId());
     checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate()); // 확정된 예약 확인
     checkRoomHoldStatus(room, request.getCheckInDate(), request.getCheckOutDate()); // 다른 사용자 결제 중 hold 확인
+
+    holdReservationSlots(room, request.getCheckInDate(), request.getCheckOutDate());
   }
 
   @Transactional
@@ -183,6 +189,22 @@ public class ReservationService {
     }
   }
 
+  /**
+   * 예약 슬롯을 임시 선점합니다 (hold = true, expiredAt = now + 5분)
+   */
+  private void holdReservationSlots(Room room, LocalDate checkIn, LocalDate checkOut) {
+    for (LocalDate date = checkIn; date.isBefore(checkOut); date = date.plusDays(1)) {
+      LocalDate finalDate = date;
+
+      ReservationSlot slot = reservationSlotRepository
+          .findByRoomIdAndReservedDate(room.getId(), date)
+          .orElseGet(() -> new ReservationSlot(room, finalDate, false));
+
+      slot.setHold(true);
+      slot.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+      reservationSlotRepository.save(slot);
+    }
+  }
 
   /**
    * 체크인부터 체크아웃 전날까지 예약 슬롯을 확인하고 예약되지 않은 슬롯에 대해 예약을 진행합니다. 예약된 슬롯은 예외를 발생시키고, 예약되지 않은 슬롯은 예약 처리합니다.
