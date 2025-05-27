@@ -98,65 +98,76 @@ class ReservationServiceTest {
     final String TEST_ACCOMMODATION_NAME = "테스트 숙소 이름";
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
-    ReservationRequest request = ReservationRequest.builder().roomId(roomId)
-        .checkInDate(checkInDate).checkOutDate(checkOutDate).build();
 
-    User user = User.builder().id(userId).build();
-
-    Host host = Host.builder().id(1L).build();
-
-    Accommodation accommodation = Accommodation.builder().id(1L).host(host)
-        .name(TEST_ACCOMMODATION_NAME).build();
-
-    Room room = Room.builder().id(roomId).accommodation(accommodation).build();
-
-    Reservation reservation = Reservation.builder().id(1L).user(user).room(room)
-        .accommodationName(TEST_ACCOMMODATION_NAME).checkInDate(request.getCheckInDate())
-        .checkOutDate(request.getCheckOutDate()).build();
-
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
-    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(roomId,
-        checkInDate, checkOutDate.minusDays(1), true)).thenReturn(false);
-    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate)).thenReturn(
-        Optional.empty());
-    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId,
-        checkOutDate.minusDays(1))).thenReturn(Optional.empty());
-
-    ArgumentCaptor<Reservation> reservationArgumentCaptor = ArgumentCaptor.forClass(
-        Reservation.class);
-    when(reservationRepository.save(reservationArgumentCaptor.capture())).thenReturn(reservation);
+    ReservationRequest request = ReservationRequest.builder()
+        .roomId(roomId)
+        .accommodationName(TEST_ACCOMMODATION_NAME)
+        .checkInDate(checkInDate)
+        .checkOutDate(checkOutDate)
+        .peopleCount(2)
+        .petCount(1)
+        .reserverName("홍길동")
+        .reserverPhoneNumber("01012345678")
+        .hasVehicle(true)
+        .totalPrice(100000L)
+        .build();
 
     PaymentReservationRequest paymentRequest = new PaymentReservationRequest();
     ReflectionTestUtils.setField(paymentRequest, "impUid", "imp_1234567890");
     ReflectionTestUtils.setField(paymentRequest, "merchantUid", "merchant_9876543210");
     ReflectionTestUtils.setField(paymentRequest, "reservationRequest", request);
 
-    // 포트원 결제 검증 성공 설정
-    doNothing().when(portOneService).verifyPayment("imp_1234567890", request.getTotalPrice());
+    User user = User.builder().id(userId).nickname("홍길동").build();
+    Host host = Host.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).host(host)
+        .name(TEST_ACCOMMODATION_NAME).build();
+    Room room = Room.builder().id(roomId).accommodation(accommodation).build();
+
+    ReservationSlot slot1 = new ReservationSlot(room, checkInDate, false);
+    slot1.setHold(true);
+    slot1.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+
+    ReservationSlot slot2 = new ReservationSlot(room, checkInDate.plusDays(1), false);
+    slot2.setHold(true);
+    slot2.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .user(user)
+        .room(room)
+        .accommodationName(TEST_ACCOMMODATION_NAME)
+        .checkInDate(checkInDate)
+        .checkOutDate(checkOutDate)
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(100000L)
+        .impUid("imp_1234567890")
+        .merchantUid("merchant_9876543210")
+        .build();
+    
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate)).thenReturn(Optional.of(slot1));
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate.plusDays(1))).thenReturn(Optional.of(slot2));
+    when(reservationRepository.save(any(Reservation.class))).thenReturn(reservation);
+    doNothing().when(portOneService).verifyPayment("imp_1234567890", 100000L);
 
     // when
     ReservationResponse response = reservationService.createReservationAfterPayment(userId, paymentRequest);
 
-
     // then
-    verify(reservationSlotRepository, times(1)).saveAll(any());
-    verify(reservationRepository, times(1)).save(any());
     assertNotNull(response.getOrderNumber());
-    assertTrue(response.getOrderNumber().matches("^[a-f0-9-]{36}$"));
+    assertEquals("merchant_9876543210", response.getOrderNumber());
 
-    String reservationConfirmedContent = String.format(
-        RESERVATION_CONFIRMED_CONTENT, reservation.getAccommodationName());
-
-    String reservationRegisteredContent = String.format(
-        RESERVATION_REGISTERED_CONTENT, reservation.getUser().getNickname());
+    verify(reservationSlotRepository, times(1)).saveAll(List.of(slot1, slot2));
+    verify(reservationRepository, times(1)).save(any(Reservation.class));
 
     verify(notificationService).sendReservationNotification(
         reservation.getId(),
         user,
         host,
-        reservationConfirmedContent,
-        reservationRegisteredContent,
+        String.format(RESERVATION_CONFIRMED_CONTENT, TEST_ACCOMMODATION_NAME),
+        String.format(RESERVATION_REGISTERED_CONTENT, "홍길동"),
         NotificationType.RESERVATION_CONFIRMED
     );
   }
