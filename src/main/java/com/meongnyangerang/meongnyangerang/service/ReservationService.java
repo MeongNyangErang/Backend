@@ -173,9 +173,9 @@ public class ReservationService {
     }
   }
 
-  private void checkRoomHoldStatus(Room room, LocalDate checkIn, LocalDate checkOut) {
-    boolean isHold = reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndHoldIsTrue(
-        room.getId(), checkIn, checkOut.minusDays(1));
+  private void checkRoomHoldStatus(Room room, LocalDate checkInDate, LocalDate checkOutDate) {
+    boolean isHold = reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndHoldTrue(
+        room.getId(), checkInDate, checkOutDate.minusDays(1));
     if (isHold) {
       throw new MeongnyangerangException(ErrorCode.ROOM_TEMPORARILY_HELD); // 새로운 에러 코드
     }

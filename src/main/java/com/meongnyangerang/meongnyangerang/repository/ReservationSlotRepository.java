@@ -18,6 +18,8 @@ public interface ReservationSlotRepository extends JpaRepository<ReservationSlot
   boolean existsByRoomIdAndReservedDateBetweenAndIsReserved(Long roomId, LocalDate startDate,
       LocalDate endDate, boolean isReserved);
 
+  boolean existsByRoomIdAndReservedDateBetweenAndHoldTrue(Long roomId, LocalDate start, LocalDate end);
+
   // 특정 날짜에 대한 예약 존재하는지 찾거나 생성하는 로직에 활용
   Optional<ReservationSlot> findByRoomIdAndReservedDate(Long roomId, LocalDate reservedDate);
 
