@@ -62,7 +62,7 @@ public class ReservationService {
   /**
    * 사용자, 객실, 예약 슬롯 상태를 검증하고 예약 슬롯을 임시 선점(hold = true, expiredAt = +5분)합니다.
    */
-  @Transactional(readOnly = true)
+  @Transactional
   public void validateAndHoldSlots(Long userId, ReservationRequest request) {
     validateUser(userId);
     Room room = validateRoom(request.getRoomId());
