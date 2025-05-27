@@ -76,6 +76,12 @@ public class Reservation {
   @Column(nullable = false)
   private ReservationStatus status;
 
+  @Column(nullable = false)
+  private String impUid;
+
+  @Column(nullable = false)
+  private String merchantUid;
+
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
