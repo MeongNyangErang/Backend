@@ -466,6 +466,46 @@ class ReservationServiceTest {
   }
 
   @Test
+  @DisplayName("findAndValidateHoldSlots()에서 expiredAt이 null인 경우 예외 발생")
+  void createReservationAfterPayment_shouldThrowWhenExpiredAtIsNull() {
+    // given
+    Long userId = 1L;
+    Long roomId = 101L;
+    LocalDate checkIn = LocalDate.of(2025, 1, 1);
+    LocalDate checkOut = LocalDate.of(2025, 1, 2);
+
+    User user = User.builder().id(userId).build();
+    Room room = Room.builder().id(roomId).build();
+
+    ReservationRequest req = ReservationRequest.builder()
+        .roomId(roomId)
+        .checkInDate(checkIn)
+        .checkOutDate(checkOut)
+        .build();
+
+    ReservationSlot slot = new ReservationSlot(room, checkIn, false);
+    slot.setHold(true);
+    slot.setExpiredAt(null);
+
+    PaymentReservationRequest paymentReq = new PaymentReservationRequest();
+    ReflectionTestUtils.setField(paymentReq, "impUid", "imp_test");
+    ReflectionTestUtils.setField(paymentReq, "merchantUid", "merchant_test");
+    ReflectionTestUtils.setField(paymentReq, "reservationRequest", req);
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkIn)).thenReturn(Optional.of(slot));
+
+    doNothing().when(portOneService).verifyPayment("imp_test", null);
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
+        reservationService.createReservationAfterPayment(userId, paymentReq));
+
+    assertEquals(ErrorCode.RESERVATION_SLOT_EXPIRED, e.getErrorCode());
+  }
+
+  @Test
   @DisplayName("유저는 이용 전 상태인 예약을 취소할 수 있다.")
   void cancelReservation_success() {
     // given
