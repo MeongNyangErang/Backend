@@ -60,7 +60,8 @@ public class ReservationService {
   public void validateReservation(Long userId, ReservationRequest request) {
     validateUser(userId);
     Room room = validateRoom(request.getRoomId());
-    checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate());
+    checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate()); // 확정된 예약 확인
+    checkRoomHoldStatus(room, request.getCheckInDate(), request.getCheckOutDate()); // 다른 사용자 결제 중 hold 확인
   }
 
   @Transactional
@@ -171,6 +172,15 @@ public class ReservationService {
       throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
     }
   }
+
+  private void checkRoomHoldStatus(Room room, LocalDate checkIn, LocalDate checkOut) {
+    boolean isHold = reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndHoldIsTrue(
+        room.getId(), checkIn, checkOut.minusDays(1));
+    if (isHold) {
+      throw new MeongnyangerangException(ErrorCode.ROOM_TEMPORARILY_HELD); // 새로운 에러 코드
+    }
+  }
+
 
   /**
    * 체크인부터 체크아웃 전날까지 예약 슬롯을 확인하고 예약되지 않은 슬롯에 대해 예약을 진행합니다. 예약된 슬롯은 예외를 발생시키고, 예약되지 않은 슬롯은 예약 처리합니다.
