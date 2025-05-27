@@ -15,7 +15,6 @@ import com.meongnyangerang.meongnyangerang.dto.ReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.UserReservationResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.dto.portone.PaymentReservationRequest;
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
@@ -63,7 +62,7 @@ public class ReservationService {
    * 사용자, 객실, 예약 슬롯 상태를 검증하고 예약 슬롯을 임시 선점(hold = true, expiredAt = +5분)합니다.
    */
   @Transactional(readOnly = true)
-  public void validateReservation(Long userId, ReservationRequest request) {
+  public void validateAndHoldSlots(Long userId, ReservationRequest request) {
     validateUser(userId);
     Room room = validateRoom(request.getRoomId());
     checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate()); // 확정된 예약 확인

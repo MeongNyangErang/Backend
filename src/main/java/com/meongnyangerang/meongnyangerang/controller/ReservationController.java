@@ -38,7 +38,7 @@ public class ReservationController {
       @AuthenticationPrincipal UserDetailsImpl userDetails,
       @Valid @RequestBody ReservationRequest request) {
 
-    reservationService.validateReservation(userDetails.getId(), request);
+    reservationService.validateAndHoldSlots(userDetails.getId(), request);
     return ResponseEntity.ok().build();
   }
 

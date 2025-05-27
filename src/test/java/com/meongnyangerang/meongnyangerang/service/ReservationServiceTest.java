@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -178,7 +176,7 @@ class ReservationServiceTest {
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.validateReservation(userId, request);
+      reservationService.validateAndHoldSlots(userId, request);
     });
 
     assertEquals(ErrorCode.USER_NOT_FOUND, e.getErrorCode());
@@ -202,7 +200,7 @@ class ReservationServiceTest {
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.validateReservation(userId, request);
+      reservationService.validateAndHoldSlots(userId, request);
     });
 
     assertEquals(ErrorCode.ROOM_NOT_FOUND, e.getErrorCode());
@@ -230,7 +228,7 @@ class ReservationServiceTest {
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.validateReservation(userId, request);
+      reservationService.validateAndHoldSlots(userId, request);
     });
 
     assertEquals(ErrorCode.ROOM_ALREADY_RESERVED, e.getErrorCode());
@@ -258,7 +256,7 @@ class ReservationServiceTest {
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.validateReservation(userId, request);
+      reservationService.validateAndHoldSlots(userId, request);
     });
 
     assertEquals(ErrorCode.ROOM_ALREADY_RESERVED, e.getErrorCode());
