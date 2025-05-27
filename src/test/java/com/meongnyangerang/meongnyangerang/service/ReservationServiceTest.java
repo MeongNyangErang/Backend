@@ -335,6 +335,38 @@ class ReservationServiceTest {
   }
 
   @Test
+  @DisplayName("checkRoomHoldStatus()에서 hold=true인 슬롯이 존재할 경우 예외 발생")
+  void validateAndHoldSlots_shouldThrowWhenRoomHoldExists() {
+    // given
+    Long userId = 1L;
+    Long roomId = 101L;
+    LocalDate checkIn = LocalDate.of(2025, 1, 1);
+    LocalDate checkOut = LocalDate.of(2025, 1, 3);
+
+    ReservationRequest request = ReservationRequest.builder()
+        .roomId(roomId)
+        .checkInDate(checkIn)
+        .checkOutDate(checkOut)
+        .build();
+
+    User user = User.builder().id(userId).build();
+    Room room = Room.builder().id(roomId).build();
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(
+        roomId, checkIn, checkOut.minusDays(1), true)).thenReturn(false);
+    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndHoldTrue(
+        roomId, checkIn, checkOut.minusDays(1))).thenReturn(true);
+
+    // when & then
+    MeongnyangerangException exception = assertThrows(MeongnyangerangException.class, () ->
+        reservationService.validateAndHoldSlots(userId, request));
+
+    assertEquals(ErrorCode.ROOM_TEMPORARILY_HELD, exception.getErrorCode());
+  }
+
+  @Test
   @DisplayName("해당 유저가 예약한 내역만 볼 수 있고 상태에 따라 조회를 할 수 있다.")
   void getUserReservation_success() {
     Long userId = 1L;
