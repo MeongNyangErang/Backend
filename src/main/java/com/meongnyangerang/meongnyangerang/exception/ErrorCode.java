@@ -42,6 +42,7 @@ public enum ErrorCode {
   PAYMENT_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "결제 완료 상태 아님"),
   PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액 불일치"),
   ROOM_TEMPORARILY_HELD(HttpStatus.BAD_REQUEST, "해당 기간은 다른 사용자가 결제 진행 중인 상태입니다. 잠시 후 다시 시도해 주세요."),
+  RESERVATION_SLOT_EXPIRED(HttpStatus.BAD_REQUEST, "예약 보류 시간이 만료되었습니다. 다시 시도해 주세요."),
 
   // 400 BAD REQUEST (JWT 관련 요청 오류)
   INVALID_JWT_FORMAT(HttpStatus.BAD_REQUEST, "JWT 형식이 올바르지 않습니다."),
