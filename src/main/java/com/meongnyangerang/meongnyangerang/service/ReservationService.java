@@ -89,7 +89,8 @@ public class ReservationService {
     // 유효성 검증을 마친 예약 슬롯 예약 확정 처리
     confirmReservationSlots(slots);
 
-    Reservation savedReservation = saveReservation(user, room, reservationRequest);
+    Reservation savedReservation = saveReservation(user, room, reservationRequest,
+        request.getImpUid(), request.getMerchantUid());
     sendNotificationWhenReservationRegistered(savedReservation);
 
     return new ReservationResponse(UUID.randomUUID().toString());
@@ -255,8 +256,11 @@ public class ReservationService {
    * @param room    예약된 객실
    * @param request 예약 요청 정보
    */
-  private Reservation saveReservation(User user, Room room, ReservationRequest request) {
+  private Reservation saveReservation(User user, Room room, ReservationRequest request,
+      String impUid, String merchantUid) {
     Reservation reservation = request.toEntity(user, room);
+    reservation.setImpUid(impUid);
+    reservation.setMerchantUid(merchantUid);
     return reservationRepository.save(reservation);
   }
 
