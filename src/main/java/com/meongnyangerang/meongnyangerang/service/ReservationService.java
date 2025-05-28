@@ -243,11 +243,7 @@ public class ReservationService {
       slot.setExpiredAt(null);
     }
 
-    try {
-      reservationSlotRepository.saveAll(slots);
-    } catch (OptimisticLockException e) {
-      throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
-    }
+    reservationSlotRepository.saveAll(slots);
   }
 
   /**
