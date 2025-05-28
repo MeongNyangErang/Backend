@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -215,7 +216,7 @@ public class ReservationService {
     }
     try {
       reservationSlotRepository.saveAll(slots);
-    } catch (OptimisticLockException e) {
+    } catch (OptimisticLockException | DataIntegrityViolationException e) {
       throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
     }
   }
