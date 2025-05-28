@@ -5,6 +5,7 @@ import com.meongnyangerang.meongnyangerang.dto.portone.PaymentResponse;
 import com.meongnyangerang.meongnyangerang.dto.portone.TokenResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,5 +74,28 @@ public class PortOneClient {
 
     return response.getBody().getResponse();
   }
+
+  public void cancelPayment(String impUid, String reason, Long amount) {
+    String accessToken = getAccessToken();
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("Authorization", accessToken);
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    Map<String, Object> body = new HashMap<>();
+    body.put("imp_uid", impUid);
+    body.put("reason", reason);
+    body.put("checksum", amount); // 실제 결제 금액과 일치해야 함
+
+    HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+    ResponseEntity<String> response = restTemplate.postForEntity(
+        "https://api.iamport.kr/payments/cancel", request, String.class);
+
+    if (!response.getStatusCode().is2xxSuccessful()) {
+      throw new MeongnyangerangException(ErrorCode.PAYMENT_CANCELLATION_FAILED);
+    }
+  }
+
 }
 
