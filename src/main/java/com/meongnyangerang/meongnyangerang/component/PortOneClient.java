@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.component;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+
 import com.meongnyangerang.meongnyangerang.dto.portone.PaymentInfo;
 import com.meongnyangerang.meongnyangerang.dto.portone.PaymentResponse;
 import com.meongnyangerang.meongnyangerang.dto.portone.TokenResponse;
@@ -47,7 +49,7 @@ public class PortOneClient {
         TOKEN_URL, request, TokenResponse.class);
 
     if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-      throw new MeongnyangerangException(ErrorCode.PAYMENT_AUTHORIZATION_FAILED);
+      throw new MeongnyangerangException(PAYMENT_AUTHORIZATION_FAILED);
     }
 
     return response.getBody().getResponse().getAccessToken();
@@ -69,7 +71,7 @@ public class PortOneClient {
     );
 
     if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-      throw new MeongnyangerangException(ErrorCode.PAYMENT_NOT_FOUND);
+      throw new MeongnyangerangException(PAYMENT_NOT_FOUND);
     }
 
     return response.getBody().getResponse();
@@ -93,7 +95,7 @@ public class PortOneClient {
         "https://api.iamport.kr/payments/cancel", request, String.class);
 
     if (!response.getStatusCode().is2xxSuccessful()) {
-      throw new MeongnyangerangException(ErrorCode.PAYMENT_CANCELLATION_FAILED);
+      throw new MeongnyangerangException(PAYMENT_CANCELLATION_FAILED);
     }
   }
 
