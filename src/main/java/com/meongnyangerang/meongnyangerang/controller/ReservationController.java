@@ -32,7 +32,7 @@ public class ReservationController {
 
   private final ReservationService reservationService;
 
-  // 예약 사전 검증 api
+  // 사용자, 객실, 예약 슬롯 상태를 검증하고 예약 슬롯을 임시 선점하는 api
   @PostMapping("/users/reservations/validate")
   public ResponseEntity<Void> validateReservation(
       @AuthenticationPrincipal UserDetailsImpl userDetails,
