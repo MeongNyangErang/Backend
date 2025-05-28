@@ -74,13 +74,21 @@ public class ReservationService {
     holdReservationSlots(room, request.getCheckInDate(), request.getCheckOutDate());
   }
 
+  /**
+   * 결제 완료 후 예약을 확정합니다.
+   * 1. 결제 금액을 검증하고,
+   * 2. 사용자와 객실 정보를 다시 조회하여 유효성을 확인한 뒤,
+   * 3. 사전에 임시 선점(hold)된 예약 슬롯들의 유효성을 검사하고,
+   * 4. 해당 슬롯들을 확정 예약 상태로 변경(isReserved = true, hold = false, expiredAt = null)한 후,
+   * 5. 최종 예약 정보를 저장하고 알림을 전송합니다.
+   */
   @Transactional
   public ReservationResponse createReservationAfterPayment(Long userId, PaymentReservationRequest request) {
     // 결제 검증
     ReservationRequest reservationRequest = request.getReservationRequest();
     portOneService.verifyPayment(request.getImpUid(), reservationRequest.getTotalPrice());
 
-    // 예약 처리
+    // 사용자, 객실 유효한지 검증
     User user = validateUser(userId);
     Room room = validateRoom(reservationRequest.getRoomId());
 
