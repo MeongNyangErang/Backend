@@ -1,5 +1,7 @@
 package com.meongnyangerang.meongnyangerang.service;
 
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+
 import com.meongnyangerang.meongnyangerang.domain.accommodation.Accommodation;
 import com.meongnyangerang.meongnyangerang.domain.notification.NotificationType;
 import com.meongnyangerang.meongnyangerang.domain.reservation.Reservation;
@@ -23,12 +25,14 @@ import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import jakarta.persistence.OptimisticLockException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -56,28 +60,49 @@ public class ReservationService {
       "%s 숙소 예약이 성공적으로 취소되었습니다.";
   private static final String RESERVATION_CANCELED_CONTENT = "%s님이 예약을 취소하였습니다.";
 
-  @Transactional(readOnly = true)
-  public void validateReservation(Long userId, ReservationRequest request) {
+  /**
+   * 사용자, 객실, 예약 슬롯 상태를 검증하고 예약 슬롯을 임시 선점(hold = true, expiredAt = +5분)합니다.
+   */
+  @Transactional
+  public void validateAndHoldSlots(Long userId, ReservationRequest request) {
     validateUser(userId);
     Room room = validateRoom(request.getRoomId());
-    checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate());
+    checkRoomAvailability(room, request.getCheckInDate(), request.getCheckOutDate()); // 확정된 예약 확인
+    checkRoomHoldStatus(room, request.getCheckInDate(), request.getCheckOutDate()); // 다른 사용자 결제 중 hold 확인
+
+    // 예약 슬롯을 임시 선점 (hold = true, expiredAt = now + 5분)
+    holdReservationSlots(room, request.getCheckInDate(), request.getCheckOutDate());
   }
 
+  /**
+   * 결제 완료 후 예약을 확정합니다.
+   * 1. 결제 금액을 검증하고,
+   * 2. 사용자와 객실 정보를 다시 조회하여 유효성을 확인한 뒤,
+   * 3. 사전에 임시 선점(hold)된 예약 슬롯들의 유효성을 검사하고,
+   * 4. 해당 슬롯들을 확정 예약 상태로 변경(isReserved = true, hold = false, expiredAt = null)한 후,
+   * 5. 최종 예약 정보를 저장하고 알림을 전송합니다.
+   */
   @Transactional
   public ReservationResponse createReservationAfterPayment(Long userId, PaymentReservationRequest request) {
     // 결제 검증
     ReservationRequest reservationRequest = request.getReservationRequest();
     portOneService.verifyPayment(request.getImpUid(), reservationRequest.getTotalPrice());
 
-    // 예약 처리
+    // 사용자, 객실 유효한지 검증
     User user = validateUser(userId);
     Room room = validateRoom(reservationRequest.getRoomId());
-    checkRoomAvailability(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
-    bookRoomForDates(room, reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
-    Reservation savedReservation = saveReservation(user, room, reservationRequest);
+
+    // hold 상태인 슬롯들을 조회하고 유효성 검증
+    List<ReservationSlot> slots = findAndValidateHoldSlots(room,
+        reservationRequest.getCheckInDate(), reservationRequest.getCheckOutDate());
+    // 유효성 검증을 마친 예약 슬롯 예약 확정 처리
+    confirmReservationSlots(slots);
+
+    Reservation savedReservation = saveReservation(user, room, reservationRequest,
+        request.getImpUid(), request.getMerchantUid());
     sendNotificationWhenReservationRegistered(savedReservation);
 
-    return new ReservationResponse(UUID.randomUUID().toString());
+    return new ReservationResponse(savedReservation.getMerchantUid());
   }
 
   // 사용자가 예약 상태(RESERVED, COMPLETED, CANCELED)에 따라 예약 목록을 조회합니다.
@@ -98,16 +123,16 @@ public class ReservationService {
   public void cancelReservation(Long userId, Long reservationId) {
     // 예약 정보 가져오기
     Reservation reservation = reservationRepository.findById(reservationId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.RESERVATION_NOT_FOUND));
+        .orElseThrow(() -> new MeongnyangerangException(RESERVATION_NOT_FOUND));
 
     // 사용자가 예약한 내역인지 확인
     if (!reservation.getUser().getId().equals(userId)) {
-      throw new MeongnyangerangException(ErrorCode.INVALID_AUTHORIZED);
+      throw new MeongnyangerangException(INVALID_AUTHORIZED);
     }
 
     // 이미 취소된 예약인지 확인
     if (reservation.getStatus() == ReservationStatus.CANCELED) {
-      throw new MeongnyangerangException(ErrorCode.RESERVATION_ALREADY_CANCELED);
+      throw new MeongnyangerangException(RESERVATION_ALREADY_CANCELED);
     }
 
     updateReservationSlot(reservation);
@@ -139,7 +164,7 @@ public class ReservationService {
    */
   private User validateUser(Long userId) {
     return userRepository.findById(userId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> new MeongnyangerangException(USER_NOT_FOUND));
   }
 
   /**
@@ -151,7 +176,7 @@ public class ReservationService {
    */
   private Room validateRoom(Long roomId) {
     return roomRepository.findById(roomId)
-        .orElseThrow(() -> new MeongnyangerangException(ErrorCode.ROOM_NOT_FOUND));
+        .orElseThrow(() -> new MeongnyangerangException(ROOM_NOT_FOUND));
   }
 
   /**
@@ -168,47 +193,73 @@ public class ReservationService {
             room.getId(), checkInDate, checkOutDate.minusDays(1), true);
 
     if (isRoomBooked) {
-      throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
+      throw new MeongnyangerangException(ROOM_ALREADY_RESERVED);
+    }
+  }
+
+  private void checkRoomHoldStatus(Room room, LocalDate checkInDate, LocalDate checkOutDate) {
+    boolean isHold = reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndHoldTrue(
+        room.getId(), checkInDate, checkOutDate.minusDays(1));
+    if (isHold) {
+      throw new MeongnyangerangException(ROOM_TEMPORARILY_HELD);
     }
   }
 
   /**
-   * 체크인부터 체크아웃 전날까지 예약 슬롯을 확인하고 예약되지 않은 슬롯에 대해 예약을 진행합니다. 예약된 슬롯은 예외를 발생시키고, 예약되지 않은 슬롯은 예약 처리합니다.
-   *
-   * @param room         예약하려는 객실
-   * @param checkInDate  체크인 날짜
-   * @param checkOutDate 체크아웃 날짜
-   * @return 예약된 슬롯 목록
-   * @throws MeongnyangerangException 이미 예약된 슬롯이 있을 경우 예외 발생
+   * 예약 슬롯을 임시 선점합니다 (hold = true, expiredAt = now + 5분)
    */
-  private void bookRoomForDates(Room room, LocalDate checkInDate,
-      LocalDate checkOutDate) {
-    List<ReservationSlot> reservations = new ArrayList<>();
+  private void holdReservationSlots(Room room, LocalDate checkIn, LocalDate checkOut) {
+    List<ReservationSlot> slots = new ArrayList<>();
 
-    // 체크인부터 체크아웃 전날까지 예약 슬롯을 확인하고 업데이트
-    for (LocalDate date = checkInDate; date.isBefore(checkOutDate); date = date.plusDays(1)) {
+    for (LocalDate date = checkIn; date.isBefore(checkOut); date = date.plusDays(1)) {
       LocalDate finalDate = date;
 
-      // 해당 날짜에 예약 슬롯을 조회하고 없으면 생성
       ReservationSlot slot = reservationSlotRepository
           .findByRoomIdAndReservedDate(room.getId(), date)
           .orElseGet(() -> new ReservationSlot(room, finalDate, false));
 
-      // 이미 예약된 슬롯이라면 예외 발생
-      if (slot.getIsReserved()) {
-        throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
+      slot.setHold(true);
+      slot.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+      slots.add(slot);
+    }
+    try {
+      reservationSlotRepository.saveAll(slots);
+    } catch (OptimisticLockException | DataIntegrityViolationException e) {
+      throw new MeongnyangerangException(ROOM_TEMPORARILY_HELD);
+    }
+  }
+
+  /**
+   * hold 상태인 슬롯들을 조회하고 유효성 검증
+   */
+  private List<ReservationSlot> findAndValidateHoldSlots(Room room, LocalDate checkIn, LocalDate checkOut) {
+    LocalDateTime now = LocalDateTime.now();
+    List<ReservationSlot> slots = new ArrayList<>();
+    for (LocalDate date = checkIn; date.isBefore(checkOut); date = date.plusDays(1)) {
+      ReservationSlot slot = reservationSlotRepository
+          .findByRoomIdAndReservedDate(room.getId(), date)
+          .orElseThrow(() -> new MeongnyangerangException(RESERVATION_NOT_FOUND));
+
+      if (!Boolean.TRUE.equals(slot.getHold()) || slot.getExpiredAt() == null || slot.getExpiredAt().isBefore(now)) {
+        throw new MeongnyangerangException(RESERVATION_SLOT_EXPIRED);
       }
 
-      // 슬롯 예약 처리
+      slots.add(slot);
+    }
+    return slots;
+  }
+
+  /**
+   * 예약 슬롯 확정 처리: hold → reserved (IsReserved = true, Hold = false, ExpiredAt = null)
+   */
+  private void confirmReservationSlots(List<ReservationSlot> slots) {
+    for (ReservationSlot slot : slots) {
       slot.setIsReserved(true);
-      reservations.add(slot);
+      slot.setHold(false);
+      slot.setExpiredAt(null);
     }
 
-    try {
-      reservationSlotRepository.saveAll(reservations);  // 저장 시 버전 번호 확인
-    } catch (OptimisticLockException e) {
-      throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
-    }
+    reservationSlotRepository.saveAll(slots);
   }
 
   /**
@@ -218,8 +269,11 @@ public class ReservationService {
    * @param room    예약된 객실
    * @param request 예약 요청 정보
    */
-  private Reservation saveReservation(User user, Room room, ReservationRequest request) {
+  private Reservation saveReservation(User user, Room room, ReservationRequest request,
+      String impUid, String merchantUid) {
     Reservation reservation = request.toEntity(user, room);
+    reservation.setImpUid(impUid);
+    reservation.setMerchantUid(merchantUid);
     return reservationRepository.save(reservation);
   }
 

@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -100,65 +98,76 @@ class ReservationServiceTest {
     final String TEST_ACCOMMODATION_NAME = "테스트 숙소 이름";
     LocalDate checkInDate = LocalDate.of(2025, 1, 1);
     LocalDate checkOutDate = LocalDate.of(2025, 1, 3);
-    ReservationRequest request = ReservationRequest.builder().roomId(roomId)
-        .checkInDate(checkInDate).checkOutDate(checkOutDate).build();
 
-    User user = User.builder().id(userId).build();
-
-    Host host = Host.builder().id(1L).build();
-
-    Accommodation accommodation = Accommodation.builder().id(1L).host(host)
-        .name(TEST_ACCOMMODATION_NAME).build();
-
-    Room room = Room.builder().id(roomId).accommodation(accommodation).build();
-
-    Reservation reservation = Reservation.builder().id(1L).user(user).room(room)
-        .accommodationName(TEST_ACCOMMODATION_NAME).checkInDate(request.getCheckInDate())
-        .checkOutDate(request.getCheckOutDate()).build();
-
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
-    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(roomId,
-        checkInDate, checkOutDate.minusDays(1), true)).thenReturn(false);
-    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate)).thenReturn(
-        Optional.empty());
-    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId,
-        checkOutDate.minusDays(1))).thenReturn(Optional.empty());
-
-    ArgumentCaptor<Reservation> reservationArgumentCaptor = ArgumentCaptor.forClass(
-        Reservation.class);
-    when(reservationRepository.save(reservationArgumentCaptor.capture())).thenReturn(reservation);
+    ReservationRequest request = ReservationRequest.builder()
+        .roomId(roomId)
+        .accommodationName(TEST_ACCOMMODATION_NAME)
+        .checkInDate(checkInDate)
+        .checkOutDate(checkOutDate)
+        .peopleCount(2)
+        .petCount(1)
+        .reserverName("홍길동")
+        .reserverPhoneNumber("01012345678")
+        .hasVehicle(true)
+        .totalPrice(100000L)
+        .build();
 
     PaymentReservationRequest paymentRequest = new PaymentReservationRequest();
     ReflectionTestUtils.setField(paymentRequest, "impUid", "imp_1234567890");
     ReflectionTestUtils.setField(paymentRequest, "merchantUid", "merchant_9876543210");
     ReflectionTestUtils.setField(paymentRequest, "reservationRequest", request);
 
-    // 포트원 결제 검증 성공 설정
-    doNothing().when(portOneService).verifyPayment("imp_1234567890", request.getTotalPrice());
+    User user = User.builder().id(userId).nickname("홍길동").build();
+    Host host = Host.builder().id(1L).build();
+    Accommodation accommodation = Accommodation.builder().id(1L).host(host)
+        .name(TEST_ACCOMMODATION_NAME).build();
+    Room room = Room.builder().id(roomId).accommodation(accommodation).build();
+
+    ReservationSlot slot1 = new ReservationSlot(room, checkInDate, false);
+    slot1.setHold(true);
+    slot1.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+
+    ReservationSlot slot2 = new ReservationSlot(room, checkInDate.plusDays(1), false);
+    slot2.setHold(true);
+    slot2.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+
+    Reservation reservation = Reservation.builder()
+        .id(1L)
+        .user(user)
+        .room(room)
+        .accommodationName(TEST_ACCOMMODATION_NAME)
+        .checkInDate(checkInDate)
+        .checkOutDate(checkOutDate)
+        .peopleCount(2)
+        .petCount(1)
+        .totalPrice(100000L)
+        .impUid("imp_1234567890")
+        .merchantUid("merchant_9876543210")
+        .build();
+    
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate)).thenReturn(Optional.of(slot1));
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkInDate.plusDays(1))).thenReturn(Optional.of(slot2));
+    when(reservationRepository.save(any(Reservation.class))).thenReturn(reservation);
+    doNothing().when(portOneService).verifyPayment("imp_1234567890", 100000L);
 
     // when
     ReservationResponse response = reservationService.createReservationAfterPayment(userId, paymentRequest);
 
-
     // then
-    verify(reservationSlotRepository, times(1)).saveAll(any());
-    verify(reservationRepository, times(1)).save(any());
     assertNotNull(response.getOrderNumber());
-    assertTrue(response.getOrderNumber().matches("^[a-f0-9-]{36}$"));
+    assertEquals("merchant_9876543210", response.getOrderNumber());
 
-    String reservationConfirmedContent = String.format(
-        RESERVATION_CONFIRMED_CONTENT, reservation.getAccommodationName());
-
-    String reservationRegisteredContent = String.format(
-        RESERVATION_REGISTERED_CONTENT, reservation.getUser().getNickname());
+    verify(reservationSlotRepository, times(1)).saveAll(List.of(slot1, slot2));
+    verify(reservationRepository, times(1)).save(any(Reservation.class));
 
     verify(notificationService).sendReservationNotification(
         reservation.getId(),
         user,
         host,
-        reservationConfirmedContent,
-        reservationRegisteredContent,
+        String.format(RESERVATION_CONFIRMED_CONTENT, TEST_ACCOMMODATION_NAME),
+        String.format(RESERVATION_REGISTERED_CONTENT, "홍길동"),
         NotificationType.RESERVATION_CONFIRMED
     );
   }
@@ -178,7 +187,7 @@ class ReservationServiceTest {
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.validateReservation(userId, request);
+      reservationService.validateAndHoldSlots(userId, request);
     });
 
     assertEquals(ErrorCode.USER_NOT_FOUND, e.getErrorCode());
@@ -202,7 +211,7 @@ class ReservationServiceTest {
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.validateReservation(userId, request);
+      reservationService.validateAndHoldSlots(userId, request);
     });
 
     assertEquals(ErrorCode.ROOM_NOT_FOUND, e.getErrorCode());
@@ -230,7 +239,7 @@ class ReservationServiceTest {
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.validateReservation(userId, request);
+      reservationService.validateAndHoldSlots(userId, request);
     });
 
     assertEquals(ErrorCode.ROOM_ALREADY_RESERVED, e.getErrorCode());
@@ -258,7 +267,7 @@ class ReservationServiceTest {
 
     // when & then
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reservationService.validateReservation(userId, request);
+      reservationService.validateAndHoldSlots(userId, request);
     });
 
     assertEquals(ErrorCode.ROOM_ALREADY_RESERVED, e.getErrorCode());
@@ -337,6 +346,38 @@ class ReservationServiceTest {
   }
 
   @Test
+  @DisplayName("checkRoomHoldStatus()에서 hold=true인 슬롯이 존재할 경우 예외 발생")
+  void validateAndHoldSlots_shouldThrowWhenRoomHoldExists() {
+    // given
+    Long userId = 1L;
+    Long roomId = 101L;
+    LocalDate checkIn = LocalDate.of(2025, 1, 1);
+    LocalDate checkOut = LocalDate.of(2025, 1, 3);
+
+    ReservationRequest request = ReservationRequest.builder()
+        .roomId(roomId)
+        .checkInDate(checkIn)
+        .checkOutDate(checkOut)
+        .build();
+
+    User user = User.builder().id(userId).build();
+    Room room = Room.builder().id(roomId).build();
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndIsReserved(
+        roomId, checkIn, checkOut.minusDays(1), true)).thenReturn(false);
+    when(reservationSlotRepository.existsByRoomIdAndReservedDateBetweenAndHoldTrue(
+        roomId, checkIn, checkOut.minusDays(1))).thenReturn(true);
+
+    // when & then
+    MeongnyangerangException exception = assertThrows(MeongnyangerangException.class, () ->
+        reservationService.validateAndHoldSlots(userId, request));
+
+    assertEquals(ErrorCode.ROOM_TEMPORARILY_HELD, exception.getErrorCode());
+  }
+
+  @Test
   @DisplayName("해당 유저가 예약한 내역만 볼 수 있고 상태에 따라 조회를 할 수 있다.")
   void getUserReservation_success() {
     Long userId = 1L;
@@ -393,6 +434,126 @@ class ReservationServiceTest {
     assertEquals(accommodation.getId(), response.content().get(1).getAccommodationId());
     assertFalse(response.content().get(0).isReviewWritten());
     assertTrue(response.content().get(1).isReviewWritten());
+  }
+
+  @Test
+  @DisplayName("findAndValidateHoldSlots()에서 hold가 false인 경우 예외 발생")
+  void createReservationAfterPayment_shouldThrowWhenHoldIsFalse() {
+    // given
+    Long userId = 1L;
+    Long roomId = 101L;
+    LocalDate checkIn = LocalDate.of(2025, 1, 1);
+    LocalDate checkOut = LocalDate.of(2025, 1, 2);
+
+    User user = User.builder().id(userId).build();
+    Room room = Room.builder().id(roomId).build();
+
+    ReservationRequest req = ReservationRequest.builder()
+        .roomId(roomId)
+        .checkInDate(checkIn)
+        .checkOutDate(checkOut)
+        .build();
+
+    ReservationSlot slot = new ReservationSlot(room, checkIn, false);
+    slot.setHold(false);
+    slot.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+
+    PaymentReservationRequest paymentReq = new PaymentReservationRequest();
+    ReflectionTestUtils.setField(paymentReq, "impUid", "imp_test");
+    ReflectionTestUtils.setField(paymentReq, "merchantUid", "merchant_test");
+    ReflectionTestUtils.setField(paymentReq, "reservationRequest", req);
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkIn)).thenReturn(Optional.of(slot));
+
+    doNothing().when(portOneService).verifyPayment("imp_test", null);
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
+        reservationService.createReservationAfterPayment(userId, paymentReq));
+
+    assertEquals(ErrorCode.RESERVATION_SLOT_EXPIRED, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("findAndValidateHoldSlots()에서 expiredAt이 null인 경우 예외 발생")
+  void createReservationAfterPayment_shouldThrowWhenExpiredAtIsNull() {
+    // given
+    Long userId = 1L;
+    Long roomId = 101L;
+    LocalDate checkIn = LocalDate.of(2025, 1, 1);
+    LocalDate checkOut = LocalDate.of(2025, 1, 2);
+
+    User user = User.builder().id(userId).build();
+    Room room = Room.builder().id(roomId).build();
+
+    ReservationRequest req = ReservationRequest.builder()
+        .roomId(roomId)
+        .checkInDate(checkIn)
+        .checkOutDate(checkOut)
+        .build();
+
+    ReservationSlot slot = new ReservationSlot(room, checkIn, false);
+    slot.setHold(true);
+    slot.setExpiredAt(null);
+
+    PaymentReservationRequest paymentReq = new PaymentReservationRequest();
+    ReflectionTestUtils.setField(paymentReq, "impUid", "imp_test");
+    ReflectionTestUtils.setField(paymentReq, "merchantUid", "merchant_test");
+    ReflectionTestUtils.setField(paymentReq, "reservationRequest", req);
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkIn)).thenReturn(Optional.of(slot));
+
+    doNothing().when(portOneService).verifyPayment("imp_test", null);
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
+        reservationService.createReservationAfterPayment(userId, paymentReq));
+
+    assertEquals(ErrorCode.RESERVATION_SLOT_EXPIRED, e.getErrorCode());
+  }
+
+  @Test
+  @DisplayName("findAndValidateHoldSlots()에서 expiredAt이 현재보다 이전인 경우 예외 발생")
+  void createReservationAfterPayment_shouldThrowWhenExpiredAtIsPast() {
+    // given
+    Long userId = 1L;
+    Long roomId = 101L;
+    LocalDate checkIn = LocalDate.of(2025, 1, 1);
+    LocalDate checkOut = LocalDate.of(2025, 1, 2);
+
+    User user = User.builder().id(userId).build();
+    Room room = Room.builder().id(roomId).build();
+
+    ReservationRequest req = ReservationRequest.builder()
+        .roomId(roomId)
+        .checkInDate(checkIn)
+        .checkOutDate(checkOut)
+        .build();
+
+    ReservationSlot slot = new ReservationSlot(room, checkIn, false);
+    slot.setHold(true);
+    slot.setExpiredAt(LocalDateTime.now().minusMinutes(1)); // 과거
+
+    PaymentReservationRequest paymentReq = new PaymentReservationRequest();
+    ReflectionTestUtils.setField(paymentReq, "impUid", "imp_test");
+    ReflectionTestUtils.setField(paymentReq, "merchantUid", "merchant_test");
+    ReflectionTestUtils.setField(paymentReq, "reservationRequest", req);
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+    when(reservationSlotRepository.findByRoomIdAndReservedDate(roomId, checkIn)).thenReturn(Optional.of(slot));
+
+    doNothing().when(portOneService).verifyPayment("imp_test", null);
+
+    // when & then
+    MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () ->
+        reservationService.createReservationAfterPayment(userId, paymentReq));
+
+    assertEquals(ErrorCode.RESERVATION_SLOT_EXPIRED, e.getErrorCode());
   }
 
   @Test
