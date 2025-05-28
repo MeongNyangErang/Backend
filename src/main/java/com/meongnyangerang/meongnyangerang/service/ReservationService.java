@@ -217,7 +217,7 @@ public class ReservationService {
     try {
       reservationSlotRepository.saveAll(slots);
     } catch (OptimisticLockException | DataIntegrityViolationException e) {
-      throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
+      throw new MeongnyangerangException(ROOM_TEMPORARILY_HELD);
     }
   }
 
