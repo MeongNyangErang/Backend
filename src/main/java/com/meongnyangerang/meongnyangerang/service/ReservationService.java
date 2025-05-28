@@ -200,6 +200,8 @@ public class ReservationService {
    * 예약 슬롯을 임시 선점합니다 (hold = true, expiredAt = now + 5분)
    */
   private void holdReservationSlots(Room room, LocalDate checkIn, LocalDate checkOut) {
+    List<ReservationSlot> slots = new ArrayList<>();
+
     for (LocalDate date = checkIn; date.isBefore(checkOut); date = date.plusDays(1)) {
       LocalDate finalDate = date;
 
@@ -209,7 +211,12 @@ public class ReservationService {
 
       slot.setHold(true);
       slot.setExpiredAt(LocalDateTime.now().plusMinutes(5));
-      reservationSlotRepository.save(slot);
+      slots.add(slot);
+    }
+    try {
+      reservationSlotRepository.saveAll(slots);
+    } catch (OptimisticLockException e) {
+      throw new MeongnyangerangException(ErrorCode.ROOM_ALREADY_RESERVED);
     }
   }
 
