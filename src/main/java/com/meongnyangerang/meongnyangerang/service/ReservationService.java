@@ -140,8 +140,9 @@ public class ReservationService {
 
     updateReservationSlot(reservation);
 
-    // 예약 상태 변경
     reservation.setStatus(ReservationStatus.CANCELED);
+    reservation.setCanceledAt(LocalDateTime.now());
+
     sendNotificationWhenReservationCanceled(reservation); // 사용자와 호스트에게 알림 발송
   }
 
