@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -576,7 +577,7 @@ class ReservationServiceTest {
     Reservation reservation = Reservation.builder().id(1L).status(ReservationStatus.RESERVED)
         .user(user).room(room).checkInDate(LocalDate.of(2025, 1, 1))
         .checkOutDate(LocalDate.of(2025, 1, 3)).peopleCount(2).petCount(1).totalPrice(30000L)
-        .createdAt(LocalDateTime.now()).build();
+        .impUid("imp_123456789").merchantUid("order_001").createdAt(LocalDateTime.now()).build();
 
     ReservationSlot slot1 = new ReservationSlot(room, reservation.getCheckInDate(), true);
     ReservationSlot slot2 = new ReservationSlot(room, reservation.getCheckInDate().plusDays(1),
@@ -600,6 +601,12 @@ class ReservationServiceTest {
         reservation.getRoom(), reservation.getCheckInDate(),
         reservation.getCheckOutDate().minusDays(1));
     assertEquals(ReservationStatus.CANCELED, reservation.getStatus());
+    assertNotNull(reservation.getCanceledAt());
+
+    // 결제 취소가 호출되었는지 확인
+    verify(portOneService, times(1)).cancelPayment(
+        eq("imp_123456789"), eq(30000L), eq("사용자 예약 취소")
+    );
 
     String reservationConfirmedContent = String.format(
         RESERVATION_CANCELED_SUCCESS_CONTENT, reservation.getAccommodationName());
