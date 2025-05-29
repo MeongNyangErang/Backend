@@ -135,6 +135,9 @@ public class ReservationService {
       throw new MeongnyangerangException(RESERVATION_ALREADY_CANCELED);
     }
 
+    // 1. 포트원 결제 취소 요청
+    portOneService.cancelPayment(reservation.getImpUid(), reservation.getTotalPrice(), "사용자 예약 취소");
+
     updateReservationSlot(reservation);
 
     // 예약 상태 변경
