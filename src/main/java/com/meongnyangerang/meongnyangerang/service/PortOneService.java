@@ -26,4 +26,9 @@ public class PortOneService {
       throw new MeongnyangerangException(PAYMENT_AMOUNT_MISMATCH);
     }
   }
+
+  public void cancelPayment(String impUid, Long amount, String reason) {
+    portOneClient.cancelPayment(impUid, reason, amount);
+  }
+
 }

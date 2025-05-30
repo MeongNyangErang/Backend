@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ReservationSlotScheduler {
 
-  private ReservationSlotRepository reservationSlotRepository;
+  private final ReservationSlotRepository reservationSlotRepository;
 
   /**
    * 만료된 hold 슬롯 초기화 (5분마다 실행)
