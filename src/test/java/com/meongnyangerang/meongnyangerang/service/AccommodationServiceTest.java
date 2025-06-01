@@ -29,7 +29,6 @@ import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
-import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
@@ -85,10 +84,7 @@ class AccommodationServiceTest {
   private ReviewRepository reviewRepository;
 
   @Mock
-  private WishlistRepository wishlistRepository;
-
-  @Mock
-  private AccommodationRoomSearchService searchService;
+  private WishlistService wishlistService;
 
   @InjectMocks
   private AccommodationService accommodationService;
@@ -528,7 +524,7 @@ class AccommodationServiceTest {
         .thenReturn(List.of(room));
     Mockito.when(reviewRepository.findTop5ByAccommodationIdOrderByCreatedAtDesc(1L))
         .thenReturn(List.of(review));
-    Mockito.when(wishlistRepository.existsByUserIdAndAccommodationId(userId, accommodationId))
+    Mockito.when(wishlistService.isWishlisted(userId, accommodationId))
         .thenReturn(true);
 
     // then
