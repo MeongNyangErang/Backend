@@ -205,4 +205,19 @@ class WishlistServiceTest {
 
     assertThat(result).containsExactlyInAnyOrder(10L, 20L);
   }
+
+  @Test
+  @DisplayName("Redis에서 찜한 숙소 ID 조회 - 존재하지 않는 경우")
+  void getWishlistIdsFromRedis_Empty() {
+    Long userId = 2L;
+    String key = "wishlist:" + userId;
+    SetOperations<String, Long> setOps = mock(SetOperations.class);
+
+    when(redisTemplate.opsForSet()).thenReturn(setOps);
+    when(setOps.members(key)).thenReturn(null);
+
+    Set<Long> result = wishlistService.getWishlistIdsFromRedis(userId);
+
+    assertThat(result).isEmpty();
+  }
 }
