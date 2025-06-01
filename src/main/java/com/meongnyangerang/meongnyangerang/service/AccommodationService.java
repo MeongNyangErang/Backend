@@ -23,7 +23,6 @@ import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.HostRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
-import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationFacilityRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationPetFacilityRepository;
@@ -53,7 +52,7 @@ public class AccommodationService {
   private final RoomRepository roomRepository;
   private final AccommodationRoomSearchService searchService;
   private final ReviewRepository reviewRepository;
-  private final WishlistRepository wishlistRepository;
+  private final WishlistService wishlistService;
 
   private static final int MAX_ADDITIONAL_IMAGE_COUNT = 3;
 
@@ -171,7 +170,7 @@ public class AccommodationService {
     // 찜 여부 확인(UserId 확인)
     boolean isWishlisted = false;
     if (userId != null) {
-      isWishlisted = wishlistRepository.existsByUserIdAndAccommodationId(userId, accommodationId);
+      isWishlisted = wishlistService.isWishlisted(userId, accommodationId);
     }
 
     accommodationRepository.incrementViewCount(accommodationId);
