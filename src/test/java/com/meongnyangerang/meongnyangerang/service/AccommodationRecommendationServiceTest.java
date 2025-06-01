@@ -59,6 +59,9 @@ class AccommodationRecommendationServiceTest {
   @Mock
   private WishlistRepository wishlistRepository;
 
+  @Mock
+  private WishlistService wishlistService;
+
   @InjectMocks
   private AccommodationRecommendationService recommendationService;
 
@@ -202,6 +205,7 @@ class AccommodationRecommendationServiceTest {
     List<AccommodationDocument> allDocs = List.of(doc1, doc2, doc3, doc4);
 
     when(userPetRepository.findAllByUserId(1L)).thenReturn(userPets);
+    when(wishlistService.getWishlistIdsFromRedis(1L)).thenReturn(Set.of(1L, 3L));
 
     when(elasticsearchClient.search(any(SearchRequest.class),
         eq(AccommodationDocument.class)))
