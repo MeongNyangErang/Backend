@@ -17,6 +17,7 @@ import com.meongnyangerang.meongnyangerang.repository.accommodation.Accommodatio
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,9 +28,15 @@ public class WishlistService {
   private final AccommodationRepository accommodationRepository;
   private final WishlistRepository wishlistRepository;
   private final UserRepository userRepository;
+  private final RedisTemplate<String, Long> redisTemplate;
+
+  private String getWishlistKey(Long userId) {
+    return "wishlist:" + userId;
+  }
 
   // 찜 등록
   @Transactional
+
   public void addWishlist(Long userId, Long accommodationId) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_ACCOUNT));
@@ -40,6 +47,9 @@ public class WishlistService {
     if (wishlistRepository.existsByUserIdAndAccommodationId(userId, accommodationId)) {
       throw new MeongnyangerangException(ALREADY_WISHLISTED);
     }
+
+    // Redis에 추가 저장
+    redisTemplate.opsForSet().add(getWishlistKey(userId), accommodationId);
 
     wishlistRepository.save(Wishlist.builder()
         .user(user)
