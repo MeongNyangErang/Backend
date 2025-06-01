@@ -46,6 +46,7 @@ public class AccommodationSearchService {
   private final WishlistRepository wishlistRepository;
   private final AccommodationRepository accommodationRepository;
   private final RedisTemplate<String, Long> redisTemplate;
+  private final WishlistService wishlistService;
 
 
   public PageResponse<AccommodationSearchResponse> searchAccommodation(Long userId,
@@ -114,16 +115,7 @@ public class AccommodationSearchService {
       }
 
       // 사용자가 찜한 숙소의 id를 Set에 저장
-      Set<Long> wishlistedIds = new HashSet<>();
-      if (userId != null) {
-        Set<Long> rawSet = redisTemplate.opsForSet().members("wishlist:" + userId);
-        if (rawSet != null) {
-          wishlistedIds = rawSet.stream()
-              .filter(Objects::nonNull)
-              .collect(Collectors.toSet());
-        }
-      }
-
+      Set<Long> wishlistedIds = wishlistService.getWishlistIdsFromRedis(userId);
 
       List<AccommodationSearchResponse> content = unique.values().stream()
           .map(doc -> {

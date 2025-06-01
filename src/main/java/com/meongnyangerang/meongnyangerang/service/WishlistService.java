@@ -14,6 +14,10 @@ import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -95,4 +99,15 @@ public class WishlistService {
   public boolean isWishlisted(Long userId, Long accommodationId) {
     return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(getWishlistKey(userId), accommodationId));
   }
+
+  // Redis에서 해당 사용자가 찜한 숙소 ID 목록을 조회
+  public Set<Long> getWishlistIdsFromRedis(Long userId) {
+    if (userId == null) return Collections.emptySet();
+
+    String key = getWishlistKey(userId);
+    Set<Long> redisIds = redisTemplate.opsForSet().members(key);
+
+    return redisIds != null ? redisIds : Collections.emptySet();
+  }
+
 }
