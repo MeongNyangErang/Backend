@@ -245,7 +245,7 @@ class AccommodationRecommendationServiceTest {
   void getMostViewedRecommendations_success() {
     // given
     Long userId = 1L;
-    List<Long> wishlisted = List.of(1L, 3L, 5L); // 찜한 숙소 ID
+    Set<Long> wishlisted = Set.of(1L, 3L, 5L); // 찜한 숙소 ID
 
     List<Accommodation> accommodations = new ArrayList<>();
     for (int i = 1; i <= 11; i++) {
@@ -277,7 +277,7 @@ class AccommodationRecommendationServiceTest {
           .thenReturn(room);
     }
 
-    when(wishlistRepository.findAccommodationIdsByUserId(userId)).thenReturn(wishlisted);
+    when(wishlistService.getWishlistIdsFromRedis(userId)).thenReturn(wishlisted);
 
     // when
     List<RecommendationResponse> result = recommendationService.getMostViewedRecommendations(
@@ -298,7 +298,7 @@ class AccommodationRecommendationServiceTest {
       assertEquals(wishlisted.contains(expected.getId()), res.isWishlisted());
 
       verify(accommodationRepository, times(1)).findTop10ByOrderByViewCountDescTotalRatingDesc();
-      verify(wishlistRepository, times(1)).findAccommodationIdsByUserId(userId);
+      verify(wishlistService, times(1)).getWishlistIdsFromRedis(userId);
       for (Accommodation a : top10) {
         verify(roomRepository).findFirstByAccommodationOrderByPriceAsc(a);
       }
