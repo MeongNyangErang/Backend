@@ -24,7 +24,6 @@ import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.PetRecommendationGroup;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
-import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.recommendation.AccommodationRecommendationService;
@@ -55,9 +54,6 @@ class AccommodationRecommendationServiceTest {
 
   @Mock
   private RoomRepository roomRepository;
-
-  @Mock
-  private WishlistRepository wishlistRepository;
 
   @Mock
   private WishlistService wishlistService;
