@@ -29,9 +29,12 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -42,6 +45,8 @@ public class AccommodationSearchService {
   private final ReservationSlotRepository reservationSlotRepository;
   private final WishlistRepository wishlistRepository;
   private final AccommodationRepository accommodationRepository;
+  private final RedisTemplate<String, Long> redisTemplate;
+
 
   public PageResponse<AccommodationSearchResponse> searchAccommodation(Long userId,
       AccommodationSearchRequest request,
@@ -109,9 +114,16 @@ public class AccommodationSearchService {
       }
 
       // 사용자가 찜한 숙소의 id를 Set에 저장
-      Set<Long> wishlistedIds =
-          (userId != null) ? new HashSet<>(wishlistRepository.findAccommodationIdsByUserId(userId))
-              : Collections.emptySet();
+      Set<Long> wishlistedIds = new HashSet<>();
+      if (userId != null) {
+        Set<Long> rawSet = redisTemplate.opsForSet().members("wishlist:" + userId);
+        if (rawSet != null) {
+          wishlistedIds = rawSet.stream()
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+        }
+      }
+
 
       List<AccommodationSearchResponse> content = unique.values().stream()
           .map(doc -> {
