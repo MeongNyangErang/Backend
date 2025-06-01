@@ -51,6 +51,7 @@ public class WishlistService {
     // Redis에 추가 저장
     redisTemplate.opsForSet().add(getWishlistKey(userId), accommodationId);
 
+    // DB에 저장
     wishlistRepository.save(Wishlist.builder()
         .user(user)
         .accommodation(accommodation)
@@ -66,6 +67,7 @@ public class WishlistService {
     // Redis에서 제거
     redisTemplate.opsForSet().remove(getWishlistKey(userId), accommodationId);
 
+    // DB에서 삭제
     wishlistRepository.delete(wishlist);
   }
 
