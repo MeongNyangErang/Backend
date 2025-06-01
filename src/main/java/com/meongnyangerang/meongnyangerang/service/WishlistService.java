@@ -14,7 +14,9 @@ import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import jakarta.annotation.PostConstruct;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -111,4 +113,16 @@ public class WishlistService {
     return redisIds != null ? redisIds : Collections.emptySet();
   }
 
+  /**
+   * 서버 시작 시 DB에 저장된 찜 정보를 Redis에 로딩합니다.
+   * Redis가 비어 있는 경우를 대비하여 일관성을 유지합니다.(서버 재시작 등)
+   */
+  @PostConstruct
+  public void preloadWishlistToRedis() {
+    List<Wishlist> all = wishlistRepository.findAll();
+    for (Wishlist w : all) {
+      String key = getWishlistKey(w.getUser().getId());
+      redisTemplate.opsForSet().add(key, w.getAccommodation().getId());
+    }
+  }
 }
