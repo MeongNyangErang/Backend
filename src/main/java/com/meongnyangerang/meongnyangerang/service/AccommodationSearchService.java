@@ -38,9 +38,7 @@ public class AccommodationSearchService {
 
   private final ElasticsearchClient elasticsearchClient;
   private final ReservationSlotRepository reservationSlotRepository;
-  private final WishlistRepository wishlistRepository;
   private final AccommodationRepository accommodationRepository;
-  private final RedisTemplate<String, Long> redisTemplate;
   private final WishlistService wishlistService;
 
 
