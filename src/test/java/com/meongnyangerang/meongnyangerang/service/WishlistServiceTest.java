@@ -21,6 +21,7 @@ import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -187,5 +188,21 @@ class WishlistServiceTest {
     assertThat(response.totalPages()).isEqualTo(3);
     assertThat(response.first()).isFalse();
     assertThat(response.last()).isFalse();
+  }
+
+  @Test
+  @DisplayName("Redis에서 찜한 숙소 ID 조회 - 존재하는 경우")
+  void getWishlistIdsFromRedis_Success() {
+    Long userId = 1L;
+    String key = "wishlist:" + userId;
+    Set<Long> ids = Set.of(10L, 20L);
+    SetOperations<String, Long> setOps = mock(SetOperations.class);
+
+    when(redisTemplate.opsForSet()).thenReturn(setOps);
+    when(setOps.members(key)).thenReturn(ids);
+
+    Set<Long> result = wishlistService.getWishlistIdsFromRedis(userId);
+
+    assertThat(result).containsExactlyInAnyOrder(10L, 20L);
   }
 }
