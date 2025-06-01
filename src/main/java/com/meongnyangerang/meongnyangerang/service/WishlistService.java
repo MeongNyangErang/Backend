@@ -90,4 +90,9 @@ public class WishlistService {
 
     return PageResponse.from(responsePage);
   }
+
+  // 찜 여부 확인
+  public boolean isWishlisted(Long userId, Long accommodationId) {
+    return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(getWishlistKey(userId), accommodationId));
+  }
 }
