@@ -63,6 +63,9 @@ public class WishlistService {
     Wishlist wishlist = wishlistRepository.findByUserIdAndAccommodationId(userId, accommodationId)
         .orElseThrow(() -> new MeongnyangerangException(NOT_EXIST_WISHLIST));
 
+    // Redis에서 제거
+    redisTemplate.opsForSet().remove(getWishlistKey(userId), accommodationId);
+
     wishlistRepository.delete(wishlist);
   }
 
