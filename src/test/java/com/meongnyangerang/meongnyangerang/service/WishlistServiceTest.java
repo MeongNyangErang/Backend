@@ -173,8 +173,10 @@ class WishlistServiceTest {
   void getUserWishlists_MiddlePage() {
     Long userId = 1L;
     Pageable pageable = PageRequest.of(1, 2);
-    Accommodation acc1 = Accommodation.builder().id(1L).name("숙소1").address("서울시").thumbnailUrl("thumb1").build();
-    Accommodation acc2 = Accommodation.builder().id(2L).name("숙소2").address("부산시").thumbnailUrl("thumb2").build();
+    Accommodation acc1 = Accommodation.builder().id(1L).name("숙소1").address("서울시")
+        .thumbnailUrl("thumb1").build();
+    Accommodation acc2 = Accommodation.builder().id(2L).name("숙소2").address("부산시")
+        .thumbnailUrl("thumb2").build();
     Wishlist w1 = Wishlist.builder().id(101L).accommodation(acc1).build();
     Wishlist w2 = Wishlist.builder().id(102L).accommodation(acc2).build();
     List<Wishlist> wishlists = List.of(w1, w2);
