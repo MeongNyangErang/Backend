@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +34,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SetOperations;
 
 @ExtendWith(MockitoExtension.class)
 class WishlistServiceTest {
@@ -48,6 +52,9 @@ class WishlistServiceTest {
   @Mock
   private AccommodationRepository accommodationRepository;
 
+  @Mock
+  private RedisTemplate<String, Long> redisTemplate;
+
   @Test
   @DisplayName("찜 등록 성공")
   void addWishlistSuccess() {
@@ -60,6 +67,7 @@ class WishlistServiceTest {
     when(userRepository.findById(1L)).thenReturn(Optional.of(user));
     when(accommodationRepository.findById(100L)).thenReturn(Optional.of(accommodation));
     when(wishlistRepository.existsByUserIdAndAccommodationId(1L, 100L)).thenReturn(false);
+    when(redisTemplate.opsForSet()).thenReturn(mock(SetOperations.class));
 
     // when
     assertDoesNotThrow(() -> wishlistService.addWishlist(1L, 100L));
@@ -76,10 +84,8 @@ class WishlistServiceTest {
   @Test
   @DisplayName("찜 등록 실패 - 이미 등록된 찜")
   void addWishlistAlreadyExists() {
-    // given
     Long userId = 1L;
     Long accommodationId = 100L;
-
     User user = User.builder().id(userId).email("user@example.com").build();
     Accommodation accommodation = Accommodation.builder().id(accommodationId).name("숙소").build();
 
@@ -88,7 +94,6 @@ class WishlistServiceTest {
     when(wishlistRepository.existsByUserIdAndAccommodationId(userId, accommodationId)).thenReturn(
         true);
 
-    // when & then
     MeongnyangerangException exception = assertThrows(
         MeongnyangerangException.class,
         () -> wishlistService.addWishlist(userId, accommodationId)
@@ -102,40 +107,30 @@ class WishlistServiceTest {
   @Test
   @DisplayName("찜 삭제 성공")
   void removeWishlistSuccess() {
-    // given
     Long userId = 1L;
     Long accommodationId = 100L;
-
     User user = User.builder().id(userId).email("user@example.com").build();
     Accommodation accommodation = Accommodation.builder().id(accommodationId).name("숙소").build();
-
-    Wishlist wishlist = Wishlist.builder()
-        .id(10L)
-        .user(user)
-        .accommodation(accommodation)
-        .build();
+    Wishlist wishlist = Wishlist.builder().id(10L).user(user).accommodation(accommodation).build();
 
     when(wishlistRepository.findByUserIdAndAccommodationId(userId, accommodationId)).thenReturn(
         Optional.of(wishlist));
+    when(redisTemplate.opsForSet()).thenReturn(mock(SetOperations.class));
 
-    // when
     wishlistService.removeWishlist(userId, accommodationId);
 
-    // then
     verify(wishlistRepository).delete(wishlist);
   }
 
   @Test
   @DisplayName("찜 삭제 실패 - 존재하지 않는 찜")
   void removeWishlistNotFound() {
-    // given
     Long userId = 1L;
     Long accommodationId = 100L;
 
     when(wishlistRepository.findByUserIdAndAccommodationId(userId, accommodationId)).thenReturn(
         Optional.empty());
 
-    // when & then
     MeongnyangerangException exception = assertThrows(
         MeongnyangerangException.class,
         () -> wishlistService.removeWishlist(userId, accommodationId)
@@ -149,44 +144,26 @@ class WishlistServiceTest {
   @Test
   @DisplayName("찜 목록 조회 - 페이징 성공")
   void getUserWishlists_PageableSuccess() {
-    // given
     Long userId = 1L;
     Pageable pageable = PageRequest.of(0, 2);
-
-    Accommodation acc1 = Accommodation.builder()
-        .id(100L)
-        .name("숙소1")
-        .thumbnailUrl("thumb1.jpg")
-        .address("서울시 강남구")
-        .totalRating(4.7)
-        .build();
-
-    Accommodation acc2 = Accommodation.builder()
-        .id(101L)
-        .name("숙소2")
-        .thumbnailUrl("thumb2.jpg")
-        .address("서울시 종로구")
-        .totalRating(4.8)
-        .build();
-
+    Accommodation acc1 = Accommodation.builder().id(100L).name("숙소1").thumbnailUrl("thumb1.jpg")
+        .address("서울시 강남구").totalRating(4.7).build();
+    Accommodation acc2 = Accommodation.builder().id(101L).name("숙소2").thumbnailUrl("thumb2.jpg")
+        .address("서울시 종로구").totalRating(4.8).build();
     Wishlist w1 = Wishlist.builder().id(1L).accommodation(acc1).build();
     Wishlist w2 = Wishlist.builder().id(2L).accommodation(acc2).build();
-
     Page<Wishlist> page = new PageImpl<>(List.of(w1, w2), pageable, 2);
 
     when(wishlistRepository.findByUserId(userId, pageable)).thenReturn(page);
 
-    // when
     PageResponse<WishlistResponse> result = wishlistService.getUserWishlists(userId, pageable);
 
-    // then
     assertThat(result.content()).hasSize(2);
     assertThat(result.totalElements()).isEqualTo(2);
     assertThat(result.totalPages()).isEqualTo(1);
     assertThat(result.page()).isEqualTo(0);
     assertThat(result.first()).isTrue();
     assertThat(result.last()).isTrue();
-
     assertThat(result.content().get(0).getAccommodationName()).isEqualTo("숙소1");
     assertThat(result.content().get(1).getAccommodationName()).isEqualTo("숙소2");
   }
@@ -194,30 +171,55 @@ class WishlistServiceTest {
   @Test
   @DisplayName("찜 목록 조회 - 여러 페이지 중 일부 조회")
   void getUserWishlists_MiddlePage() {
-    // given
     Long userId = 1L;
-    Pageable pageable = PageRequest.of(1, 2); // 두 번째 페이지
-
+    Pageable pageable = PageRequest.of(1, 2);
     Accommodation acc1 = Accommodation.builder().id(1L).name("숙소1").address("서울시")
         .thumbnailUrl("thumb1").build();
     Accommodation acc2 = Accommodation.builder().id(2L).name("숙소2").address("부산시")
         .thumbnailUrl("thumb2").build();
-
     Wishlist w1 = Wishlist.builder().id(101L).accommodation(acc1).build();
     Wishlist w2 = Wishlist.builder().id(102L).accommodation(acc2).build();
-
     List<Wishlist> wishlists = List.of(w1, w2);
-    Page<Wishlist> page = new PageImpl<>(wishlists, pageable, 6); // 총 6개, 총 3페이지
+    Page<Wishlist> page = new PageImpl<>(wishlists, pageable, 6);
 
     when(wishlistRepository.findByUserId(userId, pageable)).thenReturn(page);
 
-    // when
     PageResponse<WishlistResponse> response = wishlistService.getUserWishlists(userId, pageable);
 
-    // then
     assertThat(response.page()).isEqualTo(1);
     assertThat(response.totalPages()).isEqualTo(3);
     assertThat(response.first()).isFalse();
     assertThat(response.last()).isFalse();
+  }
+
+  @Test
+  @DisplayName("Redis에서 찜한 숙소 ID 조회 - 존재하는 경우")
+  void getWishlistIdsFromRedis_Success() {
+    Long userId = 1L;
+    String key = "wishlist:" + userId;
+    Set<Long> ids = Set.of(10L, 20L);
+    SetOperations<String, Long> setOps = mock(SetOperations.class);
+
+    when(redisTemplate.opsForSet()).thenReturn(setOps);
+    when(setOps.members(key)).thenReturn(ids);
+
+    Set<Long> result = wishlistService.getWishlistIdsFromRedis(userId);
+
+    assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+  }
+
+  @Test
+  @DisplayName("Redis에서 찜한 숙소 ID 조회 - 존재하지 않는 경우")
+  void getWishlistIdsFromRedis_Empty() {
+    Long userId = 2L;
+    String key = "wishlist:" + userId;
+    SetOperations<String, Long> setOps = mock(SetOperations.class);
+
+    when(redisTemplate.opsForSet()).thenReturn(setOps);
+    when(setOps.members(key)).thenReturn(null);
+
+    Set<Long> result = wishlistService.getWishlistIdsFromRedis(userId);
+
+    assertThat(result).isEmpty();
   }
 }

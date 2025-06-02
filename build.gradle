@@ -46,7 +46,7 @@ dependencies {
     implementation 'software.amazon.awssdk:regions:2.20.26'
 
     // Redis
-//	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     // Websocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'

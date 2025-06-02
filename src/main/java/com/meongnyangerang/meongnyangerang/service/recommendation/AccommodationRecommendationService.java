@@ -20,13 +20,12 @@ import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
-import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
+import com.meongnyangerang.meongnyangerang.service.WishlistService;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,7 +45,7 @@ public class AccommodationRecommendationService {
   private final UserPetRepository userPetRepository;
   private final AccommodationRepository accommodationRepository;
   private final RoomRepository roomRepository;
-  private final WishlistRepository wishlistRepository;
+  private final WishlistService wishlistService;
   private final PetFacilityScoreService petFacilityScoreService;
 
   private static final String INDEX_NAME = "accommodations";
@@ -97,8 +96,7 @@ public class AccommodationRecommendationService {
   // 사용자가 등록한 반려동물 기반 추천
   public List<PetRecommendationGroup> getUserPetRecommendations(Long userId) {
     List<UserPet> userPets = userPetRepository.findAllByUserId(userId);
-    Set<Long> wishlistedIds = new HashSet<>(
-        wishlistRepository.findAccommodationIdsByUserId(userId));
+    Set<Long> wishlistedIds = wishlistService.getWishlistIdsFromRedis(userId);
 
     return userPets.stream()
         .map(pet -> new PetRecommendationGroup(
@@ -118,8 +116,7 @@ public class AccommodationRecommendationService {
 
     Map<String, Integer> accScoreMap = getAccommodationScoreMap(pet);
     Map<String, Integer> roomScoreMap = getRoomScoreMap(pet);
-    Set<Long> wishlistedIds = new HashSet<>(
-        wishlistRepository.findAccommodationIdsByUserId(userId));
+    Set<Long> wishlistedIds = wishlistService.getWishlistIdsFromRedis(userId);
 
     // 해당 반려동물 유형 필터링 쿼리
     Query query = buildPetTypeQuery(pet.getType().name());
@@ -146,8 +143,7 @@ public class AccommodationRecommendationService {
   // 많은 사람들이 관심을 가진 숙소 추천
   public List<RecommendationResponse> getMostViewedRecommendations(Long userId) {
     List<Accommodation> accommodations = accommodationRepository.findTop10ByOrderByViewCountDescTotalRatingDesc();
-    Set<Long> wishlistedIds = new HashSet<>(
-        wishlistRepository.findAccommodationIdsByUserId(userId));
+    Set<Long> wishlistedIds = wishlistService.getWishlistIdsFromRedis(userId);
 
     return accommodations.stream()
         .map(accommodation -> {

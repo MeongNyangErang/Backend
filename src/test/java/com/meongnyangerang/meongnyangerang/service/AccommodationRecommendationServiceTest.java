@@ -24,11 +24,9 @@ import com.meongnyangerang.meongnyangerang.domain.user.UserPet;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.PetRecommendationGroup;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.RecommendationResponse;
 import com.meongnyangerang.meongnyangerang.repository.UserPetRepository;
-import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.recommendation.AccommodationRecommendationService;
-import com.meongnyangerang.meongnyangerang.service.recommendation.PetFacilityScoreService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -58,10 +56,7 @@ class AccommodationRecommendationServiceTest {
   private RoomRepository roomRepository;
 
   @Mock
-  private WishlistRepository wishlistRepository;
-
-  @Mock
-  private PetFacilityScoreService petFacilityScoreService;
+  private WishlistService wishlistService;
 
   @InjectMocks
   private AccommodationRecommendationService recommendationService;
@@ -206,6 +201,7 @@ class AccommodationRecommendationServiceTest {
     List<AccommodationDocument> allDocs = List.of(doc1, doc2, doc3, doc4);
 
     when(userPetRepository.findAllByUserId(1L)).thenReturn(userPets);
+    when(wishlistService.getWishlistIdsFromRedis(1L)).thenReturn(Set.of(1L, 3L));
 
     when(elasticsearchClient.search(any(SearchRequest.class),
         eq(AccommodationDocument.class)))
@@ -245,7 +241,7 @@ class AccommodationRecommendationServiceTest {
   void getMostViewedRecommendations_success() {
     // given
     Long userId = 1L;
-    List<Long> wishlisted = List.of(1L, 3L, 5L); // 찜한 숙소 ID
+    Set<Long> wishlisted = Set.of(1L, 3L, 5L); // 찜한 숙소 ID
 
     List<Accommodation> accommodations = new ArrayList<>();
     for (int i = 1; i <= 11; i++) {
@@ -277,7 +273,7 @@ class AccommodationRecommendationServiceTest {
           .thenReturn(room);
     }
 
-    when(wishlistRepository.findAccommodationIdsByUserId(userId)).thenReturn(wishlisted);
+    when(wishlistService.getWishlistIdsFromRedis(userId)).thenReturn(wishlisted);
 
     // when
     List<RecommendationResponse> result = recommendationService.getMostViewedRecommendations(
@@ -298,7 +294,7 @@ class AccommodationRecommendationServiceTest {
       assertEquals(wishlisted.contains(expected.getId()), res.isWishlisted());
 
       verify(accommodationRepository, times(1)).findTop10ByOrderByViewCountDescTotalRatingDesc();
-      verify(wishlistRepository, times(1)).findAccommodationIdsByUserId(userId);
+      verify(wishlistService, times(1)).getWishlistIdsFromRedis(userId);
       for (Accommodation a : top10) {
         verify(roomRepository).findFirstByAccommodationOrderByPriceAsc(a);
       }

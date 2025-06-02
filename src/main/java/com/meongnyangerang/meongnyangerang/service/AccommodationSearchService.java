@@ -1,6 +1,6 @@
 package com.meongnyangerang.meongnyangerang.service;
 
-import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.*;
+import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.ACCOMMODATION_NOT_FOUND;
 import static com.meongnyangerang.meongnyangerang.exception.ErrorCode.SEARCH_FAILED;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -16,16 +16,12 @@ import com.meongnyangerang.meongnyangerang.domain.accommodation.AccommodationTyp
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchRequest;
 import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearchResponse;
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
-import com.meongnyangerang.meongnyangerang.exception.ErrorCode;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
-import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +36,9 @@ public class AccommodationSearchService {
 
   private final ElasticsearchClient elasticsearchClient;
   private final ReservationSlotRepository reservationSlotRepository;
-  private final WishlistRepository wishlistRepository;
   private final AccommodationRepository accommodationRepository;
+  private final WishlistService wishlistService;
+
 
   public PageResponse<AccommodationSearchResponse> searchAccommodation(Long userId,
       AccommodationSearchRequest request,
@@ -109,9 +106,7 @@ public class AccommodationSearchService {
       }
 
       // 사용자가 찜한 숙소의 id를 Set에 저장
-      Set<Long> wishlistedIds =
-          (userId != null) ? new HashSet<>(wishlistRepository.findAccommodationIdsByUserId(userId))
-              : Collections.emptySet();
+      Set<Long> wishlistedIds = wishlistService.getWishlistIdsFromRedis(userId);
 
       List<AccommodationSearchResponse> content = unique.values().stream()
           .map(doc -> {

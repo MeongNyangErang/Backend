@@ -19,12 +19,12 @@ import com.meongnyangerang.meongnyangerang.dto.accommodation.AccommodationSearch
 import com.meongnyangerang.meongnyangerang.dto.chat.PageResponse;
 import com.meongnyangerang.meongnyangerang.exception.MeongnyangerangException;
 import com.meongnyangerang.meongnyangerang.repository.ReservationSlotRepository;
-import com.meongnyangerang.meongnyangerang.repository.WishlistRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ class AccommodationSearchServiceTest {
   private ReservationSlotRepository reservationSlotRepository;
 
   @Mock
-  private WishlistRepository wishlistRepository;
+  private WishlistService wishlistService;
 
   @Mock
   private AccommodationRepository accommodationRepository;
@@ -135,16 +135,18 @@ class AccommodationSearchServiceTest {
         request.getCheckInDate(), request.getCheckOutDate().minusDays(1)))
         .willReturn(List.of());
 
-    given(wishlistRepository.findAccommodationIdsByUserId(userId))
-        .willReturn(List.of(1L));
+    given(wishlistService.getWishlistIdsFromRedis(userId))
+        .willReturn(Set.of(1L));
 
     given(accommodationRepository.findById(1L))
         .willReturn(
-            Optional.of(Accommodation.builder().id(1L).latitude(37.5665).longitude(126.9780).build()));
+            Optional.of(
+                Accommodation.builder().id(1L).latitude(37.5665).longitude(126.9780).build()));
 
     given(accommodationRepository.findById(2L))
         .willReturn(
-            Optional.of(Accommodation.builder().id(2L).latitude(37.5796).longitude(126.9770).build()));
+            Optional.of(
+                Accommodation.builder().id(2L).latitude(37.5796).longitude(126.9770).build()));
 
     given(elasticsearchClient.search(any(Function.class), eq(AccommodationRoomDocument.class)))
         .willReturn(mockResponse);
