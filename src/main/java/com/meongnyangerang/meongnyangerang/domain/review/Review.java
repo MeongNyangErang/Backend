@@ -56,6 +56,11 @@ public class Review {
   @Column(columnDefinition = "TEXT")
   private String content;
 
+  @Column(nullable = false)
+  private Boolean hidden;
+
+  private LocalDateTime hiddenAt;
+
   private Integer reportCount;
 
   @CreatedDate
