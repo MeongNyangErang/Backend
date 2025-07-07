@@ -12,10 +12,9 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
   boolean existsByUserIdAndReservationId(Long userId, Long reservationId);
 
-  Page<Review> findByUserId(Long userId, Pageable pageable);
+  Page<Review> findByUserIdAndHiddenFalse(Long userId, Pageable pageable);
 
-  Page<Review> findByAccommodationIdAndReportCountLessThan(Long accommodationId, int reportCount,
-      Pageable pageable);
+  Page<Review> findByAccommodationIdAndHiddenFalse(Long accommodationId, Pageable pageable);
 
   Page<Review> findAllByAccommodationIdAndReportCountLessThan(
       Long accommodationId, Integer reportCount, Pageable pageable);

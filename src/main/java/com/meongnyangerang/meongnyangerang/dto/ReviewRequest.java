@@ -37,6 +37,7 @@ public class ReviewRequest {
         .content(content)
         .userRating(userRating)
         .petFriendlyRating(petFriendlyRating)
+        .hidden(false)
         .reportCount(0)
         .build();
   }
