@@ -18,6 +18,8 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.UserRepository;
 import com.meongnyangerang.meongnyangerang.security.UserDetailsImpl;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,7 +35,6 @@ public class ReviewReportService {
   private final ReviewRepository reviewRepository;
   private final UserRepository userRepository;
   private final HostRepository hostRepository;
-  private final ReviewDeletionService reviewDeletionService;
   private final ImageService imageService;
 
   // 리뷰 신고 생성
@@ -79,13 +80,19 @@ public class ReviewReportService {
   }
 
   @Transactional
-  public void deleteReviewReport(Long reviewReportId) {
+  public void processReviewReport(Long reviewReportId) {
     ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
         .orElseThrow(() -> new MeongnyangerangException(ErrorCode.NOT_EXIST_REVIEW_REPORT));
 
-    reviewReportRepository.delete(reviewReport);
+    Review review = reviewReport.getReview();
+    review.setHidden(true);
+    review.setHiddenAt(LocalDateTime.now());
 
-    reviewDeletionService.deleteReviewCompletely(reviewReport.getReview());
+    // 해당 리뷰에 달린 모든 신고 상태를 COMPLETED 로 처리
+    List<ReviewReport> allReports = reviewReportRepository.findAllByReviewId(review.getId());
+    for (ReviewReport report : allReports) {
+      report.setStatus(ReportStatus.COMPLETED);
+    }
   }
 
   private String getReporterNickname(Long reporterId, ReporterType type) {
