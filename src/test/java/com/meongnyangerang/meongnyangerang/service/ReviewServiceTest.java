@@ -35,6 +35,7 @@ import com.meongnyangerang.meongnyangerang.repository.ReviewImageProjection;
 import com.meongnyangerang.meongnyangerang.repository.ReviewImageRepository;
 import com.meongnyangerang.meongnyangerang.repository.ReviewRepository;
 import com.meongnyangerang.meongnyangerang.repository.accommodation.AccommodationRepository;
+import com.meongnyangerang.meongnyangerang.repository.room.RoomRepository;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import com.meongnyangerang.meongnyangerang.service.notification.NotificationService;
 import java.time.LocalDate;
@@ -74,6 +75,9 @@ class ReviewServiceTest {
   private AccommodationRepository accommodationRepository;
 
   @Mock
+  private RoomRepository roomRepository;
+
+  @Mock
   private ImageService imageService;
 
   @Mock
@@ -81,6 +85,9 @@ class ReviewServiceTest {
 
   @Mock
   private NotificationService notificationService;
+
+  @Mock
+  private AccommodationRoomSearchService accommodationRoomSearchService;
 
   @InjectMocks
   private ReviewService reviewService;
@@ -106,8 +113,8 @@ class ReviewServiceTest {
         .status(ReservationStatus.COMPLETED)
         .user(user)
         .room(room)
-        .checkInDate(LocalDate.of(2025, 4, 12))
-        .checkOutDate(LocalDate.of(2025, 4, 14))
+        .checkInDate(LocalDate.now().minusDays(5))
+        .checkOutDate(LocalDate.now().minusDays(3))
         .peopleCount(2)
         .petCount(1)
         .totalPrice(30000L)
@@ -119,6 +126,17 @@ class ReviewServiceTest {
         .userRating(3.0)
         .petFriendlyRating(4.0)
         .content("반려동물이 즐거워해요")
+        .build();
+
+    Review savedReview = Review.builder()
+        .id(1L)
+        .user(user)
+        .accommodation(accommodation)
+        .reservation(reservation)
+        .userRating(request.getUserRating())
+        .petFriendlyRating(request.getPetFriendlyRating())
+        .content(request.getContent())
+        .createdAt(LocalDateTime.now().minusDays(1))
         .build();
 
     List<MultipartFile> images = List.of(
@@ -136,8 +154,8 @@ class ReviewServiceTest {
     double previousTotalRating = accommodation.getTotalRating();
 
     ArgumentCaptor<Review> savedReviewCaptor = ArgumentCaptor.forClass(Review.class);
-    Review savedReview = createReview(request, user, reservation);
     when(reviewRepository.save(savedReviewCaptor.capture())).thenReturn(savedReview);
+    when(roomRepository.findAllByAccommodationId(accommodation.getId())).thenReturn(List.of(room));
 
     // when
     reviewService.createReview(user.getId(), request, images);
@@ -412,8 +430,8 @@ class ReviewServiceTest {
         .status(ReservationStatus.COMPLETED)
         .user(user)
         .room(room)
-        .checkInDate(LocalDate.of(2025, 3, 12))
-        .checkOutDate(LocalDate.of(2025, 4, 14))
+        .checkInDate(LocalDate.now().minusDays(5))
+        .checkOutDate(LocalDate.now().minusDays(3))
         .peopleCount(2)
         .petCount(1)
         .totalPrice(30000L)
@@ -485,7 +503,7 @@ class ReviewServiceTest {
         .id(2L).review(review2).imageUrl("https://test.com/images/image2.jpg")
         .createdAt(LocalDateTime.now()).build();
 
-    when(reviewRepository.findByUserId(userId, pageable)).thenReturn(reviewPage);
+    when(reviewRepository.findByUserIdAndHiddenFalse(userId, pageable)).thenReturn(reviewPage);
     when(reviewImageRepository.findAllByReviewId(review1.getId())).thenReturn(
         List.of(reviewImage1));
     when(reviewImageRepository.findAllByReviewId(review2.getId())).thenReturn(
@@ -566,7 +584,7 @@ class ReviewServiceTest {
     );
 
     when(
-        reviewRepository.findByAccommodationIdAndReportCountLessThan(accommodationId, 20, pageable))
+        reviewRepository.findByAccommodationIdAndHiddenFalse(accommodationId, pageable))
         .thenReturn(reviewPage);
 
     // when
@@ -689,6 +707,7 @@ class ReviewServiceTest {
     when(reviewRepository.findById(review.getId())).thenReturn(Optional.of(review));
     when(reviewImageRepository.findAllByReviewId(review.getId())).thenReturn(images);
     when(imageService.storeImage(mockImageFile)).thenReturn(newImageUrl);
+    when(roomRepository.findAllByAccommodationId(1L)).thenReturn(List.of(room));
 
     UpdateReviewRequest request = UpdateReviewRequest.builder()
         .content("after")
