@@ -82,8 +82,8 @@ public class ReviewService {
   }
 
   public PageResponse<MyReviewResponse> getUsersReviews(Long userId, Pageable pageable) {
-    // 해당 유저의 리뷰 내역만 조회 (리뷰 신고 수 20개 이상이면 조회 X)
-    Page<Review> reviews = reviewRepository.findByUserId(userId, pageable);
+    // 해당 유저의 리뷰 내역만 조회 (숨김 상태 제외)
+    Page<Review> reviews = reviewRepository.findByUserIdAndHiddenFalse(userId, pageable);
 
     Page<MyReviewResponse> responsePage = reviews.map(this::mapToMyReviewResponse);
 
@@ -93,9 +93,9 @@ public class ReviewService {
   public PageResponse<AccommodationReviewResponse> getAccommodationReviews(
       Long accommodationId,
       Pageable pageable) {
-    // 해당 숙소의 리뷰 내역만 조회 (리뷰 신고 수 20개 이상이면 조회 X)
-    Page<Review> reviews = reviewRepository.findByAccommodationIdAndReportCountLessThan(
-        accommodationId, 20, pageable);
+    // 해당 숙소의 리뷰 내역만 조회 (숨김 상태 제외)
+    Page<Review> reviews = reviewRepository.findByAccommodationIdAndHiddenFalse(
+        accommodationId, pageable);
 
     Page<AccommodationReviewResponse> responsePage = reviews.map(
         this::mapToAccommodationReviewResponse);
