@@ -1,7 +1,9 @@
 package com.meongnyangerang.meongnyangerang.dto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +27,7 @@ import com.meongnyangerang.meongnyangerang.service.ReviewDeletionService;
 import com.meongnyangerang.meongnyangerang.service.ReviewReportService;
 import com.meongnyangerang.meongnyangerang.service.image.ImageService;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -169,31 +172,55 @@ class ReviewReportServiceTest {
   }
 
   @Test
-  @DisplayName("신고 리뷰 삭제 - 성공")
-  void deleteReviewReport_success() {
+  @DisplayName("신고 리뷰 처리 - 성공")
+  void processReviewReport_success() {
     // given
     Review review = Review.builder().id(1L).build();
-    ReviewReport reviewReport = ReviewReport.builder().id(1L).review(review).build();
 
-    when(reviewReportRepository.findById(1L)).thenReturn(Optional.ofNullable(reviewReport));
+    ReviewReport reviewReport = ReviewReport.builder()
+        .id(1L)
+        .review(review)
+        .status(ReportStatus.PENDING)
+        .build();
+
+    ReviewReport report1 = ReviewReport.builder()
+        .id(2L)
+        .review(review)
+        .status(ReportStatus.PENDING)
+        .build();
+
+    ReviewReport report2 = ReviewReport.builder()
+        .id(3L)
+        .review(review)
+        .status(ReportStatus.PENDING)
+        .build();
+
+    List<ReviewReport> allReports = List.of(reviewReport, report1, report2);
+
+    when(reviewReportRepository.findById(1L)).thenReturn(Optional.of(reviewReport));
+    when(reviewReportRepository.findAllByReviewId(1L)).thenReturn(allReports);
 
     // when
-    reviewReportService.deleteReviewReport(1L);
+    reviewReportService.processReviewReport(1L);
 
     // then
-    verify(reviewDeletionService, times(1)).deleteReviewCompletely(review);
-    verify(reviewReportRepository, times(1)).delete(reviewReport);
+    assertTrue(review.getHidden());
+    assertNotNull(review.getHiddenAt());
+
+    for (ReviewReport report : allReports) {
+      assertEquals(ReportStatus.COMPLETED, report.getStatus());
+    }
   }
 
   @Test
-  @DisplayName("신고 리뷰 삭제 - 실패: 신고 리뷰가 없는 경우")
-  void deleteReviewReport_not_exists_review_report() {
+  @DisplayName("신고 리뷰 처리 - 실패: 신고 리뷰가 없는 경우")
+  void processReviewReport_not_exists_review_report() {
     // given
     when(reviewReportRepository.findById(999L)).thenReturn(Optional.empty());
 
     // when
     MeongnyangerangException e = assertThrows(MeongnyangerangException.class, () -> {
-      reviewReportService.deleteReviewReport(999L);
+      reviewReportService.processReviewReport(999L);
     });
 
     // then

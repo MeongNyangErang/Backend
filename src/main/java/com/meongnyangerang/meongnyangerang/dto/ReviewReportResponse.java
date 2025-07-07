@@ -6,7 +6,7 @@ import com.meongnyangerang.meongnyangerang.domain.review.ReviewReport;
 import java.time.LocalDateTime;
 
 public record ReviewReportResponse(
-    Long reviewId,
+    Long reviewReportId,
     Long reporterId,
     ReporterType reporterType,
     String reason,

@@ -3,6 +3,7 @@ package com.meongnyangerang.meongnyangerang.repository;
 import com.meongnyangerang.meongnyangerang.domain.review.ReportStatus;
 import com.meongnyangerang.meongnyangerang.domain.review.Review;
 import com.meongnyangerang.meongnyangerang.domain.review.ReviewReport;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,8 @@ public interface ReviewReportRepository extends JpaRepository<ReviewReport, Long
   Page<ReviewReport> findAllByStatus(Pageable pageable, ReportStatus reportStatus);
 
   boolean existsByReporterIdAndReview(Long reporterId, Review review);
+
+  void deleteAllByReview_Id(Long reviewId);
+
+  List<ReviewReport> findAllByReviewId(Long reviewId);
 }

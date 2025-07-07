@@ -85,10 +85,10 @@ public class AdminController {
     return ResponseEntity.ok(reviewReportService.getReviewReportDetail(reviewReportId));
   }
 
-  @DeleteMapping("/reports/{reviewReportId}")
-  public ResponseEntity<Void> deleteReviewReport(@PathVariable Long reviewReportId) {
+  @PatchMapping("/reports/{reviewReportId}")
+  public ResponseEntity<Void> processReviewReport(@PathVariable Long reviewReportId) {
 
-    reviewReportService.deleteReviewReport(reviewReportId);
+    reviewReportService.processReviewReport(reviewReportId);
 
     return ResponseEntity.ok().build();
   }
