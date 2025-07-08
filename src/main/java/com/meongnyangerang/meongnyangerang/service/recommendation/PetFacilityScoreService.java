@@ -3,8 +3,9 @@ package com.meongnyangerang.meongnyangerang.service.recommendation;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
-import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -23,10 +24,15 @@ public class PetFacilityScoreService {
 
   @PostConstruct
   public void loadScoresFromJson() {
-    try {
+    try (InputStream inputStream = getClass().getClassLoader()
+        .getResourceAsStream("pet_facility_scores.json")) {
+      if (inputStream == null) {
+        throw new FileNotFoundException("Resource not found: pet_facility_scores.json");
+      }
+
       ObjectMapper objectMapper = new ObjectMapper();
       List<PetFacilityScoreEntry> scoreEntries = objectMapper.readValue(
-          new File(JSON_FILE_PATH),
+          inputStream,
           new TypeReference<>() {
           }
       );
@@ -36,10 +42,12 @@ public class PetFacilityScoreService {
             entry.getPersonality());
         scoreMap.put(key, new ScoreDetail(entry.getAccommodationScores(), entry.getRoomScores()));
       }
+
     } catch (IOException e) {
       throw new RuntimeException("Error loading pet facility scores from JSON", e);
     }
   }
+
 
   public Map<String, Integer> getAccommodationScore(String petType, String activityLevel,
       String personality) {
